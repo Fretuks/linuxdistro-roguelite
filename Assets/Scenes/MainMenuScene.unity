@@ -304,5 +304,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   monospaceFont: {fileID: 0}
-  featuredUnitPanel:
-    featuredUnits: []
+  motdBody: unstable userspace detected; keep a rollback shell open.
+  featuredUnitPanel: {}

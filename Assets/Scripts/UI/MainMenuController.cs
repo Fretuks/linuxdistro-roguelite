@@ -25,6 +25,7 @@ namespace KernelPanic.UI
         private static bool bootIntroPlayed;
 
         [SerializeField] private FontAsset monospaceFont; // TODO: Assign a real monospace FontAsset when typography assets exist.
+        [SerializeField] private string motdBody = "unstable userspace detected; keep a rollback shell open.";
         [SerializeField] private FeaturedUnitPanel featuredUnitPanel = new();
 
         private readonly List<CommandMenuEntry> commandEntries = new();
@@ -44,21 +45,23 @@ namespace KernelPanic.UI
         private Label titleCursorLabel;
         private Label promptCursorLabel;
         private Label bootIntroLogLabel;
-        private Label backgroundLogLabel;
+        private Label motdBodyLabel;
+        private VisualElement motdBlock;
         private Button collectionBackButton;
         private Button gachaBackButton;
         private Button settingsBackButton;
         private EntropyWallet wallet;
         private GachaService gachaService;
+        private PlayerCollection playerCollection;
+        private BackgroundLogRingBuffer backgroundLog;
         private IEventBannerSource eventBannerSource;
         private int selectedCommandIndex;
-        private float backgroundScrollOffset;
         private float bootIntroElapsed;
         private int bootIntroCharacterCount;
+        private bool cursorVisible;
         private bool suppressNextClick;
         private string bootIntroCopy;
         private IVisualElementScheduledItem blinkSchedule;
-        private IVisualElementScheduledItem backgroundSchedule;
         private IVisualElementScheduledItem bootIntroSchedule;
 
         public void Initialize(EntropyWallet initializedWallet)
@@ -71,6 +74,7 @@ namespace KernelPanic.UI
         {
             document = GetComponent<UIDocument>();
             gachaService = new GachaService();
+            playerCollection = new PlayerCollection(); // TODO: Replace with persistent player-collection service composition.
             Initialize(new EntropyWallet()); // TODO: Replace with persistent wallet service composition.
             BindElements();
             BindCommandEntries();
@@ -87,7 +91,7 @@ namespace KernelPanic.UI
             RefreshStaticText();
             RefreshCurrencyReadouts();
             RefreshEventBanner();
-            featuredUnitPanel.Refresh();
+            featuredUnitPanel.Refresh(playerCollection.OwnedUnits);
             SelectCommand(0);
             ShowMainMenu();
             StartAmbientSchedules();
@@ -98,7 +102,7 @@ namespace KernelPanic.UI
         {
             UnregisterCallbacks();
             blinkSchedule?.Pause();
-            backgroundSchedule?.Pause();
+            backgroundLog?.Stop();
             bootIntroSchedule?.Pause();
         }
 
@@ -112,7 +116,9 @@ namespace KernelPanic.UI
             gachaPanel = root.Q<VisualElement>("GachaPanel");
             settingsPanel = root.Q<VisualElement>("SettingsPanel");
             eventBanner = root.Q<VisualElement>("EventBanner");
+            motdBlock = root.Q<VisualElement>("MotdBlock");
             backgroundLogLayer = root.Q<VisualElement>("BackgroundLogLayer");
+            backgroundLog = new BackgroundLogRingBuffer(backgroundLogLayer, BootLogCopy.Lines);
 
             appIdLabel = root.Q<Label>("AppIdLabel");
             entropyLabel = root.Q<Label>("EntropyLabel");
@@ -120,7 +126,7 @@ namespace KernelPanic.UI
             titleCursorLabel = root.Q<Label>("TitleCursorLabel");
             promptCursorLabel = root.Q<Label>("PromptCursorLabel");
             bootIntroLogLabel = root.Q<Label>("BootIntroLogLabel");
-            backgroundLogLabel = root.Q<Label>("BackgroundLogLabel");
+            motdBodyLabel = root.Q<Label>("MotdBodyLabel");
 
             collectionBackButton = root.Q<Button>("CollectionBackButton");
             gachaBackButton = root.Q<Button>("GachaBackButton");
@@ -168,7 +174,8 @@ namespace KernelPanic.UI
         private void RefreshStaticText()
         {
             appIdLabel.text = $"kernel-panic v{Application.version} - tty1";
-            backgroundLogLabel.text = BuildBackgroundLog();
+            motdBodyLabel.text = motdBody ?? string.Empty;
+            motdBlock.EnableInClassList(HiddenClassName, string.IsNullOrWhiteSpace(motdBody));
             bootIntroCopy = string.Join("\n", BootLogCopy.Lines);
         }
 
@@ -210,26 +217,23 @@ namespace KernelPanic.UI
 
         private void StartAmbientSchedules()
         {
+            blinkSchedule?.Pause();
+            backgroundLog?.Stop();
+            cursorVisible = true;
+            titleCursorLabel.EnableInClassList(CursorOnClassName, true);
+            promptCursorLabel.EnableInClassList(CursorOnClassName, true);
+
             if (UIPreferences.ReducedMotion)
             {
-                titleCursorLabel.AddToClassList(CursorOnClassName);
-                promptCursorLabel.AddToClassList(CursorOnClassName);
                 return;
             }
 
-            bool cursorVisible = true;
             blinkSchedule = root.schedule.Execute(() =>
             {
                 cursorVisible = !cursorVisible;
                 titleCursorLabel.EnableInClassList(CursorOnClassName, cursorVisible);
                 promptCursorLabel.EnableInClassList(CursorOnClassName, cursorVisible);
-            }).Every(480);
-
-            backgroundSchedule = root.schedule.Execute(() =>
-            {
-                backgroundScrollOffset = (backgroundScrollOffset + 0.35f) % 80f;
-                backgroundLogLayer.style.translate = new Translate(0, -backgroundScrollOffset, 0);
-            }).Every(33);
+            }).Every(500);
         }
 
         private void PlayBootIntroIfNeeded()
@@ -272,6 +276,7 @@ namespace KernelPanic.UI
             bootIntroPanel.AddToClassList(HiddenClassName);
             shellRoot.RemoveFromClassList("boot-hidden");
             shellRoot.AddToClassList("boot-visible");
+            backgroundLog?.Start(UIPreferences.ReducedMotion);
             root.Focus();
         }
 
@@ -417,12 +422,6 @@ namespace KernelPanic.UI
             collectionPanel.EnableInClassList(HiddenClassName, collectionPanel != activePanel);
             gachaPanel.EnableInClassList(HiddenClassName, gachaPanel != activePanel);
             settingsPanel.EnableInClassList(HiddenClassName, settingsPanel != activePanel);
-        }
-
-        private static string BuildBackgroundLog()
-        {
-            string block = string.Join("\n", BootLogCopy.Lines);
-            return $"{block}\n{block}\n{block}\n{block}";
         }
 
         private sealed class CommandMenuEntry

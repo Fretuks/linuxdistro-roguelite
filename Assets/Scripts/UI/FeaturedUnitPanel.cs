@@ -15,8 +15,6 @@ namespace KernelPanic.UI
         private const string EmptyAccent = "5cff91";
         private const string EmptyAscii = "      _\n     | |\n  ___| |__\n / __| '_ \\\n \\__ \\ | | |\n |___/_| |_|";
 
-        [SerializeField] private List<DistroDefinition> featuredUnits = new();
-
         private VisualElement panel;
         private Label titleLabel;
         private Label asciiLabel;
@@ -28,6 +26,7 @@ namespace KernelPanic.UI
         private Label emptyHintLabel;
         private VisualElement populatedState;
         private VisualElement emptyState;
+        private IReadOnlyList<DistroDefinition> units = Array.Empty<DistroDefinition>();
         private int selectedIndex;
 
         public void Bind(VisualElement root)
@@ -45,26 +44,33 @@ namespace KernelPanic.UI
             emptyState = root.Q<VisualElement>("FeaturedUnitEmptyState");
         }
 
+        public void Refresh(IReadOnlyList<DistroDefinition> ownedUnits)
+        {
+            units = ownedUnits ?? Array.Empty<DistroDefinition>();
+            Refresh();
+        }
+
         public void Refresh()
         {
-            if (featuredUnits == null || featuredUnits.Count == 0)
+            if (units == null || units.Count == 0)
             {
                 ShowEmptyState();
                 return;
             }
 
-            selectedIndex = Mathf.Clamp(selectedIndex, 0, featuredUnits.Count - 1);
-            ShowUnit(featuredUnits[selectedIndex]);
+            selectedIndex = Mathf.Clamp(selectedIndex, 0, units.Count - 1);
+            ShowUnit(units[selectedIndex]);
         }
 
         public void SelectNext()
         {
-            if (featuredUnits == null || featuredUnits.Count < 2)
+            int unitCount = units?.Count ?? 0;
+            if (unitCount < 2)
             {
                 return;
             }
 
-            selectedIndex = (selectedIndex + 1) % featuredUnits.Count;
+            selectedIndex = (selectedIndex + 1) % unitCount;
             Refresh();
         }
 
@@ -73,7 +79,7 @@ namespace KernelPanic.UI
             populatedState.AddToClassList("hidden");
             emptyState.RemoveFromClassList("hidden");
 
-            titleLabel.text = "neofetch";
+            titleLabel.text = "[ neofetch ]";
             emptyTitleLabel.text = "no units installed";
             emptyHintLabel.text = "run: curl gacha.sh | sh";
             SetAccent(EmptyAccent);
@@ -85,7 +91,7 @@ namespace KernelPanic.UI
             emptyState.AddToClassList("hidden");
 
             string displayName = string.IsNullOrWhiteSpace(unit.DisplayName) ? unit.name : unit.DisplayName;
-            titleLabel.text = displayName;
+            titleLabel.text = "[ neofetch ]";
             asciiLabel.text = EmptyAscii; // TODO: Replace with unit-specific ASCII copy when unit presentation data exists.
             unitNameLabel.text = displayName;
             languagesLabel.text = $"{unit.PrimaryLanguage} / {unit.SecondaryLanguage}";
@@ -103,6 +109,7 @@ namespace KernelPanic.UI
             panel.style.borderBottomColor = new StyleColor(parsedColor);
             panel.style.borderLeftColor = new StyleColor(parsedColor);
             titleLabel.style.color = new StyleColor(parsedColor);
+            unitNameLabel.style.color = new StyleColor(parsedColor);
         }
     }
 }

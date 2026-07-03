@@ -4,9 +4,7 @@
     <ui:Template name="GachaScreen" src="GachaScreen.uxml" />
     <ui:Template name="SettingsScreen" src="SettingsScreen.uxml" />
     <ui:VisualElement name="Root" class="terminal-root" focusable="true">
-        <ui:VisualElement name="BackgroundLogLayer" class="background-log-layer" pickingMode="Ignore">
-            <ui:Label name="BackgroundLogLabel" class="background-log" />
-        </ui:VisualElement>
+        <ui:VisualElement name="BackgroundLogLayer" class="background-log-layer" pickingMode="Ignore" />
 
         <ui:VisualElement name="BootIntroPanel" class="boot-intro">
             <ui:Label name="BootIntroLogLabel" class="boot-intro-log" />
@@ -61,10 +59,44 @@
                     </ui:VisualElement>
 
                     <ui:VisualElement name="FeaturedUnitPanel" class="featured-panel">
-                        <ui:Label name="FeaturedUnitTitle" text="neofetch" class="featured-title" />
+                        <ui:VisualElement class="featured-title-bar">
+                            <ui:Label name="FeaturedUnitTitle" text="[ neofetch ]" class="featured-title" />
+                        </ui:VisualElement>
                         <ui:VisualElement name="FeaturedUnitEmptyState" class="featured-empty">
-                            <ui:Label name="FeaturedUnitEmptyTitle" text="no units installed" class="empty-title" />
-                            <ui:Label name="FeaturedUnitEmptyHint" text="run: curl gacha.sh | sh" class="muted-text" />
+                            <ui:VisualElement name="FeaturedUnitEmptyArt" class="ascii-placeholder">
+                                <ui:VisualElement class="dash dash-top dash-01" />
+                                <ui:VisualElement class="dash dash-top dash-02" />
+                                <ui:VisualElement class="dash dash-top dash-03" />
+                                <ui:VisualElement class="dash dash-top dash-04" />
+                                <ui:VisualElement class="dash dash-top dash-05" />
+                                <ui:VisualElement class="dash dash-top dash-06" />
+                                <ui:VisualElement class="dash dash-top dash-07" />
+                                <ui:VisualElement class="dash dash-top dash-08" />
+                                <ui:VisualElement class="dash dash-bottom dash-01" />
+                                <ui:VisualElement class="dash dash-bottom dash-02" />
+                                <ui:VisualElement class="dash dash-bottom dash-03" />
+                                <ui:VisualElement class="dash dash-bottom dash-04" />
+                                <ui:VisualElement class="dash dash-bottom dash-05" />
+                                <ui:VisualElement class="dash dash-bottom dash-06" />
+                                <ui:VisualElement class="dash dash-bottom dash-07" />
+                                <ui:VisualElement class="dash dash-bottom dash-08" />
+                                <ui:VisualElement class="dash dash-left dash-v01" />
+                                <ui:VisualElement class="dash dash-left dash-v02" />
+                                <ui:VisualElement class="dash dash-left dash-v03" />
+                                <ui:VisualElement class="dash dash-left dash-v04" />
+                                <ui:VisualElement class="dash dash-left dash-v05" />
+                                <ui:VisualElement class="dash dash-left dash-v06" />
+                                <ui:VisualElement class="dash dash-right dash-v01" />
+                                <ui:VisualElement class="dash dash-right dash-v02" />
+                                <ui:VisualElement class="dash dash-right dash-v03" />
+                                <ui:VisualElement class="dash dash-right dash-v04" />
+                                <ui:VisualElement class="dash dash-right dash-v05" />
+                                <ui:VisualElement class="dash dash-right dash-v06" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="featured-empty-copy">
+                                <ui:Label name="FeaturedUnitEmptyTitle" text="no units installed" class="empty-title" />
+                                <ui:Label name="FeaturedUnitEmptyHint" text="run: curl gacha.sh | sh" class="muted-text" />
+                            </ui:VisualElement>
                         </ui:VisualElement>
                         <ui:VisualElement name="FeaturedUnitPopulatedState" class="featured-populated hidden">
                             <ui:Label name="FeaturedUnitAscii" class="ascii-art" />
@@ -97,6 +129,11 @@
 
             <ui:VisualElement name="EventBanner" class="event-banner hidden">
                 <ui:Label name="EventBannerLabel" class="event-banner-text" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="MotdBlock" class="motd-block">
+                <ui:Label text="cat /etc/motd" class="motd-header" />
+                <ui:Label name="MotdBodyLabel" class="motd-body" />
             </ui:VisualElement>
 
             <ui:VisualElement class="footer-bar">
