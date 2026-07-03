@@ -14,6 +14,8 @@ namespace KernelPanic.Data
         [SerializeField] private Language primaryLanguage;
         [SerializeField] private Language secondaryLanguage;
         [SerializeField] private string passiveName;
+        [SerializeField, TextArea] private string description;
+        [SerializeField] private TextAsset asciiArt;
         [SerializeField] private Color accentColor = new(0.36f, 1f, 0.57f);
         [SerializeField] private int baseUptime;
         [SerializeField] private int baseRam;
@@ -25,6 +27,8 @@ namespace KernelPanic.Data
         public Language PrimaryLanguage => primaryLanguage;
         public Language SecondaryLanguage => secondaryLanguage;
         public string PassiveName => passiveName;
+        public string Description => description;
+        public TextAsset AsciiArt => asciiArt;
         public Color AccentColor => accentColor;
         public int BaseUptime => baseUptime;
         public int BaseRam => baseRam;

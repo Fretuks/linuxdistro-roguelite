@@ -144,5 +144,30 @@
                 <ui:Label text="daily seed: --------" class="footer-muted" />
             </ui:VisualElement>
         </ui:VisualElement>
+
+        <ui:VisualElement name="StarterModal" class="modal-overlay hidden">
+            <ui:VisualElement class="starter-dialog">
+                <ui:Label text="select starter distro" class="starter-title" />
+                <ui:Label text="choose one base system to install into persistent userspace" class="starter-instruction" />
+                <ui:VisualElement name="StarterOptions" class="starter-options">
+                    <ui:VisualElement name="StarterOption0" class="starter-card">
+                        <ui:Label name="StarterName0" class="starter-name" />
+                        <ui:Label name="StarterLanguages0" class="starter-languages" />
+                        <ui:Label name="StarterDescription0" class="starter-description" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="StarterOption1" class="starter-card">
+                        <ui:Label name="StarterName1" class="starter-name" />
+                        <ui:Label name="StarterLanguages1" class="starter-languages" />
+                        <ui:Label name="StarterDescription1" class="starter-description" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="StarterOption2" class="starter-card">
+                        <ui:Label name="StarterName2" class="starter-name" />
+                        <ui:Label name="StarterLanguages2" class="starter-languages" />
+                        <ui:Label name="StarterDescription2" class="starter-description" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Label name="StarterConfirmLabel" class="starter-confirm hidden" />
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

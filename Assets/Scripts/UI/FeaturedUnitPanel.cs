@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using KernelPanic.Data;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 
 namespace KernelPanic.UI
@@ -13,11 +14,11 @@ namespace KernelPanic.UI
     public sealed class FeaturedUnitPanel
     {
         private const string EmptyAccent = "5cff91";
-        private const string EmptyAscii = "      _\n     | |\n  ___| |__\n / __| '_ \\\n \\__ \\ | | |\n |___/_| |_|";
 
         private VisualElement panel;
         private Label titleLabel;
         private Label asciiLabel;
+        private VisualElement asciiPlaceholder;
         private Label unitNameLabel;
         private Label languagesLabel;
         private Label passiveLabel;
@@ -26,11 +27,14 @@ namespace KernelPanic.UI
         private Label emptyHintLabel;
         private VisualElement populatedState;
         private VisualElement emptyState;
+        private FontAsset monospaceFont;
+        private AsciiArtFitter asciiFitter;
         private IReadOnlyList<DistroDefinition> units = Array.Empty<DistroDefinition>();
         private int selectedIndex;
 
-        public void Bind(VisualElement root)
+        public void Bind(VisualElement root, FontAsset artFont)
         {
+            monospaceFont = artFont;
             panel = root.Q<VisualElement>("FeaturedUnitPanel");
             titleLabel = root.Q<Label>("FeaturedUnitTitle");
             asciiLabel = root.Q<Label>("FeaturedUnitAscii");
@@ -42,6 +46,12 @@ namespace KernelPanic.UI
             emptyHintLabel = root.Q<Label>("FeaturedUnitEmptyHint");
             populatedState = root.Q<VisualElement>("FeaturedUnitPopulatedState");
             emptyState = root.Q<VisualElement>("FeaturedUnitEmptyState");
+
+            DistroArtPresenter.ConfigureArtLabel(asciiLabel, monospaceFont);
+            asciiFitter = new AsciiArtFitter(asciiLabel, monospaceFont);
+            asciiPlaceholder = DistroArtPresenter.CreatePlaceholder();
+            asciiPlaceholder.AddToClassList("hidden");
+            populatedState.Insert(0, asciiPlaceholder);
         }
 
         public void Refresh(IReadOnlyList<DistroDefinition> ownedUnits)
@@ -92,7 +102,7 @@ namespace KernelPanic.UI
 
             string displayName = string.IsNullOrWhiteSpace(unit.DisplayName) ? unit.name : unit.DisplayName;
             titleLabel.text = "[ neofetch ]";
-            asciiLabel.text = EmptyAscii; // TODO: Replace with unit-specific ASCII copy when unit presentation data exists.
+            asciiFitter.SetArt(DistroArtPresenter.Render(asciiLabel, asciiPlaceholder, unit));
             unitNameLabel.text = displayName;
             languagesLabel.text = $"{unit.PrimaryLanguage} / {unit.SecondaryLanguage}";
             passiveLabel.text = string.IsNullOrWhiteSpace(unit.PassiveName) ? "--" : unit.PassiveName;
