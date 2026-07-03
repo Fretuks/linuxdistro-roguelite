@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="GachaPanel" class="sub-panel hidden">
+        <ui:Label text="GACHA" class="screen-title" />
+        <ui:VisualElement name="GachaContent" class="stub-box">
+            <!-- TODO: Render summon options and results here when gacha logic exists. -->
+        </ui:VisualElement>
+        <ui:Button name="GachaBackButton" text="Back" class="terminal-button back-button" />
+    </ui:VisualElement>
+</ui:UXML>

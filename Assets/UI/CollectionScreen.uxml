@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="CollectionPanel" class="sub-panel hidden">
+        <ui:Label text="COLLECTION" class="screen-title" />
+        <ui:ScrollView name="CollectionScrollView" class="stub-scroll">
+            <!-- TODO: Render owned distros and cards here when collection data exists. -->
+            <ui:VisualElement name="CollectionContent" class="collection-content" />
+        </ui:ScrollView>
+        <ui:Button name="CollectionBackButton" text="Back" class="terminal-button back-button" />
+    </ui:VisualElement>
+</ui:UXML>

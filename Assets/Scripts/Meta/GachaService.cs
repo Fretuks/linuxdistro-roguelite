@@ -7,6 +7,8 @@ namespace KernelPanic.Meta
     /// </summary>
     public sealed class GachaService
     {
+        public int PullTokens => 0; // TODO: Replace with the real pull-token wallet when that meta system exists.
+
         public GachaPullResult PerformPull(EntropyWallet wallet, int cost)
         {
             throw new NotImplementedException();

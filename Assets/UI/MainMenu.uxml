@@ -1,0 +1,111 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="MainMenu.uss" />
+    <ui:Template name="CollectionScreen" src="CollectionScreen.uxml" />
+    <ui:Template name="GachaScreen" src="GachaScreen.uxml" />
+    <ui:Template name="SettingsScreen" src="SettingsScreen.uxml" />
+    <ui:VisualElement name="Root" class="terminal-root" focusable="true">
+        <ui:VisualElement name="BackgroundLogLayer" class="background-log-layer" pickingMode="Ignore">
+            <ui:Label name="BackgroundLogLabel" class="background-log" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="BootIntroPanel" class="boot-intro">
+            <ui:Label name="BootIntroLogLabel" class="boot-intro-log" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="ShellRoot" class="shell-root">
+            <ui:VisualElement class="status-bar">
+                <ui:Label name="AppIdLabel" class="status-text" />
+                <ui:VisualElement class="status-right">
+                    <ui:Label name="EntropyLabel" class="currency-text" />
+                    <ui:Label name="PullTokensLabel" class="currency-text" />
+                    <ui:Label text="uid=1000(player)" class="status-text" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="MainMenuPanel" class="main-panel">
+                <ui:VisualElement class="content-row">
+                    <ui:VisualElement class="command-column">
+                        <ui:VisualElement class="title-row">
+                            <ui:Label text="KERNEL PANIC" class="terminal-title" />
+                            <ui:Label name="TitleCursorLabel" text="█" class="blink-cursor" />
+                        </ui:VisualElement>
+                        <ui:Label text="roguelike kernel shell / unstable userspace" class="tagline" />
+
+                        <ui:VisualElement class="command-list">
+                            <ui:VisualElement name="CommandStartRun" class="command-row">
+                                <ui:Label text="&gt;" class="command-cursor" />
+                                <ui:Label text="./start_run" class="command-text" />
+                                <ui:Label text="new run" class="command-description" />
+                            </ui:VisualElement>
+                            <ui:VisualElement name="CommandCollection" class="command-row">
+                                <ui:Label text="&gt;" class="command-cursor" />
+                                <ui:Label text="ls ~/collection" class="command-text" />
+                                <ui:Label text="units + cards" class="command-description" />
+                            </ui:VisualElement>
+                            <ui:VisualElement name="CommandGacha" class="command-row">
+                                <ui:Label text="&gt;" class="command-cursor" />
+                                <ui:Label text="curl gacha.sh | sh" class="command-text" />
+                                <ui:Label text="summon" class="command-description" />
+                            </ui:VisualElement>
+                            <ui:VisualElement name="CommandSettings" class="command-row">
+                                <ui:Label text="&gt;" class="command-cursor" />
+                                <ui:Label text="dpkg-reconfigure" class="command-text" />
+                                <ui:Label text="settings" class="command-description" />
+                            </ui:VisualElement>
+                            <ui:VisualElement name="CommandQuit" class="command-row">
+                                <ui:Label text="&gt;" class="command-cursor" />
+                                <ui:Label text="shutdown -h now" class="command-text" />
+                                <ui:Label text="quit" class="command-description" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="FeaturedUnitPanel" class="featured-panel">
+                        <ui:Label name="FeaturedUnitTitle" text="neofetch" class="featured-title" />
+                        <ui:VisualElement name="FeaturedUnitEmptyState" class="featured-empty">
+                            <ui:Label name="FeaturedUnitEmptyTitle" text="no units installed" class="empty-title" />
+                            <ui:Label name="FeaturedUnitEmptyHint" text="run: curl gacha.sh | sh" class="muted-text" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="FeaturedUnitPopulatedState" class="featured-populated hidden">
+                            <ui:Label name="FeaturedUnitAscii" class="ascii-art" />
+                            <ui:VisualElement class="unit-readout">
+                                <ui:VisualElement class="kv-row">
+                                    <ui:Label text="unit" class="kv-key" />
+                                    <ui:Label name="FeaturedUnitName" class="kv-value" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="kv-row">
+                                    <ui:Label text="lang" class="kv-key" />
+                                    <ui:Label name="FeaturedUnitLanguages" class="kv-value" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="kv-row">
+                                    <ui:Label text="passive" class="kv-key" />
+                                    <ui:Label name="FeaturedUnitPassive" class="kv-value" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="kv-row">
+                                    <ui:Label text="best wave" class="kv-key" />
+                                    <ui:Label name="FeaturedUnitBestWave" class="kv-value" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:Instance template="CollectionScreen" />
+            <ui:Instance template="GachaScreen" />
+            <ui:Instance template="SettingsScreen" />
+
+            <ui:VisualElement name="EventBanner" class="event-banner hidden">
+                <ui:Label name="EventBannerLabel" class="event-banner-text" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="footer-bar">
+                <ui:VisualElement class="prompt-row">
+                    <ui:Label text="player@mainframe:~$ " class="prompt-text" />
+                    <ui:Label name="PromptCursorLabel" text="█" class="blink-cursor" />
+                </ui:VisualElement>
+                <ui:Label text="daily seed: --------" class="footer-muted" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

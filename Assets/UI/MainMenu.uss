@@ -1,0 +1,356 @@
+:root {
+    --kp-bg: #050807;
+    --kp-panel: #09100d;
+    --kp-primary: #5cff91;
+    --kp-primary-dim: #2f7a4d;
+    --kp-muted: #7f9b8a;
+    --kp-border: #1d3b2a;
+    --kp-hover: #102018;
+    --kp-amber: #ffbf5c;
+}
+
+.terminal-root {
+    flex-grow: 1;
+    background-color: var(--kp-bg);
+    color: var(--kp-primary);
+    font-size: 16px;
+}
+
+.background-log-layer {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    top: 0;
+    bottom: -120px;
+    opacity: 0.07;
+}
+
+.background-log {
+    color: var(--kp-primary);
+    white-space: normal;
+    font-size: 14px;
+}
+
+.boot-intro {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding: 48px;
+    background-color: var(--kp-bg);
+    justify-content: flex-end;
+}
+
+.boot-intro-log {
+    color: var(--kp-primary);
+    font-size: 15px;
+    white-space: normal;
+}
+
+.shell-root {
+    flex-grow: 1;
+    padding: 18px 24px 16px 24px;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 220ms;
+}
+
+.boot-hidden {
+    opacity: 0;
+}
+
+.boot-visible {
+    opacity: 1;
+}
+
+.reduced-motion {
+    transition-duration: 0ms;
+}
+
+.hidden {
+    display: none;
+}
+
+.status-bar,
+.footer-bar {
+    min-height: 34px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--kp-border);
+}
+
+.footer-bar {
+    border-top-width: 1px;
+    border-top-color: var(--kp-border);
+    border-bottom-width: 0;
+}
+
+.status-right,
+.prompt-row,
+.title-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.status-right {
+    justify-content: flex-end;
+}
+
+.status-text,
+.footer-muted,
+.tagline,
+.muted-text {
+    color: var(--kp-muted);
+}
+
+.currency-text {
+    color: var(--kp-amber);
+    margin-right: 18px;
+}
+
+.main-panel {
+    flex-grow: 1;
+}
+
+.content-row {
+    flex-grow: 1;
+    flex-direction: row;
+    padding-top: 52px;
+    padding-bottom: 42px;
+}
+
+.command-column {
+    flex-grow: 1;
+    min-width: 470px;
+    padding-right: 40px;
+}
+
+.terminal-title {
+    color: var(--kp-primary);
+    font-size: 54px;
+    -unity-font-style: bold;
+}
+
+.blink-cursor {
+    color: transparent;
+    margin-left: 4px;
+}
+
+.cursor-on {
+    color: var(--kp-primary);
+}
+
+.tagline {
+    margin-top: 4px;
+    margin-bottom: 34px;
+    font-size: 16px;
+}
+
+.command-list {
+    max-width: 720px;
+}
+
+.command-row {
+    min-height: 44px;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    border-left-width: 2px;
+    border-left-color: transparent;
+}
+
+.command-row:hover,
+.command-row.selected {
+    background-color: var(--kp-hover);
+}
+
+.command-row.selected {
+    border-left-color: var(--kp-primary);
+}
+
+.command-cursor {
+    width: 22px;
+    color: var(--kp-primary);
+}
+
+.command-text {
+    color: var(--kp-primary);
+    font-size: 19px;
+    flex-grow: 1;
+}
+
+.command-description {
+    color: var(--kp-muted);
+    -unity-text-align: middle-right;
+    width: 150px;
+}
+
+.featured-panel {
+    width: 430px;
+    min-height: 330px;
+    padding: 18px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-primary);
+    border-right-color: var(--kp-primary);
+    border-top-color: var(--kp-primary);
+    border-bottom-color: var(--kp-primary);
+    background-color: var(--kp-panel);
+}
+
+.featured-title,
+.screen-title {
+    color: var(--kp-primary);
+    font-size: 24px;
+    -unity-font-style: bold;
+    margin-bottom: 20px;
+}
+
+.featured-empty {
+    flex-grow: 1;
+    justify-content: center;
+    align-items: center;
+}
+
+.empty-title {
+    color: var(--kp-primary);
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.featured-populated {
+    flex-direction: row;
+}
+
+.ascii-art {
+    width: 150px;
+    color: var(--kp-primary);
+    white-space: normal;
+}
+
+.unit-readout {
+    flex-grow: 1;
+}
+
+.kv-row {
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+
+.kv-key {
+    width: 88px;
+    color: var(--kp-muted);
+}
+
+.kv-value {
+    flex-grow: 1;
+    color: var(--kp-primary);
+}
+
+.event-banner {
+    min-height: 34px;
+    justify-content: center;
+    padding-left: 12px;
+    padding-right: 12px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-amber);
+    border-right-color: var(--kp-amber);
+    border-top-color: var(--kp-amber);
+    border-bottom-color: var(--kp-amber);
+}
+
+.event-banner-text {
+    color: var(--kp-amber);
+}
+
+.sub-panel {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+}
+
+.stub-scroll,
+.stub-box {
+    width: 560px;
+    height: 300px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-border);
+    border-right-color: var(--kp-border);
+    border-top-color: var(--kp-border);
+    border-bottom-color: var(--kp-border);
+    background-color: var(--kp-panel);
+}
+
+.collection-content {
+    min-height: 280px;
+}
+
+.terminal-button {
+    height: 42px;
+    margin-top: 24px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-primary);
+    border-right-color: var(--kp-primary);
+    border-top-color: var(--kp-primary);
+    border-bottom-color: var(--kp-primary);
+    background-color: var(--kp-panel);
+    color: var(--kp-primary);
+    font-size: 16px;
+}
+
+.terminal-button:hover {
+    background-color: var(--kp-primary);
+    color: var(--kp-bg);
+}
+
+.back-button {
+    width: 220px;
+}
+
+.settings-row {
+    width: 420px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-border);
+    border-right-color: var(--kp-border);
+    border-top-color: var(--kp-border);
+    border-bottom-color: var(--kp-border);
+    background-color: var(--kp-panel);
+}
+
+.disabled-row {
+    opacity: 0.55;
+}
+
+.settings-label,
+.settings-toggle,
+.prompt-text {
+    color: var(--kp-primary);
+}

@@ -13,6 +13,8 @@ namespace KernelPanic.Data
         [SerializeField] private string displayName;
         [SerializeField] private Language primaryLanguage;
         [SerializeField] private Language secondaryLanguage;
+        [SerializeField] private string passiveName;
+        [SerializeField] private Color accentColor = new(0.36f, 1f, 0.57f);
         [SerializeField] private int baseUptime;
         [SerializeField] private int baseRam;
         [SerializeField] private int baseCyclesPerTurn;
@@ -22,6 +24,8 @@ namespace KernelPanic.Data
         public string DisplayName => displayName;
         public Language PrimaryLanguage => primaryLanguage;
         public Language SecondaryLanguage => secondaryLanguage;
+        public string PassiveName => passiveName;
+        public Color AccentColor => accentColor;
         public int BaseUptime => baseUptime;
         public int BaseRam => baseRam;
         public int BaseCyclesPerTurn => baseCyclesPerTurn;
