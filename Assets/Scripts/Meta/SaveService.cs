@@ -60,6 +60,7 @@ namespace KernelPanic.Meta
         public bool starterChosen;
         public List<string> ownedUnitIds = new();
         public List<string> bannerPoolIds = new();
+        public List<CardLoadoutSaveEntry> cardLoadouts = new();
 
         public static SaveData CreateDefault()
         {
@@ -70,6 +71,24 @@ namespace KernelPanic.Meta
         {
             ownedUnitIds ??= new List<string>();
             bannerPoolIds ??= new List<string>();
+            cardLoadouts ??= new List<CardLoadoutSaveEntry>();
+            for (int i = 0; i < cardLoadouts.Count; i++)
+            {
+                cardLoadouts[i] ??= new CardLoadoutSaveEntry();
+                cardLoadouts[i].EnsureLists();
+            }
+        }
+    }
+
+    [Serializable]
+    public sealed class CardLoadoutSaveEntry
+    {
+        public string distroId;
+        public List<string> equippedCardIds = new();
+
+        public void EnsureLists()
+        {
+            equippedCardIds ??= new List<string>();
         }
     }
 }

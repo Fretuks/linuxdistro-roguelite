@@ -28,6 +28,7 @@ namespace KernelPanic.UI
         [SerializeField] private FontAsset monospaceFont; // TODO: Assign a real monospace FontAsset when typography assets exist.
         [SerializeField] private string motdBody = "unstable userspace detected; keep a rollback shell open.";
         [SerializeField] private DistroDatabase distroDatabase;
+        [SerializeField] private CardDatabase cardDatabase;
         [SerializeField] private FeaturedUnitPanel featuredUnitPanel = new();
 
         private readonly List<CommandMenuEntry> commandEntries = new();
@@ -36,12 +37,16 @@ namespace KernelPanic.UI
         private readonly List<Label> starterLanguages = new();
         private readonly List<Label> starterDescriptions = new();
         private readonly List<VisualElement> collectionRows = new();
+        private readonly List<VisualElement> cardRows = new();
+        private readonly List<VisualElement> runSetupRows = new();
+        private readonly List<VisualElement> packageRows = new();
         private UIDocument document;
         private VisualElement root;
         private VisualElement shellRoot;
         private VisualElement bootIntroPanel;
         private VisualElement mainMenuPanel;
         private VisualElement collectionPanel;
+        private VisualElement runSetupPanel;
         private VisualElement gachaPanel;
         private VisualElement settingsPanel;
         private VisualElement eventBanner;
@@ -49,6 +54,8 @@ namespace KernelPanic.UI
         private VisualElement starterModal;
         private VisualElement collectionList;
         private VisualElement collectionDetail;
+        private VisualElement runSetupList;
+        private VisualElement runSetupDetail;
         private Label appIdLabel;
         private Label entropyLabel;
         private Label pullTokensLabel;
@@ -59,6 +66,9 @@ namespace KernelPanic.UI
         private Label starterConfirmLabel;
         private VisualElement motdBlock;
         private Button collectionBackButton;
+        private Button collectionUnitsButton;
+        private Button collectionCardsButton;
+        private Button runSetupBackButton;
         private Button gachaBackButton;
         private Button settingsBackButton;
         private SaveService saveService;
@@ -66,22 +76,29 @@ namespace KernelPanic.UI
         private EntropyWallet wallet;
         private GachaService gachaService;
         private PlayerCollection playerCollection;
+        private CardLoadout cardLoadout;
         private BackgroundLogRingBuffer backgroundLog;
         private IEventBannerSource eventBannerSource;
         private int selectedCommandIndex;
         private int selectedStarterIndex;
         private int selectedCollectionIndex;
+        private int selectedCardIndex;
+        private int selectedRunSetupIndex;
+        private int selectedPackageIndex;
         private float bootIntroElapsed;
         private int bootIntroCharacterCount;
         private bool cursorVisible;
         private bool suppressNextClick;
         private bool starterModalActive;
         private bool starterConfirming;
+        private bool collectionShowingCards;
         private bool warnedUnresolvedSaveId;
+        private bool warnedInvalidLoadoutId;
         private string bootIntroCopy;
         private IVisualElementScheduledItem blinkSchedule;
         private IVisualElementScheduledItem bootIntroSchedule;
         private IVisualElementScheduledItem starterCloseSchedule;
+        private IVisualElementScheduledItem packageNoticeSchedule;
 
         public void Initialize(EntropyWallet initializedWallet)
         {
@@ -95,6 +112,7 @@ namespace KernelPanic.UI
             saveService = new SaveService();
             gachaService = new GachaService();
             playerCollection = new PlayerCollection(); // TODO: Replace with persistent player-collection service composition.
+            cardLoadout = new CardLoadout(playerCollection.OwnedUnits);
             Initialize(new EntropyWallet()); // TODO: Replace with persistent wallet service composition.
             BindElements();
             BindCommandEntries();
@@ -130,6 +148,7 @@ namespace KernelPanic.UI
             backgroundLog?.Stop();
             bootIntroSchedule?.Pause();
             starterCloseSchedule?.Pause();
+            packageNoticeSchedule?.Pause();
         }
 
         private void BindElements()
@@ -139,6 +158,7 @@ namespace KernelPanic.UI
             bootIntroPanel = root.Q<VisualElement>("BootIntroPanel");
             mainMenuPanel = root.Q<VisualElement>("MainMenuPanel");
             collectionPanel = root.Q<VisualElement>("CollectionPanel");
+            runSetupPanel = root.Q<VisualElement>("RunSetupPanel");
             gachaPanel = root.Q<VisualElement>("GachaPanel");
             settingsPanel = root.Q<VisualElement>("SettingsPanel");
             eventBanner = root.Q<VisualElement>("EventBanner");
@@ -148,6 +168,8 @@ namespace KernelPanic.UI
             starterModal = root.Q<VisualElement>("StarterModal");
             collectionList = root.Q<VisualElement>("CollectionList");
             collectionDetail = root.Q<VisualElement>("CollectionDetail");
+            runSetupList = root.Q<VisualElement>("RunSetupList");
+            runSetupDetail = root.Q<VisualElement>("RunSetupDetail");
 
             appIdLabel = root.Q<Label>("AppIdLabel");
             entropyLabel = root.Q<Label>("EntropyLabel");
@@ -167,6 +189,9 @@ namespace KernelPanic.UI
             }
 
             collectionBackButton = root.Q<Button>("CollectionBackButton");
+            collectionUnitsButton = root.Q<Button>("CollectionUnitsButton");
+            collectionCardsButton = root.Q<Button>("CollectionCardsButton");
+            runSetupBackButton = root.Q<Button>("RunSetupBackButton");
             gachaBackButton = root.Q<Button>("GachaBackButton");
             settingsBackButton = root.Q<Button>("SettingsBackButton");
         }
@@ -196,6 +221,9 @@ namespace KernelPanic.UI
             root.RegisterCallback<KeyDownEvent>(HandleKeyDown);
             root.RegisterCallback<PointerDownEvent>(HandlePointerDown);
             collectionBackButton.clicked += ShowMainMenu;
+            collectionUnitsButton.clicked += ShowCollectionUnits;
+            collectionCardsButton.clicked += ShowCollectionCards;
+            runSetupBackButton.clicked += ShowMainMenu;
             gachaBackButton.clicked += ShowMainMenu;
             settingsBackButton.clicked += ShowMainMenu;
         }
@@ -205,6 +233,9 @@ namespace KernelPanic.UI
             root.UnregisterCallback<KeyDownEvent>(HandleKeyDown);
             root.UnregisterCallback<PointerDownEvent>(HandlePointerDown);
             collectionBackButton.clicked -= ShowMainMenu;
+            collectionUnitsButton.clicked -= ShowCollectionUnits;
+            collectionCardsButton.clicked -= ShowCollectionCards;
+            runSetupBackButton.clicked -= ShowMainMenu;
             gachaBackButton.clicked -= ShowMainMenu;
             settingsBackButton.clicked -= ShowMainMenu;
         }
@@ -231,6 +262,29 @@ namespace KernelPanic.UI
                     gachaService.AddToBannerPool(unit);
                 }
             }
+
+            for (int i = 0; i < saveData.cardLoadouts.Count; i++)
+            {
+                CardLoadoutSaveEntry entry = saveData.cardLoadouts[i];
+                entry.EnsureLists();
+                List<string> resolvedIds = new();
+                for (int cardIndex = 0; cardIndex < entry.equippedCardIds.Count; cardIndex++)
+                {
+                    string resolvedId = ResolveSavedCardId(entry.equippedCardIds[cardIndex]);
+                    if (!string.IsNullOrWhiteSpace(resolvedId))
+                    {
+                        resolvedIds.Add(resolvedId);
+                    }
+                }
+
+                if (!cardLoadout.TryLoad(entry.distroId, resolvedIds, out bool skippedInvalid) || skippedInvalid)
+                {
+                    WarnInvalidLoadoutId();
+                }
+            }
+
+            EnsureLoadoutsForOwnedUnits();
+            SaveCurrentState();
         }
 
         private DistroDefinition ResolveSavedDistro(string id)
@@ -245,11 +299,49 @@ namespace KernelPanic.UI
             return unit;
         }
 
+        private string ResolveSavedCardId(string id)
+        {
+            if (cardDatabase == null)
+            {
+                return id;
+            }
+
+            CardDefinition card = cardDatabase.FindById(id);
+            if (card == null)
+            {
+                WarnInvalidLoadoutId();
+                return null;
+            }
+
+            return card.Id;
+        }
+
+        private void WarnInvalidLoadoutId()
+        {
+            if (warnedInvalidLoadoutId)
+            {
+                return;
+            }
+
+            warnedInvalidLoadoutId = true;
+            Debug.LogWarning("Save references an invalid card loadout id; restoring a valid default loadout.");
+        }
+
         private void HandleMetaStateChanged()
         {
+            EnsureLoadoutsForOwnedUnits();
             SaveCurrentState();
             featuredUnitPanel.Refresh(playerCollection.OwnedUnits);
             RefreshCollection();
+            RefreshRunSetup();
+        }
+
+        private void EnsureLoadoutsForOwnedUnits()
+        {
+            for (int i = 0; i < playerCollection.OwnedUnits.Count; i++)
+            {
+                cardLoadout.EnsureDefaultLoadout(playerCollection.OwnedUnits[i]);
+            }
         }
 
         private void SaveCurrentState()
@@ -276,6 +368,8 @@ namespace KernelPanic.UI
                     saveData.bannerPoolIds.Add(unit.Id);
                 }
             }
+
+            cardLoadout.WriteTo(saveData.cardLoadouts);
 
             saveService.Save(saveData);
         }
@@ -345,8 +439,22 @@ namespace KernelPanic.UI
                 return;
             }
 
+            if (collectionShowingCards)
+            {
+                RefreshCollectionCards();
+                return;
+            }
+
+            RefreshCollectionUnits();
+        }
+
+        private void RefreshCollectionUnits()
+        {
             collectionRows.Clear();
             collectionList.Clear();
+            collectionDetail.Clear();
+            collectionUnitsButton?.AddToClassList(SelectedClassName);
+            collectionCardsButton?.RemoveFromClassList(SelectedClassName);
 
             IReadOnlyList<DistroDefinition> units = playerCollection.OwnedUnits;
             if (units.Count == 0)
@@ -383,6 +491,58 @@ namespace KernelPanic.UI
             SelectCollectionUnit(selectedCollectionIndex);
         }
 
+        private void RefreshCollectionCards()
+        {
+            cardRows.Clear();
+            collectionList.Clear();
+            collectionDetail.Clear();
+            collectionUnitsButton?.RemoveFromClassList(SelectedClassName);
+            collectionCardsButton?.AddToClassList(SelectedClassName);
+
+            IReadOnlyList<CardDefinition> cards = cardDatabase == null ? Array.Empty<CardDefinition>() : cardDatabase.AllCards;
+            if (cards.Count == 0)
+            {
+                collectionDetail.Add(new Label("no cards indexed") { name = "CollectionEmptyTitle" });
+                collectionDetail.Add(new Label("assign a CardDatabase to browse card rules here") { name = "CollectionEmptyHint" });
+                return;
+            }
+
+            for (int i = 0; i < cards.Count; i++)
+            {
+                CardDefinition card = cards[i];
+                if (card == null)
+                {
+                    continue;
+                }
+
+                int index = cardRows.Count;
+                VisualElement row = new();
+                row.AddToClassList("collection-row");
+                row.RegisterCallback<PointerEnterEvent>(_ => SelectCollectionCard(index));
+                row.RegisterCallback<ClickEvent>(_ => SelectCollectionCard(index));
+
+                Label name = new(DisplayName(card));
+                name.AddToClassList("collection-row-name");
+
+                Label meta = new($"{card.Language}  {card.CycleCost}c");
+                meta.AddToClassList("collection-row-languages");
+
+                row.Add(name);
+                row.Add(meta);
+                collectionList.Add(row);
+                cardRows.Add(row);
+            }
+
+            if (cardRows.Count == 0)
+            {
+                collectionDetail.Add(new Label("no cards indexed") { name = "CollectionEmptyTitle" });
+                return;
+            }
+
+            selectedCardIndex = Mathf.Clamp(selectedCardIndex, 0, cardRows.Count - 1);
+            SelectCollectionCard(selectedCardIndex);
+        }
+
         private void SelectCollectionUnit(int index)
         {
             IReadOnlyList<DistroDefinition> units = playerCollection.OwnedUnits;
@@ -400,9 +560,27 @@ namespace KernelPanic.UI
             RenderCollectionDetail(units[selectedCollectionIndex]);
         }
 
+        private void SelectCollectionCard(int index)
+        {
+            if (cardRows.Count == 0)
+            {
+                return;
+            }
+
+            selectedCardIndex = Mathf.Clamp(index, 0, cardRows.Count - 1);
+            for (int i = 0; i < cardRows.Count; i++)
+            {
+                cardRows[i].EnableInClassList(SelectedClassName, i == selectedCardIndex);
+            }
+
+            RenderCardDetail(GetVisibleCard(selectedCardIndex));
+        }
+
         private void RenderCollectionDetail(DistroDefinition unit)
         {
             collectionDetail.Clear();
+            packageRows.Clear();
+            selectedPackageIndex = 0;
 
             // TODO: Unify this readout with FeaturedUnitPanel when unit presentation grows beyond labels.
             VisualElement readout = new();
@@ -438,6 +616,298 @@ namespace KernelPanic.UI
             collectionDetail.Add(description);
         }
 
+        private void RenderCardDetail(CardDefinition card)
+        {
+            collectionDetail.Clear();
+            if (card == null)
+            {
+                return;
+            }
+
+            Label name = new(DisplayName(card));
+            name.AddToClassList("collection-detail-name");
+            collectionDetail.Add(name);
+
+            collectionDetail.Add(BuildDetailLine("language", card.Language.ToString()));
+            collectionDetail.Add(BuildDetailLine("rarity", card.Rarity.ToString()));
+            collectionDetail.Add(BuildDetailLine("cost", $"{card.CycleCost} cycles"));
+            collectionDetail.Add(BuildDetailLine("track", card.ResolutionTrack.ToString()));
+            collectionDetail.Add(BuildDetailLine("type", card.DistroExclusive ? "distro exclusive" : "standard"));
+
+            Label description = new(string.IsNullOrWhiteSpace(card.Description) ? "--" : card.Description);
+            description.AddToClassList("collection-detail-description");
+            collectionDetail.Add(description);
+        }
+
+        private void RefreshRunSetup()
+        {
+            if (runSetupList == null || runSetupDetail == null)
+            {
+                return;
+            }
+
+            runSetupRows.Clear();
+            runSetupList.Clear();
+            runSetupDetail.Clear();
+
+            IReadOnlyList<DistroDefinition> units = playerCollection.OwnedUnits;
+            if (units.Count == 0)
+            {
+                runSetupDetail.Add(new Label("no units installed") { name = "RunSetupEmptyTitle" });
+                runSetupDetail.Add(new Label("run: curl gacha.sh | sh") { name = "RunSetupEmptyHint" });
+                return;
+            }
+
+            selectedRunSetupIndex = Mathf.Clamp(selectedRunSetupIndex, 0, units.Count - 1);
+            for (int i = 0; i < units.Count; i++)
+            {
+                int index = i;
+                DistroDefinition unit = units[i];
+                VisualElement row = new();
+                row.AddToClassList("collection-row");
+                row.RegisterCallback<PointerEnterEvent>(_ => SelectRunSetupUnit(index));
+                row.RegisterCallback<ClickEvent>(_ => SelectRunSetupUnit(index));
+
+                Label name = new(DisplayName(unit));
+                name.AddToClassList("collection-row-name");
+                name.style.color = new StyleColor(unit.AccentColor);
+
+                Label languages = new(FormatLanguages(unit));
+                languages.AddToClassList("collection-row-languages");
+
+                row.Add(name);
+                row.Add(languages);
+                runSetupList.Add(row);
+                runSetupRows.Add(row);
+            }
+
+            SelectRunSetupUnit(selectedRunSetupIndex);
+        }
+
+        private void SelectRunSetupUnit(int index)
+        {
+            IReadOnlyList<DistroDefinition> units = playerCollection.OwnedUnits;
+            if (units.Count == 0)
+            {
+                return;
+            }
+
+            selectedRunSetupIndex = Mathf.Clamp(index, 0, units.Count - 1);
+            for (int i = 0; i < runSetupRows.Count; i++)
+            {
+                runSetupRows[i].EnableInClassList(SelectedClassName, i == selectedRunSetupIndex);
+            }
+
+            RenderRunSetupDetail(units[selectedRunSetupIndex]);
+        }
+
+        private void RenderRunSetupDetail(DistroDefinition unit)
+        {
+            runSetupDetail.Clear();
+            packageRows.Clear();
+            selectedPackageIndex = 0;
+
+            Label name = new(DisplayName(unit));
+            name.AddToClassList("collection-detail-name");
+            name.style.color = new StyleColor(unit.AccentColor);
+            runSetupDetail.Add(name);
+            runSetupDetail.Add(BuildDetailLine("lang", FormatLanguages(unit)));
+            runSetupDetail.Add(BuildDetailLine("loadout", $"pick {CardLoadout.MaxEquippedCards} cards"));
+            BuildPackageList(unit, runSetupDetail);
+        }
+
+        private void BuildPackageList(DistroDefinition unit, VisualElement parent)
+        {
+            VisualElement packageSection = new();
+            packageSection.AddToClassList("package-list");
+
+            Label header = new("dpkg -l (pick 4)");
+            header.AddToClassList("package-header");
+            packageSection.Add(header);
+
+            Label notice = new();
+            notice.name = "PackageNotice";
+            notice.AddToClassList("package-notice");
+            notice.AddToClassList(HiddenClassName);
+            packageSection.Add(notice);
+
+            if (unit.ExclusiveCards.Count == 0)
+            {
+                Label empty = new("no distro packages installed");
+                empty.AddToClassList("package-empty");
+                packageSection.Add(empty);
+                parent.Add(packageSection);
+                return;
+            }
+
+            IReadOnlyList<string> equippedIds = cardLoadout.GetEquippedCardIds(unit.Id);
+            for (int i = 0; i < unit.ExclusiveCards.Count; i++)
+            {
+                CardDefinition card = unit.ExclusiveCards[i];
+                if (card == null || card.IsToken)
+                {
+                    continue;
+                }
+
+                int index = packageRows.Count;
+                VisualElement row = BuildPackageRow(unit, card, equippedIds, index);
+                packageRows.Add(row);
+                packageSection.Add(row);
+            }
+
+            parent.Add(packageSection);
+            RefreshPackageSelection();
+        }
+
+        private VisualElement BuildPackageRow(DistroDefinition unit, CardDefinition card, IReadOnlyList<string> equippedIds, int index)
+        {
+            bool equipped = ContainsId(equippedIds, card.Id);
+            bool loadoutFull = equippedIds.Count >= CardLoadout.MaxEquippedCards;
+
+            VisualElement row = new();
+            row.AddToClassList("package-row");
+            row.EnableInClassList("equipped", equipped);
+            row.EnableInClassList("dimmed", !equipped && loadoutFull);
+            row.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                selectedPackageIndex = index;
+                RefreshPackageSelection();
+            });
+            row.RegisterCallback<ClickEvent>(_ => TogglePackage(unit, card));
+
+            VisualElement summary = new();
+            summary.AddToClassList("package-summary");
+
+            Label marker = new(equipped ? "[x]" : "[ ]");
+            marker.AddToClassList("package-marker");
+            marker.style.color = new StyleColor(equipped ? unit.AccentColor : Color.gray);
+
+            Label name = new(DisplayName(card));
+            name.AddToClassList("package-name");
+
+            Label meta = new($"{card.Language}  {card.CycleCost}c");
+            meta.AddToClassList("package-meta");
+
+            summary.Add(marker);
+            summary.Add(name);
+            summary.Add(meta);
+
+            Label cardDescription = new(string.IsNullOrWhiteSpace(card.Description) ? "--" : card.Description);
+            cardDescription.AddToClassList("package-description");
+
+            row.Add(summary);
+            row.Add(cardDescription);
+            return row;
+        }
+
+        private void RefreshPackageSelection()
+        {
+            for (int i = 0; i < packageRows.Count; i++)
+            {
+                packageRows[i].EnableInClassList(SelectedClassName, i == selectedPackageIndex);
+            }
+        }
+
+        private void ToggleSelectedPackage()
+        {
+            IReadOnlyList<DistroDefinition> units = playerCollection.OwnedUnits;
+            if (units.Count == 0 || selectedRunSetupIndex >= units.Count)
+            {
+                return;
+            }
+
+            DistroDefinition unit = units[selectedRunSetupIndex];
+            CardDefinition card = GetVisibleExclusiveCard(unit, selectedPackageIndex);
+            if (card != null)
+            {
+                TogglePackage(unit, card);
+            }
+        }
+
+        private void TogglePackage(DistroDefinition unit, CardDefinition card)
+        {
+            IReadOnlyList<string> equippedIds = cardLoadout.GetEquippedCardIds(unit.Id);
+            bool changed = ContainsId(equippedIds, card.Id)
+                ? cardLoadout.TryUnequip(unit.Id, card.Id, out CardLoadoutFailureReason reason)
+                : cardLoadout.TryEquip(unit.Id, card.Id, out reason);
+
+            if (!changed)
+            {
+                ShowPackageNotice(reason);
+                return;
+            }
+
+            SaveCurrentState();
+            RenderRunSetupDetail(unit);
+        }
+
+        private void ShowPackageNotice(CardLoadoutFailureReason reason)
+        {
+            Label notice = runSetupDetail.Q<Label>("PackageNotice");
+            if (notice == null)
+            {
+                return;
+            }
+
+            notice.text = reason == CardLoadoutFailureReason.Full
+                ? "dpkg: dependency limit reached (unequip a package first)"
+                : $"dpkg: package toggle failed ({reason})";
+            notice.RemoveFromClassList(HiddenClassName);
+
+            packageNoticeSchedule?.Pause();
+            if (UIPreferences.ReducedMotion)
+            {
+                return;
+            }
+
+            packageNoticeSchedule = root.schedule.Execute(() => notice.AddToClassList(HiddenClassName)).StartingIn(2000);
+        }
+
+        private static CardDefinition GetVisibleExclusiveCard(DistroDefinition unit, int visibleIndex)
+        {
+            int currentIndex = 0;
+            for (int i = 0; i < unit.ExclusiveCards.Count; i++)
+            {
+                CardDefinition card = unit.ExclusiveCards[i];
+                if (card == null || card.IsToken)
+                {
+                    continue;
+                }
+
+                if (currentIndex == visibleIndex)
+                {
+                    return card;
+                }
+
+                currentIndex++;
+            }
+
+            return null;
+        }
+
+        private CardDefinition GetVisibleCard(int visibleIndex)
+        {
+            IReadOnlyList<CardDefinition> cards = cardDatabase == null ? Array.Empty<CardDefinition>() : cardDatabase.AllCards;
+            int currentIndex = 0;
+            for (int i = 0; i < cards.Count; i++)
+            {
+                CardDefinition card = cards[i];
+                if (card == null)
+                {
+                    continue;
+                }
+
+                if (currentIndex == visibleIndex)
+                {
+                    return card;
+                }
+
+                currentIndex++;
+            }
+
+            return null;
+        }
+
         private static VisualElement BuildDetailLine(string key, string value)
         {
             VisualElement row = new();
@@ -456,6 +926,24 @@ namespace KernelPanic.UI
         private static string DisplayName(DistroDefinition unit)
         {
             return string.IsNullOrWhiteSpace(unit.DisplayName) ? unit.name : unit.DisplayName;
+        }
+
+        private static string DisplayName(CardDefinition card)
+        {
+            return string.IsNullOrWhiteSpace(card.DisplayName) ? card.name : card.DisplayName;
+        }
+
+        private static bool ContainsId(IReadOnlyList<string> ids, string id)
+        {
+            for (int i = 0; i < ids.Count; i++)
+            {
+                if (string.Equals(ids[i], id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string FormatLanguages(DistroDefinition unit)
@@ -555,6 +1043,30 @@ namespace KernelPanic.UI
                 return;
             }
 
+            if (IsRunSetupVisible())
+            {
+                if (evt.keyCode == KeyCode.UpArrow)
+                {
+                    SelectPackage(selectedPackageIndex - 1);
+                    evt.StopPropagation();
+                    return;
+                }
+
+                if (evt.keyCode == KeyCode.DownArrow)
+                {
+                    SelectPackage(selectedPackageIndex + 1);
+                    evt.StopPropagation();
+                    return;
+                }
+
+                if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+                {
+                    ToggleSelectedPackage();
+                    evt.StopPropagation();
+                    return;
+                }
+            }
+
             if (evt.keyCode == KeyCode.UpArrow)
             {
                 SelectCommand(selectedCommandIndex - 1);
@@ -590,6 +1102,22 @@ namespace KernelPanic.UI
                 ActivateCommand(digitIndex);
                 evt.StopPropagation();
             }
+        }
+
+        private bool IsRunSetupVisible()
+        {
+            return runSetupPanel != null && !runSetupPanel.ClassListContains(HiddenClassName);
+        }
+
+        private void SelectPackage(int index)
+        {
+            if (packageRows.Count == 0)
+            {
+                return;
+            }
+
+            selectedPackageIndex = (index + packageRows.Count) % packageRows.Count;
+            RefreshPackageSelection();
         }
 
         private void HandlePointerDown(PointerDownEvent evt)
@@ -813,7 +1341,8 @@ namespace KernelPanic.UI
 
         private void HandleStartRunClicked()
         {
-            SceneLoader.LoadGame();
+            RefreshRunSetup();
+            ShowPanel(runSetupPanel);
         }
 
         private void HandleQuitClicked()
@@ -833,8 +1362,21 @@ namespace KernelPanic.UI
 
         private void ShowCollection()
         {
+            collectionShowingCards = false;
             RefreshCollection();
             ShowPanel(collectionPanel);
+        }
+
+        private void ShowCollectionUnits()
+        {
+            collectionShowingCards = false;
+            RefreshCollection();
+        }
+
+        private void ShowCollectionCards()
+        {
+            collectionShowingCards = true;
+            RefreshCollection();
         }
 
         private void ShowGacha()
@@ -852,6 +1394,7 @@ namespace KernelPanic.UI
         {
             mainMenuPanel.EnableInClassList(HiddenClassName, mainMenuPanel != activePanel);
             collectionPanel.EnableInClassList(HiddenClassName, collectionPanel != activePanel);
+            runSetupPanel.EnableInClassList(HiddenClassName, runSetupPanel != activePanel);
             gachaPanel.EnableInClassList(HiddenClassName, gachaPanel != activePanel);
             settingsPanel.EnableInClassList(HiddenClassName, settingsPanel != activePanel);
         }

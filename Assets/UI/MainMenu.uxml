@@ -124,6 +124,15 @@
             </ui:VisualElement>
 
             <ui:Instance template="CollectionScreen" />
+            <ui:VisualElement name="RunSetupPanel" class="sub-panel hidden">
+                <ui:Label text="NEW RUN" class="screen-title" />
+                <ui:Label text="choose 4 distro cards before booting a run" class="collection-detail-muted run-setup-hint" />
+                <ui:VisualElement name="RunSetupContent" class="collection-shell">
+                    <ui:ScrollView name="RunSetupList" class="collection-list" />
+                    <ui:VisualElement name="RunSetupDetail" class="collection-detail" />
+                </ui:VisualElement>
+                <ui:Button name="RunSetupBackButton" text="Back" class="terminal-button back-button" />
+            </ui:VisualElement>
             <ui:Instance template="GachaScreen" />
             <ui:Instance template="SettingsScreen" />
 

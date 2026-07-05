@@ -23,4 +23,9 @@ MonoBehaviour:
   baseUptime: 60
   baseRam: 5
   baseCyclesPerTurn: 3
-  exclusiveCards: []
+  exclusiveCards:
+  - {fileID: 11400000, guid: 0a4f1d1d84564f3cad58b8863e941201, type: 2}
+  - {fileID: 11400000, guid: 14c5d40f866a4cb6b0a6316e01f42891, type: 2}
+  - {fileID: 11400000, guid: 2a0f50d541f046fc99c8fb6deef4f1aa, type: 2}
+  - {fileID: 11400000, guid: 3d57857f3f30419c8be4c44914c5abbe, type: 2}
+  - {fileID: 11400000, guid: 4cae271a0f4146c59aab74e4c9d6d0f8, type: 2}
