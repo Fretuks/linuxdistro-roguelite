@@ -16,11 +16,22 @@ MonoBehaviour:
   displayName: Mint
   primaryLanguage: 3
   secondaryLanguage: 4
-  passiveName: It Just Works
+  passive: {fileID: 11400000, guid: a1100000000000000000000000000003, type: 2}
   description: Comfort incarnate. No surprises, no drama, ever.
+  playstyleSummary: zero-variance comfort. every number lands at its ceiling, so you always know exactly what a turn does -- at the cost of a high-roll upside.
+  languageBlurbs:
+  - lang: 3
+    blurb: cheap, flexible cards that resolve at end of turn.
+  - lang: 4
+    blurb: for mint, fixed and reliable -- no chaos, no ranges.
   asciiArt: {fileID: 4900000, guid: 412c9be402ec4d8c8510e71066ec22ff, type: 3}
   accentColor: {r: 0.5294118, g: 0.8117647, b: 0.24313726, a: 1}
   baseUptime: 65
   baseRam: 5
   baseCyclesPerTurn: 3
-  exclusiveCards: []
+  exclusiveCards:
+  - {fileID: 11400000, guid: c1a50000000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: c1a50000000000000000000000000002, type: 2}
+  - {fileID: 11400000, guid: c1a50000000000000000000000000003, type: 2}
+  - {fileID: 11400000, guid: c1a50000000000000000000000000004, type: 2}
+  - {fileID: 11400000, guid: c1a50000000000000000000000000005, type: 2}

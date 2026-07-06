@@ -12,6 +12,7 @@ namespace KernelPanic.Data
         [SerializeField] private string id;
         [SerializeField] private string displayName;
         [SerializeField] private string description;
+        [SerializeField] private string flavorText;
         [SerializeField] private Language language;
         [SerializeField] private Rarity rarity;
         [SerializeField] private int cycleCost;
@@ -25,6 +26,7 @@ namespace KernelPanic.Data
         public string Id => id;
         public string DisplayName => displayName;
         public string Description => description;
+        public string FlavorText => flavorText;
         public Language Language => language;
         public Rarity Rarity => rarity;
         public int CycleCost => cycleCost;

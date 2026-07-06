@@ -206,16 +206,28 @@ namespace KernelPanic.UI
         {
             root.RegisterCallback<KeyDownEvent>(HandleKeyDown);
             root.RegisterCallback<PointerDownEvent>(HandlePointerDown);
-            collectionUnitsButton.clicked += ShowCollectionUnits;
-            collectionCardsButton.clicked += ShowCollectionCards;
+            collectionUnitsButton.RegisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
+            collectionCardsButton.RegisterCallback<ClickEvent>(HandleCollectionCardsTabClicked);
         }
 
         private void UnregisterCallbacks()
         {
             root.UnregisterCallback<KeyDownEvent>(HandleKeyDown);
             root.UnregisterCallback<PointerDownEvent>(HandlePointerDown);
-            collectionUnitsButton.clicked -= ShowCollectionUnits;
-            collectionCardsButton.clicked -= ShowCollectionCards;
+            collectionUnitsButton.UnregisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
+            collectionCardsButton.UnregisterCallback<ClickEvent>(HandleCollectionCardsTabClicked);
+        }
+
+        private void HandleCollectionUnitsTabClicked(ClickEvent evt)
+        {
+            ShowCollectionUnits();
+            evt.StopPropagation();
+        }
+
+        private void HandleCollectionCardsTabClicked(ClickEvent evt)
+        {
+            ShowCollectionCards();
+            evt.StopPropagation();
         }
 
         private void LoadMetaState()
@@ -599,7 +611,8 @@ namespace KernelPanic.UI
                 summary.Add(meta);
 
                 row.Add(summary);
-                row.Add(new Label(string.IsNullOrWhiteSpace(unit.PassiveName) ? "passive: --" : $"passive: {unit.PassiveName}")
+                string passiveTitle = unit.Passive == null || string.IsNullOrWhiteSpace(unit.Passive.Name) ? "--" : unit.Passive.Name;
+                row.Add(new Label($"passive: {passiveTitle}")
                 {
                     name = $"RunSetupDescription{index}"
                 });
@@ -724,8 +737,44 @@ namespace KernelPanic.UI
             stats.AddToClassList("collection-detail-muted");
             copy.Add(stats);
 
+            AddDistroTeachingDetails(copy, unit);
+
             readout.Add(copy);
             return readout;
+        }
+
+        private static void AddDistroTeachingDetails(VisualElement target, DistroDefinition unit)
+        {
+            if (unit.Passive != null)
+            {
+                Label passiveTitle = new(unit.Passive.Name);
+                passiveTitle.AddToClassList("detail-section-title");
+                target.Add(passiveTitle);
+
+                Label passiveRules = new(unit.Passive.RulesText);
+                passiveRules.AddToClassList("collection-detail-description");
+                target.Add(passiveRules);
+
+                if (!string.IsNullOrWhiteSpace(unit.Passive.FlavorText))
+                {
+                    Label passiveFlavor = new(unit.Passive.FlavorText);
+                    passiveFlavor.AddToClassList("flavor-text");
+                    target.Add(passiveFlavor);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(unit.PlaystyleSummary))
+            {
+                Label playstyle = new(unit.PlaystyleSummary);
+                playstyle.AddToClassList("collection-detail-description");
+                target.Add(playstyle);
+            }
+
+            for (int i = 0; i < unit.LanguageBlurbs.Count; i++)
+            {
+                DistroDefinition.LanguageBlurb blurb = unit.LanguageBlurbs[i];
+                target.Add(BuildDetailLine(blurb.Lang.ToString(), blurb.Blurb));
+            }
         }
 
         private static VisualElement BuildDetailLine(string key, string value)
@@ -765,6 +814,12 @@ namespace KernelPanic.UI
             {
                 row.Add(new Label(card.Description) { name = "RunSetupCardDescription" });
                 row.ElementAt(1).AddToClassList("package-description");
+            }
+
+            if (!string.IsNullOrWhiteSpace(card.FlavorText))
+            {
+                row.Add(new Label(card.FlavorText) { name = "RunSetupCardFlavor" });
+                row.ElementAt(row.childCount - 1).AddToClassList("package-flavor");
             }
 
             return row;

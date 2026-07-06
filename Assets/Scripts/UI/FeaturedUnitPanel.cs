@@ -130,7 +130,7 @@ namespace KernelPanic.UI
             asciiFitter.SetArt(DistroArtPresenter.Render(asciiLabel, asciiPlaceholder, unit));
             unitNameLabel.text = DistroPresentation.DisplayName(unit);
             languagesLabel.text = DistroPresentation.FormatLanguages(unit);
-            passiveLabel.text = string.IsNullOrWhiteSpace(unit.PassiveName) ? "--" : unit.PassiveName;
+            passiveLabel.text = unit.Passive == null || string.IsNullOrWhiteSpace(unit.Passive.Name) ? "--" : unit.Passive.Name;
             bestWaveLabel.text = "--"; // TODO: Bind best-wave stats from SaveService when stats exist.
             SetAccent(ColorUtility.ToHtmlStringRGB(unit.AccentColor));
         }

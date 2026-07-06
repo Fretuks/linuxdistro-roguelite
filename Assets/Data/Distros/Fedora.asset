@@ -16,11 +16,22 @@ MonoBehaviour:
   displayName: Fedora
   primaryLanguage: 2
   secondaryLanguage: 8
-  passiveName: Bleeding Edge
+  passive: {fileID: 11400000, guid: a1100000000000000000000000000002, type: 2}
   description: First to every new feature. Occasionally first to the bugs that come with it.
+  playstyleSummary: high-tempo gambler. her first play each turn is pushed hard, but bleeding edge bites back. rust cards are her safety net.
+  languageBlurbs:
+  - lang: 2
+    blurb: guaranteed damage that never misses; overkill turns to shield.
+  - lang: 8
+    blurb: expensive early, ramps cheaper the longer the fight runs.
   asciiArt: {fileID: 4900000, guid: f2373174b6954f2d9088d83d10e0d9e4, type: 3}
   accentColor: {r: 0.23529412, g: 0.43137255, b: 0.7058824, a: 1}
   baseUptime: 55
   baseRam: 5
   baseCyclesPerTurn: 3
-  exclusiveCards: []
+  exclusiveCards:
+  - {fileID: 11400000, guid: feda0000000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: feda0000000000000000000000000002, type: 2}
+  - {fileID: 11400000, guid: feda0000000000000000000000000003, type: 2}
+  - {fileID: 11400000, guid: feda0000000000000000000000000004, type: 2}
+  - {fileID: 11400000, guid: feda0000000000000000000000000005, type: 2}

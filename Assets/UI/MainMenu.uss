@@ -635,6 +635,22 @@ Button {
     margin-bottom: 12px;
 }
 
+.detail-section-title {
+    color: var(--kp-primary);
+    -unity-font-style: bold;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    white-space: normal;
+}
+
+.flavor-text,
+.package-flavor {
+    color: var(--kp-muted);
+    -unity-font-style: italic;
+    white-space: normal;
+    margin-bottom: 10px;
+}
+
 .package-list {
     min-width: 0;
     flex-grow: 1;
@@ -720,6 +736,11 @@ Button {
     min-width: 0;
     color: var(--kp-muted);
     white-space: normal;
+    margin-left: 34px;
+    margin-top: 2px;
+}
+
+.package-flavor {
     margin-left: 34px;
     margin-top: 2px;
 }

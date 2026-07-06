@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: UbuntuProTrial
+  m_Name: DnfUpdate
   m_EditorClassIdentifier: 
-  id: ubuntu_pro_trial
-  displayName: ubuntu pro trial
-  description: unplayable. exhausts at end of combat.
-  flavorText: upgrade to unlock this feature.
-  language: 3
+  id: fedora_dnf_update
+  displayName: dnf update
+  description: deal 9. costs 1 less per java card played this combat (min 0).
+  flavorText: today everything gets newer.
+  language: 8
   rarity: 0
-  cycleCost: 0
+  cycleCost: 2
   resolutionTrack: 0
-  distroExclusive: 0
-  isToken: 1
-  designNotes: "junk token; unplayable flag TBD in combat model."
+  distroExclusive: 1
+  isToken: 0
+  designNotes: Java ramp card; cost reduction counts prior Java cards played this combat and clamps at 0.
   upgradeTarget: {fileID: 0}
   effects: []

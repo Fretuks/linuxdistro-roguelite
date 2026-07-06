@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: UbuntuProTrial
+  m_Name: Rawhide
   m_EditorClassIdentifier: 
-  id: ubuntu_pro_trial
-  displayName: ubuntu pro trial
-  description: unplayable. exhausts at end of combat.
-  flavorText: upgrade to unlock this feature.
-  language: 3
-  rarity: 0
+  id: fedora_rawhide
+  displayName: rawhide
+  description: draw 2. the next card you play this turn gains bleeding edge's discount and crash risk.
+  flavorText: straight from tomorrow's mirror.
+  language: 8
+  rarity: 1
   cycleCost: 0
   resolutionTrack: 0
-  distroExclusive: 0
-  isToken: 1
-  designNotes: "junk token; unplayable flag TBD in combat model."
+  distroExclusive: 1
+  isToken: 0
+  designNotes: Rare setup; grants next-card temporary Bleeding Edge discount plus crash-risk hook even if first-card window has passed.
   upgradeTarget: {fileID: 0}
   effects: []

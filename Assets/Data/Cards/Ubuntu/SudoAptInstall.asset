@@ -15,6 +15,7 @@ MonoBehaviour:
   id: ubuntu_apt_install
   displayName: sudo apt install
   description: "queue: add a random common python card to your hand. it costs 0 this combat."
+  flavorText: pull it from the repo and pretend it was always there.
   language: 3
   rarity: 0
   cycleCost: 1

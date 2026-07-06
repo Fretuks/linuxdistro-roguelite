@@ -16,8 +16,14 @@ MonoBehaviour:
   displayName: Ubuntu
   primaryLanguage: 3
   secondaryLanguage: 4
-  passiveName: Long Term Support
+  passive: {fileID: 11400000, guid: a1100000000000000000000000000001, type: 2}
   description: The friendly one. Everything works out of the box, and she will not stop helping.
+  playstyleSummary: an accessible engine that never runs dry -- cheap python cards and a passive that always finds you the right package.
+  languageBlurbs:
+  - lang: 3
+    blurb: cheap, flexible cards that resolve at end of turn.
+  - lang: 4
+    blurb: instant hits with wild variance and odd side effects.
   asciiArt: {fileID: 4900000, guid: 975f1f5de289435eb81c91c3eddd31dc, type: 3}
   accentColor: {r: 0.9137255, g: 0.32941177, b: 0.1254902, a: 1}
   baseUptime: 60

@@ -15,6 +15,7 @@ MonoBehaviour:
   id: ubuntu_ask_ubuntu
   displayName: ask ubuntu
   description: "queue: draw 2 cards."
+  flavorText: somebody solved this in 2014.
   language: 3
   rarity: 0
   cycleCost: 0

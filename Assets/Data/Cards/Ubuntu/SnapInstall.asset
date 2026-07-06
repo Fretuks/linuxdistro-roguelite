@@ -15,6 +15,7 @@ MonoBehaviour:
   id: ubuntu_snap_install
   displayName: snap install
   description: deal 6-14 damage. shuffle an ubuntu pro trial into your draw pile.
+  flavorText: convenient, somehow heavier than expected.
   language: 4
   rarity: 0
   cycleCost: 0

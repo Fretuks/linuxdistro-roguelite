@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: UnattendedUpgrades
+  m_Name: TimeshiftSnapshot
   m_EditorClassIdentifier: 
-  id: ubuntu_unattended_upgrades
-  displayName: unattended-upgrades
-  description: gain 4 shield now and at the end of your next 2 turns.
-  flavorText: the machine fixes itself while you sleep.
+  id: mint_timeshift
+  displayName: timeshift snapshot
+  description: "queue: record uptime now. at end of your next turn, restore to it if lower."
+  flavorText: save point created before touching anything scary.
   language: 3
-  rarity: 0
+  rarity: 1
   cycleCost: 1
   resolutionTrack: 1
   distroExclusive: 1
   isToken: 0
-  designNotes: immediate shield + 2-turn delayed shield ticks.
+  designNotes: deterministic safety queue; record current uptime and restore at delayed checkpoint only if current uptime is lower.
   upgradeTarget: {fileID: 0}
   effects: []

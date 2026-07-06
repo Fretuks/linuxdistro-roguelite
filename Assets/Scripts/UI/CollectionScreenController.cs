@@ -167,6 +167,7 @@ namespace KernelPanic.UI
             Label description = new(string.IsNullOrWhiteSpace(unit.Description) ? "--" : unit.Description);
             description.AddToClassList("collection-detail-description");
             detail.Add(description);
+            AddPassiveDetails(detail, unit);
 
             VisualElement readout = new();
             readout.AddToClassList("collection-detail-readout");
@@ -183,7 +184,6 @@ namespace KernelPanic.UI
             details.AddToClassList("collection-detail-values");
 
             details.Add(BuildDetailLine("lang", DistroPresentation.FormatLanguages(unit)));
-            details.Add(BuildDetailLine("passive", string.IsNullOrWhiteSpace(unit.PassiveName) ? "--" : unit.PassiveName));
             details.Add(BuildDetailLine("uptime", unit.BaseUptime.ToString()));
             details.Add(BuildDetailLine("ram", unit.BaseRam.ToString()));
             details.Add(BuildDetailLine("cycles", unit.BaseCyclesPerTurn.ToString()));
@@ -204,6 +204,12 @@ namespace KernelPanic.UI
             Label description = new(card == null || string.IsNullOrWhiteSpace(card.Description) ? "--" : card.Description);
             description.AddToClassList("collection-detail-description");
             detail.Add(description);
+            if (card != null && !string.IsNullOrWhiteSpace(card.FlavorText))
+            {
+                Label flavor = new(card.FlavorText);
+                flavor.AddToClassList("flavor-text");
+                detail.Add(flavor);
+            }
 
             detail.Add(BuildDetailLine("owner", DistroPresentation.DisplayName(entry.Owner)));
             detail.Add(BuildDetailLine("lang", card == null ? "--" : card.Language.ToString()));
@@ -225,6 +231,29 @@ namespace KernelPanic.UI
             row.Add(keyLabel);
             row.Add(valueLabel);
             return row;
+        }
+
+        private static void AddPassiveDetails(VisualElement target, DistroDefinition unit)
+        {
+            if (unit.Passive == null)
+            {
+                return;
+            }
+
+            Label passiveTitle = new(unit.Passive.Name);
+            passiveTitle.AddToClassList("detail-section-title");
+            target.Add(passiveTitle);
+
+            Label passiveRules = new(unit.Passive.RulesText);
+            passiveRules.AddToClassList("collection-detail-description");
+            target.Add(passiveRules);
+
+            if (!string.IsNullOrWhiteSpace(unit.Passive.FlavorText))
+            {
+                Label passiveFlavor = new(unit.Passive.FlavorText);
+                passiveFlavor.AddToClassList("flavor-text");
+                target.Add(passiveFlavor);
+            }
         }
 
         private static IReadOnlyList<CardEntry> BuildCardEntries(DistroDefinition featuredUnit)

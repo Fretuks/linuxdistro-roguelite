@@ -5,23 +5,23 @@ MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: UbuntuProTrial
+  m_Name: BorrowChecker
   m_EditorClassIdentifier: 
-  id: ubuntu_pro_trial
-  displayName: ubuntu pro trial
-  description: unplayable. exhausts at end of combat.
-  flavorText: upgrade to unlock this feature.
-  language: 3
+  id: fedora_borrow_checker
+  displayName: borrow checker
+  description: gain 8 shield. if this is the first card played this turn, gain 8 more.
+  flavorText: no aliasing, no panic.
+  language: 2
   rarity: 0
-  cycleCost: 0
+  cycleCost: 1
   resolutionTrack: 0
-  distroExclusive: 0
-  isToken: 1
-  designNotes: "junk token; unplayable flag TBD in combat model."
+  distroExclusive: 1
+  isToken: 0
+  designNotes: defensive first-card payoff; should benefit from Bleeding Edge cost discount but not damage multiplier.
   upgradeTarget: {fileID: 0}
   effects: []
