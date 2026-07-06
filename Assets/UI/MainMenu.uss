@@ -749,6 +749,7 @@ Button {
     min-height: 110px;
     max-height: 128px;
     flex-direction: row;
+    overflow: hidden;
 }
 
 .run-readout .ascii-art,
@@ -762,6 +763,14 @@ Button {
     flex-grow: 1;
     min-width: 0;
     padding-left: 14px;
+}
+
+.run-passive-summary {
+    color: var(--kp-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 8px;
 }
 
 .boot-command-row {

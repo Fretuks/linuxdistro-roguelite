@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b1f51fb7c354203a2f93ad22fbeb101, type: 3}
+  m_Name: BleedingEdge
+  m_EditorClassIdentifier: 
+  id: fedora_bleeding_edge
+  displayName: Bleeding Edge
+  rulesText: the first card you play each turn costs 1 less and deals +50%, but may crash (do nothing). crash chance rises each turn it doesn't happen and resets when it does.
+  flavorText: first to every feature. first to every bug.
+  designNotes: applies discount+damage mult to first-card-of-turn; escalating crash probability with reset-on-trigger; interacts with Fedora cards flagged crash-immune and with rawhide.

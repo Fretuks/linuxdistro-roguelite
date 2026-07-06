@@ -737,44 +737,15 @@ namespace KernelPanic.UI
             stats.AddToClassList("collection-detail-muted");
             copy.Add(stats);
 
-            AddDistroTeachingDetails(copy, unit);
+            if (unit.Passive != null)
+            {
+                Label passive = new($"{unit.Passive.Name}: {unit.Passive.RulesText}");
+                passive.AddToClassList("run-passive-summary");
+                copy.Add(passive);
+            }
 
             readout.Add(copy);
             return readout;
-        }
-
-        private static void AddDistroTeachingDetails(VisualElement target, DistroDefinition unit)
-        {
-            if (unit.Passive != null)
-            {
-                Label passiveTitle = new(unit.Passive.Name);
-                passiveTitle.AddToClassList("detail-section-title");
-                target.Add(passiveTitle);
-
-                Label passiveRules = new(unit.Passive.RulesText);
-                passiveRules.AddToClassList("collection-detail-description");
-                target.Add(passiveRules);
-
-                if (!string.IsNullOrWhiteSpace(unit.Passive.FlavorText))
-                {
-                    Label passiveFlavor = new(unit.Passive.FlavorText);
-                    passiveFlavor.AddToClassList("flavor-text");
-                    target.Add(passiveFlavor);
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(unit.PlaystyleSummary))
-            {
-                Label playstyle = new(unit.PlaystyleSummary);
-                playstyle.AddToClassList("collection-detail-description");
-                target.Add(playstyle);
-            }
-
-            for (int i = 0; i < unit.LanguageBlurbs.Count; i++)
-            {
-                DistroDefinition.LanguageBlurb blurb = unit.LanguageBlurbs[i];
-                target.Add(BuildDetailLine(blurb.Lang.ToString(), blurb.Blurb));
-            }
         }
 
         private static VisualElement BuildDetailLine(string key, string value)
