@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Fedora
   primaryLanguage: 2
   secondaryLanguage: 8
-  passive: {fileID: 11400000, guid: a1100000000000000000000000000002, type: 2}
+  passive: {fileID: 11400000, guid: ded62c69f70d38a49b21972d857df4e2, type: 2}
   description: First to every new feature. Occasionally first to the bugs that come with it.
   playstyleSummary: high-tempo gambler. her first play each turn is pushed hard, but bleeding edge bites back. rust cards are her safety net.
   languageBlurbs:
@@ -30,8 +30,8 @@ MonoBehaviour:
   baseRam: 5
   baseCyclesPerTurn: 3
   exclusiveCards:
-  - {fileID: 11400000, guid: feda0000000000000000000000000001, type: 2}
-  - {fileID: 11400000, guid: feda0000000000000000000000000002, type: 2}
-  - {fileID: 11400000, guid: feda0000000000000000000000000003, type: 2}
-  - {fileID: 11400000, guid: feda0000000000000000000000000004, type: 2}
-  - {fileID: 11400000, guid: feda0000000000000000000000000005, type: 2}
+  - {fileID: 11400000, guid: 93ddfe2f35c5c4447b1e5f49b50c544d, type: 2}
+  - {fileID: 11400000, guid: e6a3f582f36bb2647ab6101d60a05075, type: 2}
+  - {fileID: 11400000, guid: e0a15eebcb5cb7b409a6afe60710e1e1, type: 2}
+  - {fileID: 11400000, guid: fde58599fc89f4f4ab515612f4f481f7, type: 2}
+  - {fileID: 11400000, guid: 7f1a9912cb72c5b448fa2cb101eb9785, type: 2}
