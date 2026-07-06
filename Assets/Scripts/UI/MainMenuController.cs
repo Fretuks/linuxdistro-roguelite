@@ -37,6 +37,7 @@ namespace KernelPanic.UI
         [SerializeField] private FontAsset monospaceFont; // TODO: Assign a real monospace FontAsset when typography assets exist.
         [SerializeField] private string motdBody = "unstable userspace detected; keep a rollback shell open.";
         [SerializeField] private DistroDatabase distroDatabase;
+        [SerializeField] private CardDatabase cardDatabase;
         [SerializeField] private FeaturedUnitPanel featuredUnitPanel = new();
         [SerializeField] private CollectionScreenController collectionScreen = new();
         [SerializeField] private StarterSelectionController starterSelection = new();
@@ -48,6 +49,7 @@ namespace KernelPanic.UI
         private VisualElement bootIntroPanel;
         private VisualElement mainMenuPanel;
         private VisualElement collectionPanel;
+        private VisualElement runSetupPanel;
         private VisualElement gachaPanel;
         private VisualElement settingsPanel;
         private VisualElement eventBanner;
@@ -61,6 +63,9 @@ namespace KernelPanic.UI
         private Label motdBodyLabel;
         private VisualElement motdBlock;
         private Button collectionBackButton;
+        private Button collectionUnitsButton;
+        private Button collectionCardsButton;
+        private Button runSetupBackButton;
         private Button gachaBackButton;
         private Button settingsBackButton;
         private SaveService saveService;
@@ -68,6 +73,7 @@ namespace KernelPanic.UI
         private EntropyWallet wallet;
         private GachaService gachaService;
         private PlayerCollection playerCollection;
+        private CardLoadout cardLoadout;
         private BackgroundLogRingBuffer backgroundLog;
         private IEventBannerSource eventBannerSource;
         private int selectedCommandIndex;
@@ -76,6 +82,7 @@ namespace KernelPanic.UI
         private bool cursorVisible;
         private bool suppressNextClick;
         private bool warnedUnresolvedSaveId;
+        private bool warnedInvalidLoadoutId;
         private string bootIntroCopy;
         private IVisualElementScheduledItem blinkSchedule;
         private IVisualElementScheduledItem bootIntroSchedule;
@@ -92,6 +99,7 @@ namespace KernelPanic.UI
             saveService = new SaveService();
             gachaService = new GachaService();
             playerCollection = new PlayerCollection(); // TODO: Replace with persistent player-collection service composition.
+            cardLoadout = new CardLoadout(playerCollection.OwnedUnits);
             Initialize(new EntropyWallet()); // TODO: Replace with persistent wallet service composition.
             BindElements();
             BindCommandEntries();
@@ -137,6 +145,7 @@ namespace KernelPanic.UI
             bootIntroPanel = root.Q<VisualElement>("BootIntroPanel");
             mainMenuPanel = root.Q<VisualElement>("MainMenuPanel");
             collectionPanel = root.Q<VisualElement>("CollectionPanel");
+            runSetupPanel = root.Q<VisualElement>("RunSetupPanel");
             gachaPanel = root.Q<VisualElement>("GachaPanel");
             settingsPanel = root.Q<VisualElement>("SettingsPanel");
             eventBanner = root.Q<VisualElement>("EventBanner");
@@ -153,6 +162,9 @@ namespace KernelPanic.UI
             motdBodyLabel = root.Q<Label>("MotdBodyLabel");
 
             collectionBackButton = root.Q<Button>("CollectionBackButton");
+            collectionUnitsButton = root.Q<Button>("CollectionUnitsButton");
+            collectionCardsButton = root.Q<Button>("CollectionCardsButton");
+            runSetupBackButton = root.Q<Button>("RunSetupBackButton");
             gachaBackButton = root.Q<Button>("GachaBackButton");
             settingsBackButton = root.Q<Button>("SettingsBackButton");
         }
@@ -182,6 +194,9 @@ namespace KernelPanic.UI
             root.RegisterCallback<KeyDownEvent>(HandleKeyDown);
             root.RegisterCallback<PointerDownEvent>(HandlePointerDown);
             collectionBackButton.clicked += ShowMainMenu;
+            collectionUnitsButton.clicked += ShowCollectionUnits;
+            collectionCardsButton.clicked += ShowCollectionCards;
+            runSetupBackButton.clicked += ShowMainMenu;
             gachaBackButton.clicked += ShowMainMenu;
             settingsBackButton.clicked += ShowMainMenu;
         }
@@ -191,6 +206,9 @@ namespace KernelPanic.UI
             root.UnregisterCallback<KeyDownEvent>(HandleKeyDown);
             root.UnregisterCallback<PointerDownEvent>(HandlePointerDown);
             collectionBackButton.clicked -= ShowMainMenu;
+            collectionUnitsButton.clicked -= ShowCollectionUnits;
+            collectionCardsButton.clicked -= ShowCollectionCards;
+            runSetupBackButton.clicked -= ShowMainMenu;
             gachaBackButton.clicked -= ShowMainMenu;
             settingsBackButton.clicked -= ShowMainMenu;
         }
@@ -217,6 +235,29 @@ namespace KernelPanic.UI
                     gachaService.AddToBannerPool(unit);
                 }
             }
+
+            for (int i = 0; i < saveData.cardLoadouts.Count; i++)
+            {
+                CardLoadoutSaveEntry entry = saveData.cardLoadouts[i];
+                entry.EnsureLists();
+                List<string> resolvedIds = new();
+                for (int cardIndex = 0; cardIndex < entry.equippedCardIds.Count; cardIndex++)
+                {
+                    string resolvedId = ResolveSavedCardId(entry.equippedCardIds[cardIndex]);
+                    if (!string.IsNullOrWhiteSpace(resolvedId))
+                    {
+                        resolvedIds.Add(resolvedId);
+                    }
+                }
+
+                if (!cardLoadout.TryLoad(entry.distroId, resolvedIds, out bool skippedInvalid) || skippedInvalid)
+                {
+                    WarnInvalidLoadoutId();
+                }
+            }
+
+            EnsureLoadoutsForOwnedUnits();
+            SaveCurrentState();
         }
 
         private DistroDefinition ResolveSavedDistro(string id)
@@ -231,8 +272,37 @@ namespace KernelPanic.UI
             return unit;
         }
 
+        private string ResolveSavedCardId(string id)
+        {
+            if (cardDatabase == null)
+            {
+                return id;
+            }
+
+            CardDefinition card = cardDatabase.FindById(id);
+            if (card == null)
+            {
+                WarnInvalidLoadoutId();
+                return null;
+            }
+
+            return card.Id;
+        }
+
+        private void WarnInvalidLoadoutId()
+        {
+            if (warnedInvalidLoadoutId)
+            {
+                return;
+            }
+
+            warnedInvalidLoadoutId = true;
+            Debug.LogWarning("Save references an invalid card loadout id; restoring a valid default loadout.");
+        }
+
         private void HandleMetaStateChanged()
         {
+            EnsureLoadoutsForOwnedUnits();
             SaveCurrentState();
             featuredUnitPanel.Refresh(playerCollection.OwnedUnits);
             collectionScreen.Refresh(playerCollection.OwnedUnits);
@@ -276,6 +346,8 @@ namespace KernelPanic.UI
                     saveData.bannerPoolIds.Add(unit.Id);
                 }
             }
+
+            cardLoadout.WriteTo(saveData.cardLoadouts);
 
             saveService.Save(saveData);
         }
@@ -416,6 +488,30 @@ namespace KernelPanic.UI
                 return;
             }
 
+            if (IsRunSetupVisible())
+            {
+                if (evt.keyCode == KeyCode.UpArrow)
+                {
+                    SelectPackage(selectedPackageIndex - 1);
+                    evt.StopPropagation();
+                    return;
+                }
+
+                if (evt.keyCode == KeyCode.DownArrow)
+                {
+                    SelectPackage(selectedPackageIndex + 1);
+                    evt.StopPropagation();
+                    return;
+                }
+
+                if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+                {
+                    ToggleSelectedPackage();
+                    evt.StopPropagation();
+                    return;
+                }
+            }
+
             if (evt.keyCode == KeyCode.UpArrow)
             {
                 SelectCommand(selectedCommandIndex - 1);
@@ -453,6 +549,22 @@ namespace KernelPanic.UI
             }
         }
 
+        private bool IsRunSetupVisible()
+        {
+            return runSetupPanel != null && !runSetupPanel.ClassListContains(HiddenClassName);
+        }
+
+        private void SelectPackage(int index)
+        {
+            if (packageRows.Count == 0)
+            {
+                return;
+            }
+
+            selectedPackageIndex = (index + packageRows.Count) % packageRows.Count;
+            RefreshPackageSelection();
+        }
+
         private void HandlePointerDown(PointerDownEvent evt)
         {
             root.Focus();
@@ -486,7 +598,8 @@ namespace KernelPanic.UI
 
         private void HandleStartRunClicked()
         {
-            SceneLoader.LoadGame();
+            RefreshRunSetup();
+            ShowPanel(runSetupPanel);
         }
 
         private void HandleQuitClicked()
@@ -510,6 +623,18 @@ namespace KernelPanic.UI
             ShowPanel(collectionPanel);
         }
 
+        private void ShowCollectionUnits()
+        {
+            collectionShowingCards = false;
+            RefreshCollection();
+        }
+
+        private void ShowCollectionCards()
+        {
+            collectionShowingCards = true;
+            RefreshCollection();
+        }
+
         private void ShowGacha()
         {
             ShowPanel(gachaPanel);
@@ -525,6 +650,7 @@ namespace KernelPanic.UI
         {
             mainMenuPanel.EnableInClassList(HiddenClassName, mainMenuPanel != activePanel);
             collectionPanel.EnableInClassList(HiddenClassName, collectionPanel != activePanel);
+            runSetupPanel.EnableInClassList(HiddenClassName, runSetupPanel != activePanel);
             gachaPanel.EnableInClassList(HiddenClassName, gachaPanel != activePanel);
             settingsPanel.EnableInClassList(HiddenClassName, settingsPanel != activePanel);
         }

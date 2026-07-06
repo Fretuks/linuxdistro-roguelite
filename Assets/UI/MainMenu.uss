@@ -481,6 +481,31 @@ Button {
     flex-direction: row;
 }
 
+.collection-actions {
+    width: 760px;
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.collection-action-button {
+    width: 110px;
+    height: 34px;
+    margin-top: 0;
+    margin-left: 8px;
+}
+
+.collection-action-button.selected {
+    background-color: var(--kp-primary);
+    color: var(--kp-bg);
+}
+
+.run-setup-hint {
+    width: 760px;
+    margin-top: -12px;
+    margin-bottom: 12px;
+}
+
 .collection-list {
     width: 300px;
     margin-right: 16px;
@@ -550,6 +575,82 @@ Button {
     color: var(--kp-primary);
     white-space: normal;
     margin-top: 14px;
+}
+
+.package-list {
+    margin-top: 18px;
+    min-width: 0;
+}
+
+.package-header {
+    color: var(--kp-muted);
+    margin-bottom: 6px;
+}
+
+.package-notice {
+    color: var(--kp-amber);
+    margin-bottom: 8px;
+    white-space: normal;
+}
+
+.package-empty {
+    color: var(--kp-muted);
+    margin-top: 6px;
+}
+
+.package-row {
+    min-width: 0;
+    padding: 7px 10px;
+    margin-top: 4px;
+    border-left-width: 2px;
+    border-left-color: transparent;
+}
+
+.package-row.selected,
+.package-row.equipped {
+    border-left-color: var(--kp-primary);
+}
+
+.package-row.selected {
+    background-color: var(--kp-hover);
+}
+
+.package-row.dimmed {
+    opacity: 0.45;
+}
+
+.package-summary {
+    min-width: 0;
+    flex-direction: row;
+}
+
+.package-marker {
+    width: 34px;
+    min-width: 34px;
+}
+
+.package-name {
+    flex-grow: 1;
+    min-width: 0;
+    color: var(--kp-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -unity-text-overflow-position: end;
+}
+
+.package-meta {
+    min-width: 96px;
+    color: var(--kp-muted);
+    -unity-text-align: upper-right;
+}
+
+.package-description {
+    min-width: 0;
+    color: var(--kp-muted);
+    white-space: normal;
+    margin-left: 34px;
+    margin-top: 2px;
 }
 
 .modal-overlay {

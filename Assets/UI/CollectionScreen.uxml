@@ -1,6 +1,10 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <ui:VisualElement name="CollectionPanel" class="sub-panel hidden">
         <ui:Label text="COLLECTION" class="screen-title" />
+        <ui:VisualElement class="collection-actions">
+            <ui:Button name="CollectionUnitsButton" text="units" class="terminal-button collection-action-button" />
+            <ui:Button name="CollectionCardsButton" text="cards" class="terminal-button collection-action-button" />
+        </ui:VisualElement>
         <ui:VisualElement name="CollectionContent" class="collection-shell">
             <ui:ScrollView name="CollectionList" class="collection-list" />
             <ui:VisualElement name="CollectionDetail" class="collection-detail" />
