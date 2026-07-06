@@ -1,0 +1,180 @@
+Index: .idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"CMakeProjectFlavorService\">\r\n    <option name=\"flavorId\" value=\"CMakePlainProjectFlavor\" />\r\n  </component>\r\n  <component name=\"CMakeSettings\">\r\n    <configurations />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"4222a6b8-add3-4f43-9c42-fd6bb5a76169\" name=\"Changes\" comment=\"\" />\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"EmbeddingIndexingInfo\">\r\n    <option name=\"cachedIndexableFilesCount\" value=\"32\" />\r\n    <option name=\"fileBasedEmbeddingIndicesEnabled\" value=\"true\" />\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\"><![CDATA[{\r\n  \"lastFilter\": {\r\n    \"state\": \"OPEN\",\r\n    \"assignee\": \"Fretuks\"\r\n  }\r\n}]]></component>\r\n  <component name=\"GithubPullRequestsUISettings\"><![CDATA[{\r\n  \"selectedUrlAndAccountId\": {\r\n    \"url\": \"https://github.com/Fretuks/LinuxDistrosButTheyAreBreedable.git\",\r\n    \"accountId\": \"6d14636d-cbde-4085-b66d-c0a0ec0a2b36\"\r\n  }\r\n}]]></component>\r\n  <component name=\"HighlightingSettingsPerFile\">\r\n    <setting file=\"file://$PROJECT_DIR$/Assets/Data/Cards/Ubuntu/AskUbuntu.asset\" root0=\"FORCE_HIGHLIGHTING\" />\r\n    <setting file=\"file://$PROJECT_DIR$/Assets/Data/Distros/Fedora.asset\" root0=\"FORCE_HIGHLIGHTING\" />\r\n    <setting file=\"file://$PROJECT_DIR$/Assets/Data/Distros/Mint.asset\" root0=\"FORCE_HIGHLIGHTING\" />\r\n    <setting file=\"file://$PROJECT_DIR$/Assets/Scripts/UI.meta\" root0=\"FORCE_HIGHLIGHTING\" />\r\n  </component>\r\n  <component name=\"KubernetesApiPersistence\"><![CDATA[{}]]></component>\r\n  <component name=\"KubernetesApiProvider\"><![CDATA[{\r\n  \"isMigrated\": true\r\n}]]></component>\r\n  <component name=\"McpProjectServerCommands\">\r\n    <commands />\r\n    <urls />\r\n  </component>\r\n  <component name=\"MetaFilesCheckinStateConfiguration\" checkMetaFiles=\"true\" />\r\n  <component name=\"NextEditCompletionFeaturesState\">\r\n    <decayedCancelled>\r\n      <entry key=\"MS100\" value=\"1.438509361801407\" />\r\n      <entry key=\"MS500\" value=\"3.790393521918326\" />\r\n      <entry key=\"S2\" value=\"5.310264559045734\" />\r\n      <entry key=\"S5\" value=\"7.282397907577572\" />\r\n      <entry key=\"S10\" value=\"15.927836578313265\" />\r\n      <entry key=\"S30\" value=\"42.46303584188099\" />\r\n      <entry key=\"S60\" value=\"58.552982439383754\" />\r\n      <entry key=\"M2\" value=\"77.01353109658214\" />\r\n      <entry key=\"M5\" value=\"124.26211764068626\" />\r\n      <entry key=\"M10\" value=\"187.4266114714968\" />\r\n      <entry key=\"M15\" value=\"232.21272534466814\" />\r\n      <entry key=\"M30\" value=\"307.8116124440359\" />\r\n      <entry key=\"H1\" value=\"377.3836648034463\" />\r\n      <entry key=\"H2\" value=\"498.1870804196365\" />\r\n      <entry key=\"H4\" value=\"744.4498046005001\" />\r\n      <entry key=\"D1\" value=\"1430.7019790438612\" />\r\n      <entry key=\"W1\" value=\"1661.1944647099226\" />\r\n    </decayedCancelled>\r\n    <decayedSelected>\r\n      <entry key=\"MS100\" value=\"0.0\" />\r\n      <entry key=\"MS500\" value=\"0.0\" />\r\n      <entry key=\"S2\" value=\"0.0\" />\r\n      <entry key=\"S5\" value=\"0.0\" />\r\n      <entry key=\"S10\" value=\"0.0\" />\r\n      <entry key=\"S30\" value=\"0.0\" />\r\n      <entry key=\"S60\" value=\"2.2539392675032193E-205\" />\r\n      <entry key=\"M2\" value=\"7.861676298626748E-103\" />\r\n      <entry key=\"M5\" value=\"2.7503540141502405E-41\" />\r\n      <entry key=\"M10\" value=\"9.065339519756739E-21\" />\r\n      <entry key=\"M15\" value=\"6.267607481808273E-14\" />\r\n      <entry key=\"M30\" value=\"4.33524801527939E-7\" />\r\n      <entry key=\"H1\" value=\"0.0011403631334612554\" />\r\n      <entry key=\"H2\" value=\"0.0584892562705743\" />\r\n      <entry key=\"H4\" value=\"0.41888725636908325\" />\r\n      <entry key=\"D1\" value=\"2.1608122068775386\" />\r\n      <entry key=\"W1\" value=\"2.8626186893709065\" />\r\n    </decayedSelected>\r\n    <decayedShown>\r\n      <entry key=\"MS100\" value=\"1.3875301487723088\" />\r\n      <entry key=\"MS500\" value=\"3.341519097174889\" />\r\n      <entry key=\"S2\" value=\"4.620934944688695\" />\r\n      <entry key=\"S5\" value=\"6.797875372803498\" />\r\n      <entry key=\"S10\" value=\"15.62661706090063\" />\r\n      <entry key=\"S30\" value=\"42.344183639887014\" />\r\n      <entry key=\"S60\" value=\"58.49025243429429\" />\r\n      <entry key=\"M2\" value=\"76.97900973543229\" />\r\n      <entry key=\"M5\" value=\"124.24288430135377\" />\r\n      <entry key=\"M10\" value=\"187.4141399952993\" />\r\n      <entry key=\"M15\" value=\"232.2033968750635\" />\r\n      <entry key=\"M30\" value=\"307.80627055033676\" />\r\n      <entry key=\"H1\" value=\"377.38190086855104\" />\r\n      <entry key=\"H2\" value=\"498.2439668119673\" />\r\n      <entry key=\"H4\" value=\"744.8676908695711\" />\r\n      <entry key=\"D1\" value=\"1432.8624958433536\" />\r\n      <entry key=\"W1\" value=\"1664.0570341385317\" />\r\n    </decayedShown>\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 8,\r\n  &quot;fromUser&quot;: false\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"3FzHQpylxvSOFoPdGxOa9Gq0OxT\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\"><![CDATA[{\r\n  \"keyToString\": {\r\n    \"ModuleVcsDetector.initialDetectionPerformed\": \"true\",\r\n    \"RunOnceActivity.MCP Project settings loaded\": \"true\",\r\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\r\n    \"RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252\": \"true\",\r\n    \"RunOnceActivity.cidr.known.project.marker\": \"true\",\r\n    \"RunOnceActivity.git.unshallow\": \"true\",\r\n    \"RunOnceActivity.readMode.enableVisualFormatting\": \"true\",\r\n    \"RunOnceActivity.typescript.service.memoryLimit.init\": \"true\",\r\n    \"cidr.known.project.marker\": \"true\",\r\n    \"codeWithMe.voiceChat.enabledByDefault\": \"false\",\r\n    \"git-widget-placeholder\": \"main\",\r\n    \"node.js.detected.package.eslint\": \"true\",\r\n    \"node.js.detected.package.tslint\": \"true\",\r\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\r\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\r\n    \"nodejs_package_manager_path\": \"npm\",\r\n    \"settings.editor.selected.configurable\": \"ml.llm.LLMThirdPartyAiProvidersConfigurable\",\r\n    \"vue.rearranger.settings.migration\": \"true\"\r\n  }\r\n}]]></component>\r\n  <component name=\"RunManager\" selected=\"Attach to Unity Editor.Attach to Unity Editor\">\r\n    <configuration name=\"Start Unity\" type=\"RunUnityExe\" factoryName=\"Unity Executable\">\r\n      <option name=\"EXE_PATH\" value=\"C:\\Program Files\\Unity\\Hub\\Editor\\6000.4.8f1\\Editor\\Unity.exe\" />\r\n      <option name=\"PROGRAM_PARAMETERS\" value=\"-projectPath C:\\Users\\frederik\\linuxdistrosbuttheyarebreedable -debugCodeOptimization\" />\r\n      <option name=\"WORKING_DIRECTORY\" value=\"C:\\Users\\frederik\\linuxdistrosbuttheyarebreedable\" />\r\n      <option name=\"PASS_PARENT_ENVS\" value=\"1\" />\r\n      <option name=\"ENV_FILE_PATHS\" value=\"\" />\r\n      <option name=\"REDIRECT_INPUT_PATH\" value=\"\" />\r\n      <option name=\"MIXED_MODE_DEBUG\" value=\"0\" />\r\n      <method v=\"2\" />\r\n    </configuration>\r\n    <configuration name=\"Unit Tests (batch mode)\" type=\"RunUnityExe\" factoryName=\"Unity Executable\">\r\n      <option name=\"EXE_PATH\" value=\"C:\\Program Files\\Unity\\Hub\\Editor\\6000.4.8f1\\Editor\\Unity.exe\" />\r\n      <option name=\"PROGRAM_PARAMETERS\" value=\"-runTests -batchmode -projectPath C:\\Users\\frederik\\linuxdistrosbuttheyarebreedable -testResults Logs/results.xml -logFile Logs/Editor.log -testPlatform EditMode -debugCodeOptimization\" />\r\n      <option name=\"WORKING_DIRECTORY\" value=\"C:\\Users\\frederik\\linuxdistrosbuttheyarebreedable\" />\r\n      <option name=\"PASS_PARENT_ENVS\" value=\"1\" />\r\n      <option name=\"ENV_FILE_PATHS\" value=\"\" />\r\n      <option name=\"REDIRECT_INPUT_PATH\" value=\"\" />\r\n      <option name=\"MIXED_MODE_DEBUG\" value=\"0\" />\r\n      <method v=\"2\" />\r\n    </configuration>\r\n    <configuration name=\"Attach to Unity Editor\" type=\"UNITY_DEBUG_RUN_CONFIGURATION\" factoryName=\"Unity Debug\" show_console_on_std_err=\"false\" show_console_on_std_out=\"false\" port=\"50000\" address=\"localhost\" useMixedMode=\"false\">\r\n      <option name=\"allowRunningInParallel\" value=\"false\" />\r\n      <option name=\"listenPortForConnections\" value=\"false\" />\r\n      <option name=\"pid\" />\r\n      <option name=\"projectPathOnTarget\" />\r\n      <option name=\"runtimes\">\r\n        <list />\r\n      </option>\r\n      <option name=\"selectedOptions\">\r\n        <list />\r\n      </option>\r\n      <method v=\"2\" />\r\n    </configuration>\r\n    <configuration name=\"Attach to\" type=\"UnityDevicePlayer\" factoryName=\"UnityAttachToDevicePlayer\">\r\n      <method v=\"2\" />\r\n    </configuration>\r\n  </component>\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"4222a6b8-add3-4f43-9c42-fd6bb5a76169\" name=\"Changes\" comment=\"\" />\r\n      <created>1783070964876</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1783070964876</updated>\r\n      <workItem from=\"1783070968755\" duration=\"2378000\" />\r\n      <workItem from=\"1783076584341\" duration=\"427000\" />\r\n      <workItem from=\"1783078078025\" duration=\"1898000\" />\r\n      <workItem from=\"1783096821364\" duration=\"12348000\" />\r\n      <workItem from=\"1783260629489\" duration=\"273000\" />\r\n      <workItem from=\"1783260969262\" duration=\"51000\" />\r\n      <workItem from=\"1783262049096\" duration=\"2156000\" />\r\n      <workItem from=\"1783330590375\" duration=\"18451000\" />\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"implement main screen\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783079945946</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783079945946</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"fix shit and stuff\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783109610318</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783109610318</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00003\" summary=\"Add actual ASCII-Art for distros, add first three distros and being able to choose a starting-distro. Update UI to fix multiple small bugs.\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783116725387</created>\r\n      <option name=\"number\" value=\"00003\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783116725387</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00004\" summary=\"refactor card systems\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783263967899</created>\r\n      <option name=\"number\" value=\"00004\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00004\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783263967899</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00005\" summary=\"Add actual carts and shit&#10;&#10;Upgrade UI to Level 6&#10;&#10;Balls\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783338078609</created>\r\n      <option name=\"number\" value=\"00005\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00005\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783338078609</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00006\" summary=\"Implement more UX and cards for other distros\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783345034560</created>\r\n      <option name=\"number\" value=\"00006\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00006\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783345034560</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00007\" summary=\"Fix some fucking bugs (FSFB)\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783345615899</created>\r\n      <option name=\"number\" value=\"00007\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00007\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783345615899</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00008\" summary=\"fix a small bug with design\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783348523028</created>\r\n      <option name=\"number\" value=\"00008\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00008\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783348523028</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00009\" summary=\"small change to main menu\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783355306282</created>\r\n      <option name=\"number\" value=\"00009\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00009\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783355306282</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00010\" summary=\"finished main-menu so far\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783369049373</created>\r\n      <option name=\"number\" value=\"00010\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00010\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783369049373</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00011\" summary=\"finish implementing main menu\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783369137249</created>\r\n      <option name=\"number\" value=\"00011\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00011\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783369137249</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00012\" summary=\"finish implementing main\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1783369290237</created>\r\n      <option name=\"number\" value=\"00012\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00012\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1783369290237</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"13\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n  <component name=\"UnityCheckinConfiguration\" checkUnsavedScenes=\"true\" />\r\n  <component name=\"UnityProjectConfiguration\" hasMinimizedUI=\"true\" />\r\n  <component name=\"UnityProjectDiscoverer\">\r\n    <option name=\"hasUnityReference\" value=\"true\" />\r\n    <option name=\"unityProject\" value=\"true\" />\r\n    <option name=\"unityProjectFolder\" value=\"true\" />\r\n  </component>\r\n  <component name=\"UnityUnitTestConfiguration\" currentTestLauncher=\"Both\" />\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <option name=\"CLEAR_INITIAL_COMMIT_MESSAGE\" value=\"true\" />\r\n    <MESSAGE value=\"implement main screen\" />\r\n    <MESSAGE value=\"fix shit and stuff\" />\r\n    <MESSAGE value=\"Add actual ASCII-Art for distros, add first three distros and being able to choose a starting-distro. Update UI to fix multiple small bugs.\" />\r\n    <MESSAGE value=\"refactor card systems\" />\r\n    <MESSAGE value=\"Add actual carts and shit&#10;&#10;Upgrade UI to Level 6&#10;&#10;Balls\" />\r\n    <MESSAGE value=\"Implement more UX and cards for other distros\" />\r\n    <MESSAGE value=\"Fix some fucking bugs (FSFB)\" />\r\n    <MESSAGE value=\"fix a small bug with design\" />\r\n    <MESSAGE value=\"small change to main menu\" />\r\n    <MESSAGE value=\"finished main-menu so far\" />\r\n    <MESSAGE value=\"finish implementing main menu\" />\r\n    <MESSAGE value=\"finish implementing main\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"finish implementing main\" />\r\n  </component>\r\n  <component name=\"XDebuggerManager\">\r\n    <breakpoint-manager>\r\n      <breakpoints>\r\n        <breakpoint enabled=\"true\" type=\"DotNet_Exception_Breakpoints\">\r\n          <properties exception=\"System.OperationCanceledException\" breakIfHandledByOtherCode=\"false\" displayValue=\"System.OperationCanceledException\" />\r\n          <option name=\"timeStamp\" value=\"1\" />\r\n        </breakpoint>\r\n        <breakpoint enabled=\"true\" type=\"DotNet_Exception_Breakpoints\">\r\n          <properties exception=\"System.Threading.Tasks.TaskCanceledException\" breakIfHandledByOtherCode=\"false\" displayValue=\"System.Threading.Tasks.TaskCanceledException\" />\r\n          <option name=\"timeStamp\" value=\"2\" />\r\n        </breakpoint>\r\n        <breakpoint enabled=\"true\" type=\"DotNet_Exception_Breakpoints\">\r\n          <properties exception=\"System.Threading.ThreadAbortException\" breakIfHandledByOtherCode=\"false\" displayValue=\"System.Threading.ThreadAbortException\" />\r\n          <option name=\"timeStamp\" value=\"3\" />\r\n        </breakpoint>\r\n      </breakpoints>\r\n    </breakpoint-manager>\r\n  </component>\r\n  <component name=\"XSLT-Support.FileAssociations.UIState\">\r\n    <expand />\r\n    <select />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml b/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml
+--- a/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml	(revision abe9816985beb72fa563cfd252f54e7c24fde80a)
++++ b/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml	(date 1783370904742)
+@@ -21,6 +21,19 @@
+     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+   </component>
+   <component name="Git.Settings">
++    <excluded-from-favorite>
++      <branch-storage>
++        <map>
++          <entry type="REMOTE">
++            <value>
++              <list>
++                <branch-info repo="$PROJECT_DIR$" source="origin/main" />
++              </list>
++            </value>
++          </entry>
++        </map>
++      </branch-storage>
++    </excluded-from-favorite>
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+   </component>
+   <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+@@ -36,6 +49,7 @@
+   }
+ }]]></component>
+   <component name="HighlightingSettingsPerFile">
++    <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Mint/Cinnamon.asset" root0="FORCE_HIGHLIGHTING" />
+     <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Ubuntu/AskUbuntu.asset" root0="FORCE_HIGHLIGHTING" />
+     <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Fedora.asset" root0="FORCE_HIGHLIGHTING" />
+     <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Mint.asset" root0="FORCE_HIGHLIGHTING" />
+@@ -52,23 +66,23 @@
+   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+   <component name="NextEditCompletionFeaturesState">
+     <decayedCancelled>
+-      <entry key="MS100" value="1.438509361801407" />
+-      <entry key="MS500" value="3.790393521918326" />
+-      <entry key="S2" value="5.310264559045734" />
+-      <entry key="S5" value="7.282397907577572" />
+-      <entry key="S10" value="15.927836578313265" />
+-      <entry key="S30" value="42.46303584188099" />
+-      <entry key="S60" value="58.552982439383754" />
+-      <entry key="M2" value="77.01353109658214" />
+-      <entry key="M5" value="124.26211764068626" />
+-      <entry key="M10" value="187.4266114714968" />
+-      <entry key="M15" value="232.21272534466814" />
+-      <entry key="M30" value="307.8116124440359" />
+-      <entry key="H1" value="377.3836648034463" />
+-      <entry key="H2" value="498.1870804196365" />
+-      <entry key="H4" value="744.4498046005001" />
+-      <entry key="D1" value="1430.7019790438612" />
+-      <entry key="W1" value="1661.1944647099226" />
++      <entry key="MS100" value="1.0040616411497238" />
++      <entry key="MS500" value="1.5837789883325726" />
++      <entry key="S2" value="5.409965225993223" />
++      <entry key="S5" value="9.845454656010116" />
++      <entry key="S10" value="13.159902165082617" />
++      <entry key="S30" value="17.93215432049951" />
++      <entry key="S60" value="20.46732331070107" />
++      <entry key="M2" value="27.69966267570677" />
++      <entry key="M5" value="67.92301040922798" />
++      <entry key="M10" value="136.18385927702838" />
++      <entry key="M15" value="189.00635513626233" />
++      <entry key="M30" value="283.3215278672822" />
++      <entry key="H1" value="370.0716030174776" />
++      <entry key="H2" value="500.77140165438476" />
++      <entry key="H4" value="752.0439666834552" />
++      <entry key="D1" value="1448.7265992218136" />
++      <entry key="W1" value="1683.3680113707912" />
+     </decayedCancelled>
+     <decayedSelected>
+       <entry key="MS100" value="0.0" />
+@@ -77,36 +91,36 @@
+       <entry key="S5" value="0.0" />
+       <entry key="S10" value="0.0" />
+       <entry key="S30" value="0.0" />
+-      <entry key="S60" value="2.2539392675032193E-205" />
+-      <entry key="M2" value="7.861676298626748E-103" />
+-      <entry key="M5" value="2.7503540141502405E-41" />
+-      <entry key="M10" value="9.065339519756739E-21" />
+-      <entry key="M15" value="6.267607481808273E-14" />
+-      <entry key="M30" value="4.33524801527939E-7" />
+-      <entry key="H1" value="0.0011403631334612554" />
+-      <entry key="H2" value="0.0584892562705743" />
+-      <entry key="H4" value="0.41888725636908325" />
+-      <entry key="D1" value="2.1608122068775386" />
+-      <entry key="W1" value="2.8626186893709065" />
++      <entry key="S60" value="1.4975160847232977E-207" />
++      <entry key="M2" value="6.408107681029824E-104" />
++      <entry key="M5" value="1.0089611758955233E-41" />
++      <entry key="M10" value="5.490690989674969E-21" />
++      <entry key="M15" value="4.4867348948720475E-14" />
++      <entry key="M30" value="3.667990968153478E-7" />
++      <entry key="H1" value="0.0010489392184821963" />
++      <entry key="H2" value="0.056095713514559456" />
++      <entry key="H4" value="0.4102267127220965" />
++      <entry key="D1" value="2.1533013998014874" />
++      <entry key="W1" value="2.86119510596788" />
+     </decayedSelected>
+     <decayedShown>
+-      <entry key="MS100" value="1.3875301487723088" />
+-      <entry key="MS500" value="3.341519097174889" />
+-      <entry key="S2" value="4.620934944688695" />
+-      <entry key="S5" value="6.797875372803498" />
+-      <entry key="S10" value="15.62661706090063" />
+-      <entry key="S30" value="42.344183639887014" />
+-      <entry key="S60" value="58.49025243429429" />
+-      <entry key="M2" value="76.97900973543229" />
+-      <entry key="M5" value="124.24288430135377" />
+-      <entry key="M10" value="187.4141399952993" />
+-      <entry key="M15" value="232.2033968750635" />
+-      <entry key="M30" value="307.80627055033676" />
+-      <entry key="H1" value="377.38190086855104" />
+-      <entry key="H2" value="498.2439668119673" />
+-      <entry key="H4" value="744.8676908695711" />
+-      <entry key="D1" value="1432.8624958433536" />
+-      <entry key="W1" value="1664.0570341385317" />
++      <entry key="MS100" value="0.06981712943582996" />
++      <entry key="MS500" value="0.9958446117868276" />
++      <entry key="S2" value="5.102980050779517" />
++      <entry key="S5" value="9.690190845300117" />
++      <entry key="S10" value="13.074619374435686" />
++      <entry key="S30" value="17.90153058732641" />
++      <entry key="S60" value="20.451257862033238" />
++      <entry key="M2" value="27.688931387259867" />
++      <entry key="M5" value="67.91276409922236" />
++      <entry key="M10" value="136.17470619933357" />
++      <entry key="M15" value="188.99861009938752" />
++      <entry key="M30" value="283.31647413469375" />
++      <entry key="H1" value="370.06971336727366" />
++      <entry key="H2" value="500.8258265030547" />
++      <entry key="H4" value="752.4531462999327" />
++      <entry key="D1" value="1450.8795951059608" />
++      <entry key="W1" value="1686.2291556497446" />
+     </decayedShown>
+   </component>
+   <component name="ProjectColorInfo">{
+@@ -192,7 +206,7 @@
+       <workItem from="1783260629489" duration="273000" />
+       <workItem from="1783260969262" duration="51000" />
+       <workItem from="1783262049096" duration="2156000" />
+-      <workItem from="1783330590375" duration="18451000" />
++      <workItem from="1783330590375" duration="19321000" />
+     </task>
+     <task id="LOCAL-00001" summary="implement main screen">
+       <option name="closed" value="true" />
+@@ -290,7 +304,15 @@
+       <option name="project" value="LOCAL" />
+       <updated>1783369290237</updated>
+     </task>
+-    <option name="localTasksCounter" value="13" />
++    <task id="LOCAL-00013" summary="fix git commit issues">
++      <option name="closed" value="true" />
++      <created>1783370196514</created>
++      <option name="number" value="00013" />
++      <option name="presentableId" value="LOCAL-00013" />
++      <option name="project" value="LOCAL" />
++      <updated>1783370196514</updated>
++    </task>
++    <option name="localTasksCounter" value="14" />
+     <servers />
+   </component>
+   <component name="TypeScriptGeneratedFilesManager">
+@@ -318,7 +340,8 @@
+     <MESSAGE value="finished main-menu so far" />
+     <MESSAGE value="finish implementing main menu" />
+     <MESSAGE value="finish implementing main" />
+-    <option name="LAST_COMMIT_MESSAGE" value="finish implementing main" />
++    <MESSAGE value="fix git commit issues" />
++    <option name="LAST_COMMIT_MESSAGE" value="fix git commit issues" />
+   </component>
+   <component name="XDebuggerManager">
+     <breakpoint-manager>
