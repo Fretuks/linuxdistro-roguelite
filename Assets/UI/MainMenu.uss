@@ -735,6 +735,12 @@ Button {
     color: var(--kp-amber);
 }
 
+.starter-error {
+    margin-bottom: 18px;
+    color: var(--kp-amber);
+    white-space: normal;
+}
+
 .terminal-button {
     height: 42px;
     margin-top: 24px;

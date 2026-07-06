@@ -158,6 +158,7 @@
             <ui:VisualElement class="starter-dialog">
                 <ui:Label text="select starter distro" class="starter-title" />
                 <ui:Label text="choose one base system to install into persistent userspace" class="starter-instruction" />
+                <ui:Label name="StarterErrorLabel" class="starter-error hidden" />
                 <ui:VisualElement name="StarterOptions" class="starter-options">
                     <ui:VisualElement name="StarterOption0" class="starter-card">
                         <ui:Label name="StarterName0" class="starter-name" />

@@ -31,5 +31,52 @@ namespace KernelPanic.Data
 
             return null;
         }
+
+        /// <summary>
+        /// Checks that every entry is assigned and has a unique, non-blank id. Used at both
+        /// edit time (OnValidate) and runtime, so misconfiguration surfaces before it can
+        /// silently disable a feature that depends on this database.
+        /// </summary>
+        public bool TryValidate(out string error)
+        {
+            for (int i = 0; i < allDistros.Count; i++)
+            {
+                if (allDistros[i] == null)
+                {
+                    error = $"entry {i} is empty";
+                    return false;
+                }
+            }
+
+            HashSet<string> seenIds = new(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < allDistros.Count; i++)
+            {
+                string id = allDistros[i].Id;
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    error = $"'{allDistros[i].name}' has a blank id";
+                    return false;
+                }
+
+                if (!seenIds.Add(id))
+                {
+                    error = $"duplicate distro id '{id}'";
+                    return false;
+                }
+            }
+
+            error = null;
+            return true;
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (!TryValidate(out string error))
+            {
+                Debug.LogError($"DistroDatabase '{name}': {error}.", this);
+            }
+        }
+#endif
     }
 }
