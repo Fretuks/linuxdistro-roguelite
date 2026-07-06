@@ -1,5 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <Style src="MainMenu.uss" />
+    <ui:Template name="ScreenFrame" src="ScreenFrame.uxml" />
     <ui:Template name="CollectionScreen" src="CollectionScreen.uxml" />
     <ui:Template name="GachaScreen" src="GachaScreen.uxml" />
     <ui:Template name="SettingsScreen" src="SettingsScreen.uxml" />
@@ -124,14 +125,22 @@
             </ui:VisualElement>
 
             <ui:Instance template="CollectionScreen" />
-            <ui:VisualElement name="RunSetupPanel" class="sub-panel hidden">
-                <ui:Label text="NEW RUN" class="screen-title" />
-                <ui:Label text="choose 4 distro cards before booting a run" class="collection-detail-muted run-setup-hint" />
-                <ui:VisualElement name="RunSetupContent" class="collection-shell">
+            <ui:VisualElement name="RunSetupPanel" class="screen-panel hidden">
+                <ui:VisualElement class="screen-frame">
+                    <ui:VisualElement class="screen-frame-header">
+                        <ui:Label class="screen-frame-title" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="screen-frame-content">
+                        <ui:Label text="choose distro packages before booting a run" class="collection-detail-muted run-setup-hint" />
+                        <ui:VisualElement name="RunSetupContent" class="run-setup-shell">
                     <ui:ScrollView name="RunSetupList" class="collection-list" />
                     <ui:VisualElement name="RunSetupDetail" class="collection-detail" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="screen-frame-footer">
+                        <ui:Label class="screen-frame-hint" />
+                    </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:Button name="RunSetupBackButton" text="Back" class="terminal-button back-button" />
             </ui:VisualElement>
             <ui:Instance template="GachaScreen" />
             <ui:Instance template="SettingsScreen" />

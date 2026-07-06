@@ -1,10 +1,18 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
-    <ui:VisualElement name="SettingsPanel" class="sub-panel hidden">
-        <ui:Label text="SETTINGS" class="screen-title" />
-        <ui:VisualElement class="settings-row disabled-row">
-            <ui:Label text="Audio" class="settings-label" />
-            <ui:Toggle name="AudioToggle" text="TODO" enabled="false" class="settings-toggle" />
+    <ui:VisualElement name="SettingsPanel" class="screen-panel hidden">
+        <ui:VisualElement class="screen-frame">
+            <ui:VisualElement class="screen-frame-header">
+                <ui:Label class="screen-frame-title" />
+            </ui:VisualElement>
+            <ui:VisualElement class="screen-frame-content">
+                <ui:VisualElement class="settings-row disabled-row">
+                    <ui:Label text="Audio" class="settings-label" />
+                    <ui:Toggle name="AudioToggle" text="TODO" enabled="false" class="settings-toggle" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="screen-frame-footer">
+                <ui:Label class="screen-frame-hint" />
+            </ui:VisualElement>
         </ui:VisualElement>
-        <ui:Button name="SettingsBackButton" text="Back" class="terminal-button back-button" />
     </ui:VisualElement>
 </ui:UXML>

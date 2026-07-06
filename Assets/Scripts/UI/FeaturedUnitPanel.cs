@@ -56,11 +56,21 @@ namespace KernelPanic.UI
 
         public void Refresh(IReadOnlyList<DistroDefinition> ownedUnits)
         {
+            Refresh(ownedUnits, null);
+        }
+
+        public void Refresh(IReadOnlyList<DistroDefinition> ownedUnits, DistroDefinition featuredUnit)
+        {
             units = ownedUnits ?? Array.Empty<DistroDefinition>();
-            Refresh();
+            Refresh(featuredUnit);
         }
 
         public void Refresh()
+        {
+            Refresh((DistroDefinition)null);
+        }
+
+        private void Refresh(DistroDefinition featuredUnit)
         {
             if (units == null || units.Count == 0)
             {
@@ -68,7 +78,7 @@ namespace KernelPanic.UI
                 return;
             }
 
-            selectedIndex = Mathf.Clamp(selectedIndex, 0, units.Count - 1);
+            selectedIndex = ResolveSelectedIndex(featuredUnit);
             ShowUnit(units[selectedIndex]);
         }
 
@@ -82,6 +92,22 @@ namespace KernelPanic.UI
 
             selectedIndex = (selectedIndex + 1) % unitCount;
             Refresh();
+        }
+
+        private int ResolveSelectedIndex(DistroDefinition featuredUnit)
+        {
+            if (featuredUnit != null)
+            {
+                for (int i = 0; i < units.Count; i++)
+                {
+                    if (units[i] == featuredUnit)
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return Mathf.Clamp(selectedIndex, 0, units.Count - 1);
         }
 
         private void ShowEmptyState()

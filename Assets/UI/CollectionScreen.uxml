@@ -1,14 +1,22 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
-    <ui:VisualElement name="CollectionPanel" class="sub-panel hidden">
-        <ui:Label text="COLLECTION" class="screen-title" />
-        <ui:VisualElement class="collection-actions">
-            <ui:Button name="CollectionUnitsButton" text="units" class="terminal-button collection-action-button" />
-            <ui:Button name="CollectionCardsButton" text="cards" class="terminal-button collection-action-button" />
+    <ui:VisualElement name="CollectionPanel" class="screen-panel hidden">
+        <ui:VisualElement class="screen-frame">
+            <ui:VisualElement class="screen-frame-header">
+                <ui:Label class="screen-frame-title" />
+            </ui:VisualElement>
+            <ui:VisualElement class="screen-frame-content">
+                <ui:VisualElement class="collection-actions">
+                    <ui:Button name="CollectionUnitsButton" text="units" class="collection-tab" />
+                    <ui:Button name="CollectionCardsButton" text="cards" class="collection-tab" />
+                </ui:VisualElement>
+                <ui:VisualElement name="CollectionContent" class="collection-shell">
+                    <ui:ScrollView name="CollectionList" class="collection-list" />
+                    <ui:VisualElement name="CollectionDetail" class="collection-detail" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="screen-frame-footer">
+                <ui:Label class="screen-frame-hint" />
+            </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="CollectionContent" class="collection-shell">
-            <ui:ScrollView name="CollectionList" class="collection-list" />
-            <ui:VisualElement name="CollectionDetail" class="collection-detail" />
-        </ui:VisualElement>
-        <ui:Button name="CollectionBackButton" text="Back" class="terminal-button back-button" />
     </ui:VisualElement>
 </ui:UXML>

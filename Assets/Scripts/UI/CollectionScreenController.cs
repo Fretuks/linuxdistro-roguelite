@@ -19,6 +19,7 @@ namespace KernelPanic.UI
         private VisualElement detail;
         private FontAsset monospaceFont;
         private IReadOnlyList<DistroDefinition> units = Array.Empty<DistroDefinition>();
+        private IReadOnlyList<CardEntry> cards = Array.Empty<CardEntry>();
         private int selectedIndex;
 
         public void Bind(VisualElement root, FontAsset artFont)
@@ -28,7 +29,7 @@ namespace KernelPanic.UI
             detail = root.Q<VisualElement>("CollectionDetail");
         }
 
-        public void Refresh(IReadOnlyList<DistroDefinition> ownedUnits)
+        public void RefreshUnits(IReadOnlyList<DistroDefinition> ownedUnits)
         {
             units = ownedUnits ?? Array.Empty<DistroDefinition>();
             if (list == null || detail == null)
@@ -73,6 +74,55 @@ namespace KernelPanic.UI
             SelectUnit(selectedIndex);
         }
 
+        public void RefreshCards(DistroDefinition featuredUnit)
+        {
+            cards = BuildCardEntries(featuredUnit);
+            if (list == null || detail == null)
+            {
+                return;
+            }
+
+            rows.Clear();
+            list.Clear();
+
+            if (cards.Count == 0)
+            {
+                detail.Clear();
+                detail.Add(new Label("no cards installed") { name = "CollectionEmptyTitle" });
+                detail.Add(new Label("featured distro cards appear here") { name = "CollectionEmptyHint" });
+                return;
+            }
+
+            selectedIndex = Mathf.Clamp(selectedIndex, 0, cards.Count - 1);
+            for (int i = 0; i < cards.Count; i++)
+            {
+                int index = i;
+                CardEntry entry = cards[i];
+                VisualElement row = new();
+                row.AddToClassList("collection-row");
+                row.RegisterCallback<PointerEnterEvent>(_ => SelectCard(index));
+                row.RegisterCallback<ClickEvent>(_ => SelectCard(index));
+
+                Label name = new(GetCardDisplayName(entry.Card));
+                name.AddToClassList("collection-row-name");
+
+                Label meta = new($"{DistroPresentation.DisplayName(entry.Owner)} / {FormatCardMeta(entry.Card)}");
+                meta.AddToClassList("collection-row-languages");
+
+                row.Add(name);
+                row.Add(meta);
+                list.Add(row);
+                rows.Add(row);
+            }
+
+            SelectCard(selectedIndex);
+        }
+
+        public void Refresh(IReadOnlyList<DistroDefinition> ownedUnits)
+        {
+            RefreshUnits(ownedUnits);
+        }
+
         private void SelectUnit(int index)
         {
             if (units.Count == 0)
@@ -89,9 +139,34 @@ namespace KernelPanic.UI
             RenderDetail(units[selectedIndex]);
         }
 
+        private void SelectCard(int index)
+        {
+            if (cards.Count == 0)
+            {
+                return;
+            }
+
+            selectedIndex = Mathf.Clamp(index, 0, cards.Count - 1);
+            for (int i = 0; i < rows.Count; i++)
+            {
+                rows[i].EnableInClassList("selected", i == selectedIndex);
+            }
+
+            RenderCardDetail(cards[selectedIndex]);
+        }
+
         private void RenderDetail(DistroDefinition unit)
         {
             detail.Clear();
+
+            Label name = new(DistroPresentation.DisplayName(unit));
+            name.AddToClassList("collection-detail-name");
+            name.style.color = new StyleColor(unit.AccentColor);
+            detail.Add(name);
+
+            Label description = new(string.IsNullOrWhiteSpace(unit.Description) ? "--" : unit.Description);
+            description.AddToClassList("collection-detail-description");
+            detail.Add(description);
 
             VisualElement readout = new();
             readout.AddToClassList("collection-detail-readout");
@@ -107,11 +182,6 @@ namespace KernelPanic.UI
             VisualElement details = new();
             details.AddToClassList("collection-detail-values");
 
-            Label name = new(DistroPresentation.DisplayName(unit));
-            name.AddToClassList("collection-detail-name");
-            name.style.color = new StyleColor(unit.AccentColor);
-            details.Add(name);
-
             details.Add(BuildDetailLine("lang", DistroPresentation.FormatLanguages(unit)));
             details.Add(BuildDetailLine("passive", string.IsNullOrWhiteSpace(unit.PassiveName) ? "--" : unit.PassiveName));
             details.Add(BuildDetailLine("uptime", unit.BaseUptime.ToString()));
@@ -120,10 +190,26 @@ namespace KernelPanic.UI
 
             readout.Add(details);
             detail.Add(readout);
+        }
 
-            Label description = new(string.IsNullOrWhiteSpace(unit.Description) ? "--" : unit.Description);
+        private void RenderCardDetail(CardEntry entry)
+        {
+            detail.Clear();
+
+            CardDefinition card = entry.Card;
+            Label name = new(GetCardDisplayName(card));
+            name.AddToClassList("collection-detail-name");
+            detail.Add(name);
+
+            Label description = new(card == null || string.IsNullOrWhiteSpace(card.Description) ? "--" : card.Description);
             description.AddToClassList("collection-detail-description");
             detail.Add(description);
+
+            detail.Add(BuildDetailLine("owner", DistroPresentation.DisplayName(entry.Owner)));
+            detail.Add(BuildDetailLine("lang", card == null ? "--" : card.Language.ToString()));
+            detail.Add(BuildDetailLine("rarity", card == null ? "--" : card.Rarity.ToString()));
+            detail.Add(BuildDetailLine("cost", card == null ? "--" : card.CycleCost.ToString()));
+            detail.Add(BuildDetailLine("type", card != null && card.IsToken ? "token" : "loadout"));
         }
 
         private static VisualElement BuildDetailLine(string key, string value)
@@ -139,6 +225,55 @@ namespace KernelPanic.UI
             row.Add(keyLabel);
             row.Add(valueLabel);
             return row;
+        }
+
+        private static IReadOnlyList<CardEntry> BuildCardEntries(DistroDefinition featuredUnit)
+        {
+            List<CardEntry> entries = new();
+            if (featuredUnit == null)
+            {
+                return entries;
+            }
+
+            for (int cardIndex = 0; cardIndex < featuredUnit.ExclusiveCards.Count; cardIndex++)
+            {
+                CardDefinition card = featuredUnit.ExclusiveCards[cardIndex];
+                if (card == null)
+                {
+                    continue;
+                }
+
+                entries.Add(new CardEntry(featuredUnit, card));
+            }
+
+            return entries;
+        }
+
+        private static string GetCardDisplayName(CardDefinition card)
+        {
+            if (card == null)
+            {
+                return "--";
+            }
+
+            return string.IsNullOrWhiteSpace(card.DisplayName) ? card.Id : card.DisplayName;
+        }
+
+        private static string FormatCardMeta(CardDefinition card)
+        {
+            return card == null ? "--" : $"{card.Language} / {card.CycleCost}c";
+        }
+
+        private readonly struct CardEntry
+        {
+            public CardEntry(DistroDefinition owner, CardDefinition card)
+            {
+                Owner = owner;
+                Card = card;
+            }
+
+            public DistroDefinition Owner { get; }
+            public CardDefinition Card { get; }
         }
     }
 }
