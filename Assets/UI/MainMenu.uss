@@ -746,8 +746,8 @@ Button {
 }
 
 .run-readout {
-    min-height: 110px;
-    max-height: 128px;
+    min-height: 112px;
+    max-height: 122px;
     flex-direction: row;
     overflow: hidden;
 }
@@ -765,12 +765,39 @@ Button {
     padding-left: 14px;
 }
 
-.run-passive-summary {
-    color: var(--kp-primary);
+.run-readout .collection-detail-name {
+    margin-bottom: 4px;
+}
+
+.run-readout .collection-detail-description {
+    margin-top: 0;
+    margin-bottom: 6px;
+}
+
+.run-stat-line {
+    margin-top: 0;
+    margin-bottom: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-top: 8px;
+}
+
+.run-passive-block {
+    flex-shrink: 0;
+    margin-top: 10px;
+    margin-bottom: 8px;
+}
+
+.run-passive-rules {
+    color: var(--kp-primary);
+    white-space: normal;
+}
+
+.run-passive-flavor {
+    color: var(--kp-muted);
+    -unity-font-style: italic;
+    white-space: normal;
+    margin-top: 4px;
 }
 
 .boot-command-row {

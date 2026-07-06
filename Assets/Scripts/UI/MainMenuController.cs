@@ -659,6 +659,7 @@ namespace KernelPanic.UI
 
             DistroDefinition unit = playerCollection.OwnedUnits[selectedPackageIndex];
             runSetupDetail.Add(BuildRunSetupReadout(unit));
+            AddRunSetupPassive(unit, runSetupDetail);
 
             ScrollView packageScroll = new(ScrollViewMode.Vertical);
             packageScroll.AddToClassList("package-scroll");
@@ -735,17 +736,35 @@ namespace KernelPanic.UI
 
             Label stats = new($"uptime {unit.BaseUptime} · ram {unit.BaseRam} · cycles {unit.BaseCyclesPerTurn}");
             stats.AddToClassList("collection-detail-muted");
+            stats.AddToClassList("run-stat-line");
             copy.Add(stats);
-
-            if (unit.Passive != null)
-            {
-                Label passive = new($"{unit.Passive.Name}: {unit.Passive.RulesText}");
-                passive.AddToClassList("run-passive-summary");
-                copy.Add(passive);
-            }
 
             readout.Add(copy);
             return readout;
+        }
+
+        private static void AddRunSetupPassive(DistroDefinition unit, VisualElement container)
+        {
+            if (unit.Passive == null)
+            {
+                return;
+            }
+
+            VisualElement passiveBlock = new();
+            passiveBlock.AddToClassList("run-passive-block");
+
+            Label rules = new($"{unit.Passive.Name}: {unit.Passive.RulesText}");
+            rules.AddToClassList("run-passive-rules");
+            passiveBlock.Add(rules);
+
+            if (!string.IsNullOrWhiteSpace(unit.Passive.FlavorText))
+            {
+                Label flavor = new(unit.Passive.FlavorText);
+                flavor.AddToClassList("run-passive-flavor");
+                passiveBlock.Add(flavor);
+            }
+
+            container.Add(passiveBlock);
         }
 
         private static VisualElement BuildDetailLine(string key, string value)
@@ -991,6 +1010,18 @@ namespace KernelPanic.UI
             runSetupPanel.EnableInClassList(HiddenClassName, runSetupPanel != activePanel);
             gachaPanel.EnableInClassList(HiddenClassName, gachaPanel != activePanel);
             settingsPanel.EnableInClassList(HiddenClassName, settingsPanel != activePanel);
+
+            bool showingMainMenu = mainMenuPanel == activePanel;
+            motdBlock.EnableInClassList(HiddenClassName, !showingMainMenu || string.IsNullOrWhiteSpace(motdBody));
+
+            if (showingMainMenu)
+            {
+                RefreshEventBanner();
+            }
+            else
+            {
+                eventBanner.AddToClassList(HiddenClassName);
+            }
         }
 
         private sealed class CommandMenuEntry
