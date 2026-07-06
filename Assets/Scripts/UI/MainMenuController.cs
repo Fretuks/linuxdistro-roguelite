@@ -25,17 +25,23 @@ namespace KernelPanic.UI
         private const float BootIntroSeconds = 1.5f;
         private static bool bootIntroPlayed;
 
+        // Static fields don't reset between Play sessions when the Editor's "Reload Domain"
+        // option is disabled. RuntimeInitializeOnLoadMethod runs once per player/Play-mode
+        // startup regardless of that setting, so this keeps bootIntroPlayed session-scoped.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSessionState()
+        {
+            bootIntroPlayed = false;
+        }
+
         [SerializeField] private FontAsset monospaceFont; // TODO: Assign a real monospace FontAsset when typography assets exist.
         [SerializeField] private string motdBody = "unstable userspace detected; keep a rollback shell open.";
         [SerializeField] private DistroDatabase distroDatabase;
         [SerializeField] private FeaturedUnitPanel featuredUnitPanel = new();
+        [SerializeField] private CollectionScreenController collectionScreen = new();
+        [SerializeField] private StarterSelectionController starterSelection = new();
 
         private readonly List<CommandMenuEntry> commandEntries = new();
-        private readonly List<VisualElement> starterCards = new();
-        private readonly List<Label> starterNames = new();
-        private readonly List<Label> starterLanguages = new();
-        private readonly List<Label> starterDescriptions = new();
-        private readonly List<VisualElement> collectionRows = new();
         private UIDocument document;
         private VisualElement root;
         private VisualElement shellRoot;
@@ -46,9 +52,6 @@ namespace KernelPanic.UI
         private VisualElement settingsPanel;
         private VisualElement eventBanner;
         private VisualElement backgroundLogLayer;
-        private VisualElement starterModal;
-        private VisualElement collectionList;
-        private VisualElement collectionDetail;
         private Label appIdLabel;
         private Label entropyLabel;
         private Label pullTokensLabel;
@@ -56,7 +59,6 @@ namespace KernelPanic.UI
         private Label promptCursorLabel;
         private Label bootIntroLogLabel;
         private Label motdBodyLabel;
-        private Label starterConfirmLabel;
         private VisualElement motdBlock;
         private Button collectionBackButton;
         private Button gachaBackButton;
@@ -69,19 +71,14 @@ namespace KernelPanic.UI
         private BackgroundLogRingBuffer backgroundLog;
         private IEventBannerSource eventBannerSource;
         private int selectedCommandIndex;
-        private int selectedStarterIndex;
-        private int selectedCollectionIndex;
         private float bootIntroElapsed;
         private int bootIntroCharacterCount;
         private bool cursorVisible;
         private bool suppressNextClick;
-        private bool starterModalActive;
-        private bool starterConfirming;
         private bool warnedUnresolvedSaveId;
         private string bootIntroCopy;
         private IVisualElementScheduledItem blinkSchedule;
         private IVisualElementScheduledItem bootIntroSchedule;
-        private IVisualElementScheduledItem starterCloseSchedule;
 
         public void Initialize(EntropyWallet initializedWallet)
         {
@@ -99,8 +96,9 @@ namespace KernelPanic.UI
             BindElements();
             BindCommandEntries();
             RegisterCommandEntryCallbacks();
-            RegisterStarterCallbacks();
             featuredUnitPanel.Bind(root, monospaceFont);
+            collectionScreen.Bind(root, monospaceFont);
+            starterSelection.Bind(root, distroDatabase, HandleStarterConfirmed);
             LoadMetaState();
             playerCollection.Changed += HandleMetaStateChanged;
             gachaService.BannerPoolChanged += HandleMetaStateChanged;
@@ -116,7 +114,7 @@ namespace KernelPanic.UI
             RefreshCurrencyReadouts();
             RefreshEventBanner();
             featuredUnitPanel.Refresh(playerCollection.OwnedUnits);
-            RefreshCollection();
+            collectionScreen.Refresh(playerCollection.OwnedUnits);
             SelectCommand(0);
             ShowMainMenu();
             StartAmbientSchedules();
@@ -129,7 +127,7 @@ namespace KernelPanic.UI
             blinkSchedule?.Pause();
             backgroundLog?.Stop();
             bootIntroSchedule?.Pause();
-            starterCloseSchedule?.Pause();
+            starterSelection.PauseSchedules();
         }
 
         private void BindElements()
@@ -145,9 +143,6 @@ namespace KernelPanic.UI
             motdBlock = root.Q<VisualElement>("MotdBlock");
             backgroundLogLayer = root.Q<VisualElement>("BackgroundLogLayer");
             backgroundLog = new BackgroundLogRingBuffer(backgroundLogLayer, BootLogCopy.Lines);
-            starterModal = root.Q<VisualElement>("StarterModal");
-            collectionList = root.Q<VisualElement>("CollectionList");
-            collectionDetail = root.Q<VisualElement>("CollectionDetail");
 
             appIdLabel = root.Q<Label>("AppIdLabel");
             entropyLabel = root.Q<Label>("EntropyLabel");
@@ -156,15 +151,6 @@ namespace KernelPanic.UI
             promptCursorLabel = root.Q<Label>("PromptCursorLabel");
             bootIntroLogLabel = root.Q<Label>("BootIntroLogLabel");
             motdBodyLabel = root.Q<Label>("MotdBodyLabel");
-            starterConfirmLabel = root.Q<Label>("StarterConfirmLabel");
-
-            for (int i = 0; i < 3; i++)
-            {
-                starterCards.Add(root.Q<VisualElement>($"StarterOption{i}"));
-                starterNames.Add(root.Q<Label>($"StarterName{i}"));
-                starterLanguages.Add(root.Q<Label>($"StarterLanguages{i}"));
-                starterDescriptions.Add(root.Q<Label>($"StarterDescription{i}"));
-            }
 
             collectionBackButton = root.Q<Button>("CollectionBackButton");
             gachaBackButton = root.Q<Button>("GachaBackButton");
@@ -249,7 +235,21 @@ namespace KernelPanic.UI
         {
             SaveCurrentState();
             featuredUnitPanel.Refresh(playerCollection.OwnedUnits);
-            RefreshCollection();
+            collectionScreen.Refresh(playerCollection.OwnedUnits);
+        }
+
+        private void HandleStarterConfirmed(DistroDefinition picked, IReadOnlyList<DistroDefinition> remaining)
+        {
+            playerCollection.Add(picked);
+            for (int i = 0; i < remaining.Count; i++)
+            {
+                gachaService.AddToBannerPool(remaining[i]);
+            }
+
+            saveData.starterChosen = true;
+            SaveCurrentState();
+            featuredUnitPanel.Refresh(playerCollection.OwnedUnits);
+            collectionScreen.Refresh(playerCollection.OwnedUnits);
         }
 
         private void SaveCurrentState()
@@ -298,20 +298,6 @@ namespace KernelPanic.UI
             }
         }
 
-        private void RegisterStarterCallbacks()
-        {
-            for (int i = 0; i < starterCards.Count; i++)
-            {
-                int index = i;
-                starterCards[i].RegisterCallback<PointerEnterEvent>(_ => SelectStarter(index));
-                starterCards[i].RegisterCallback<ClickEvent>(_ =>
-                {
-                    SelectStarter(index);
-                    ConfirmStarterSelectionIntent();
-                });
-            }
-        }
-
         private void RefreshCurrencyReadouts()
         {
             if (entropyLabel == null || pullTokensLabel == null || gachaService == null || wallet == null)
@@ -336,131 +322,6 @@ namespace KernelPanic.UI
             root.Q<Label>("EventBannerLabel").text = banner.RemainingTime.HasValue
                 ? $"{banner.Text}  {banner.RemainingTime.Value:g}"
                 : banner.Text;
-        }
-
-        private void RefreshCollection()
-        {
-            if (collectionList == null || collectionDetail == null)
-            {
-                return;
-            }
-
-            collectionRows.Clear();
-            collectionList.Clear();
-
-            IReadOnlyList<DistroDefinition> units = playerCollection.OwnedUnits;
-            if (units.Count == 0)
-            {
-                collectionDetail.Clear();
-                collectionDetail.Add(new Label("no units installed") { name = "CollectionEmptyTitle" });
-                collectionDetail.Add(new Label("run: curl gacha.sh | sh") { name = "CollectionEmptyHint" });
-                return;
-            }
-
-            selectedCollectionIndex = Mathf.Clamp(selectedCollectionIndex, 0, units.Count - 1);
-            for (int i = 0; i < units.Count; i++)
-            {
-                int index = i;
-                DistroDefinition unit = units[i];
-                VisualElement row = new();
-                row.AddToClassList("collection-row");
-                row.RegisterCallback<PointerEnterEvent>(_ => SelectCollectionUnit(index));
-                row.RegisterCallback<ClickEvent>(_ => SelectCollectionUnit(index));
-
-                Label name = new(DisplayName(unit));
-                name.AddToClassList("collection-row-name");
-                name.style.color = new StyleColor(unit.AccentColor);
-
-                Label languages = new(FormatLanguages(unit));
-                languages.AddToClassList("collection-row-languages");
-
-                row.Add(name);
-                row.Add(languages);
-                collectionList.Add(row);
-                collectionRows.Add(row);
-            }
-
-            SelectCollectionUnit(selectedCollectionIndex);
-        }
-
-        private void SelectCollectionUnit(int index)
-        {
-            IReadOnlyList<DistroDefinition> units = playerCollection.OwnedUnits;
-            if (units.Count == 0)
-            {
-                return;
-            }
-
-            selectedCollectionIndex = Mathf.Clamp(index, 0, units.Count - 1);
-            for (int i = 0; i < collectionRows.Count; i++)
-            {
-                collectionRows[i].EnableInClassList(SelectedClassName, i == selectedCollectionIndex);
-            }
-
-            RenderCollectionDetail(units[selectedCollectionIndex]);
-        }
-
-        private void RenderCollectionDetail(DistroDefinition unit)
-        {
-            collectionDetail.Clear();
-
-            // TODO: Unify this readout with FeaturedUnitPanel when unit presentation grows beyond labels.
-            VisualElement readout = new();
-            readout.AddToClassList("collection-detail-readout");
-
-            Label artLabel = new();
-            DistroArtPresenter.ConfigureArtLabel(artLabel, monospaceFont);
-            AsciiArtFitter artFitter = new(artLabel, monospaceFont);
-            VisualElement artPlaceholder = DistroArtPresenter.CreatePlaceholder();
-            artFitter.SetArt(DistroArtPresenter.Render(artLabel, artPlaceholder, unit));
-            readout.Add(artPlaceholder);
-            readout.Add(artLabel);
-
-            VisualElement details = new();
-            details.AddToClassList("collection-detail-values");
-
-            Label name = new(DisplayName(unit));
-            name.AddToClassList("collection-detail-name");
-            name.style.color = new StyleColor(unit.AccentColor);
-            details.Add(name);
-
-            details.Add(BuildDetailLine("lang", FormatLanguages(unit)));
-            details.Add(BuildDetailLine("passive", string.IsNullOrWhiteSpace(unit.PassiveName) ? "--" : unit.PassiveName));
-            details.Add(BuildDetailLine("uptime", unit.BaseUptime.ToString()));
-            details.Add(BuildDetailLine("ram", unit.BaseRam.ToString()));
-            details.Add(BuildDetailLine("cycles", unit.BaseCyclesPerTurn.ToString()));
-
-            readout.Add(details);
-            collectionDetail.Add(readout);
-
-            Label description = new(string.IsNullOrWhiteSpace(unit.Description) ? "--" : unit.Description);
-            description.AddToClassList("collection-detail-description");
-            collectionDetail.Add(description);
-        }
-
-        private static VisualElement BuildDetailLine(string key, string value)
-        {
-            VisualElement row = new();
-            row.AddToClassList("kv-row");
-
-            Label keyLabel = new(key);
-            keyLabel.AddToClassList("kv-key");
-            Label valueLabel = new(value);
-            valueLabel.AddToClassList("kv-value");
-
-            row.Add(keyLabel);
-            row.Add(valueLabel);
-            return row;
-        }
-
-        private static string DisplayName(DistroDefinition unit)
-        {
-            return string.IsNullOrWhiteSpace(unit.DisplayName) ? unit.name : unit.DisplayName;
-        }
-
-        private static string FormatLanguages(DistroDefinition unit)
-        {
-            return $"{unit.PrimaryLanguage} / {unit.SecondaryLanguage}";
         }
 
         private void StartAmbientSchedules()
@@ -525,7 +386,7 @@ namespace KernelPanic.UI
             shellRoot.RemoveFromClassList("boot-hidden");
             shellRoot.AddToClassList("boot-visible");
             backgroundLog?.Start(UIPreferences.ReducedMotion);
-            ShowStarterModalIfNeeded();
+            starterSelection.ShowIfNeeded(saveData == null || saveData.starterChosen);
             root.Focus();
         }
 
@@ -548,9 +409,9 @@ namespace KernelPanic.UI
                 return;
             }
 
-            if (starterModalActive)
+            if (starterSelection.IsActive)
             {
-                HandleStarterKeyDown(evt);
+                starterSelection.HandleKeyDown(evt);
                 evt.StopPropagation();
                 return;
             }
@@ -583,7 +444,7 @@ namespace KernelPanic.UI
                 return;
             }
 
-            int digitIndex = GetDigitCommandIndex(evt.keyCode);
+            int digitIndex = CommandKeyBindings.GetDigitIndex(evt.keyCode);
             if (digitIndex >= 0)
             {
                 SelectCommand(digitIndex);
@@ -596,194 +457,6 @@ namespace KernelPanic.UI
         {
             root.Focus();
             suppressNextClick = SkipBootIntro();
-        }
-
-        private void ShowStarterModalIfNeeded()
-        {
-            if (saveData == null || saveData.starterChosen)
-            {
-                return;
-            }
-
-            IReadOnlyList<DistroDefinition> starters = GetStarterDistros();
-            if (starters.Count < 3)
-            {
-                Debug.LogWarning("Starter distro selection needs three distros in DistroDatabase.");
-                return;
-            }
-
-            starterModalActive = true;
-            starterConfirming = false;
-            starterConfirmLabel.AddToClassList(HiddenClassName);
-            starterModal.RemoveFromClassList(HiddenClassName);
-
-            for (int i = 0; i < starterCards.Count; i++)
-            {
-                DistroDefinition unit = starters[i];
-                starterNames[i].text = DisplayName(unit);
-                starterNames[i].style.color = new StyleColor(unit.AccentColor);
-                starterLanguages[i].text = FormatLanguages(unit);
-                starterDescriptions[i].text = unit.Description;
-            }
-
-            SelectStarter(0);
-            root.Focus();
-        }
-
-        private IReadOnlyList<DistroDefinition> GetStarterDistros()
-        {
-            return distroDatabase == null ? Array.Empty<DistroDefinition>() : distroDatabase.AllDistros;
-        }
-
-        private void SelectStarter(int index)
-        {
-            IReadOnlyList<DistroDefinition> starters = GetStarterDistros();
-            if (starters.Count == 0)
-            {
-                return;
-            }
-
-            selectedStarterIndex = (index + Mathf.Min(starters.Count, starterCards.Count)) % Mathf.Min(starters.Count, starterCards.Count);
-            starterConfirming = false;
-            starterConfirmLabel.AddToClassList(HiddenClassName);
-
-            for (int i = 0; i < starterCards.Count; i++)
-            {
-                bool selected = i == selectedStarterIndex;
-                starterCards[i].EnableInClassList(SelectedClassName, selected);
-                if (i < starters.Count && selected)
-                {
-                    StyleColor accent = new(starters[i].AccentColor);
-                    starterCards[i].style.borderTopColor = accent;
-                    starterCards[i].style.borderRightColor = accent;
-                    starterCards[i].style.borderBottomColor = accent;
-                    starterCards[i].style.borderLeftColor = accent;
-                }
-                else
-                {
-                    starterCards[i].style.borderTopColor = StyleKeyword.Null;
-                    starterCards[i].style.borderRightColor = StyleKeyword.Null;
-                    starterCards[i].style.borderBottomColor = StyleKeyword.Null;
-                    starterCards[i].style.borderLeftColor = StyleKeyword.Null;
-                }
-            }
-        }
-
-        private void HandleStarterKeyDown(KeyDownEvent evt)
-        {
-            if (evt.keyCode == KeyCode.LeftArrow)
-            {
-                SelectStarter(selectedStarterIndex - 1);
-                return;
-            }
-
-            if (evt.keyCode == KeyCode.RightArrow)
-            {
-                SelectStarter(selectedStarterIndex + 1);
-                return;
-            }
-
-            int digitIndex = GetDigitCommandIndex(evt.keyCode);
-            if (digitIndex >= 0 && digitIndex < 3)
-            {
-                SelectStarter(digitIndex);
-                return;
-            }
-
-            if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
-            {
-                if (starterConfirming)
-                {
-                    ConfirmStarterSelection();
-                    return;
-                }
-
-                ConfirmStarterSelectionIntent();
-                return;
-            }
-
-            if (evt.keyCode == KeyCode.Y && starterConfirming)
-            {
-                ConfirmStarterSelection();
-                return;
-            }
-
-            if (evt.keyCode == KeyCode.Escape || evt.keyCode == KeyCode.N)
-            {
-                starterConfirming = false;
-                starterConfirmLabel.AddToClassList(HiddenClassName);
-            }
-        }
-
-        private void ConfirmStarterSelectionIntent()
-        {
-            IReadOnlyList<DistroDefinition> starters = GetStarterDistros();
-            if (selectedStarterIndex >= starters.Count)
-            {
-                return;
-            }
-
-            starterConfirming = true;
-            starterConfirmLabel.text = $"install {DisplayName(starters[selectedStarterIndex])}? this cannot be undone [Y/n]";
-            starterConfirmLabel.RemoveFromClassList(HiddenClassName);
-        }
-
-        private void ConfirmStarterSelection()
-        {
-            IReadOnlyList<DistroDefinition> starters = GetStarterDistros();
-            if (selectedStarterIndex >= starters.Count)
-            {
-                return;
-            }
-
-            DistroDefinition picked = starters[selectedStarterIndex];
-            playerCollection.Add(picked);
-            for (int i = 0; i < starters.Count; i++)
-            {
-                if (i != selectedStarterIndex)
-                {
-                    gachaService.AddToBannerPool(starters[i]);
-                }
-            }
-
-            saveData.starterChosen = true;
-            SaveCurrentState();
-            featuredUnitPanel.Refresh(playerCollection.OwnedUnits);
-            RefreshCollection();
-
-            starterConfirmLabel.text = $"installing {picked.Id} (1/1)... done";
-            starterConfirmLabel.RemoveFromClassList(HiddenClassName);
-            if (UIPreferences.ReducedMotion)
-            {
-                CloseStarterModal();
-                return;
-            }
-
-            starterCloseSchedule?.Pause();
-            starterCloseSchedule = root.schedule.Execute(CloseStarterModal).StartingIn(600);
-        }
-
-        private void CloseStarterModal()
-        {
-            starterCloseSchedule?.Pause();
-            starterCloseSchedule = null;
-            starterModalActive = false;
-            starterConfirming = false;
-            starterModal.AddToClassList(HiddenClassName);
-            root.Focus();
-        }
-
-        private static int GetDigitCommandIndex(KeyCode keyCode)
-        {
-            return keyCode switch
-            {
-                KeyCode.Alpha1 or KeyCode.Keypad1 => 0,
-                KeyCode.Alpha2 or KeyCode.Keypad2 => 1,
-                KeyCode.Alpha3 or KeyCode.Keypad3 => 2,
-                KeyCode.Alpha4 or KeyCode.Keypad4 => 3,
-                KeyCode.Alpha5 or KeyCode.Keypad5 => 4,
-                _ => -1
-            };
         }
 
         private void SelectCommand(int index)
@@ -833,7 +506,7 @@ namespace KernelPanic.UI
 
         private void ShowCollection()
         {
-            RefreshCollection();
+            collectionScreen.Refresh(playerCollection.OwnedUnits);
             ShowPanel(collectionPanel);
         }
 

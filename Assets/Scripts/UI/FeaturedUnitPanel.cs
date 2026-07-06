@@ -100,11 +100,10 @@ namespace KernelPanic.UI
             populatedState.RemoveFromClassList("hidden");
             emptyState.AddToClassList("hidden");
 
-            string displayName = string.IsNullOrWhiteSpace(unit.DisplayName) ? unit.name : unit.DisplayName;
             titleLabel.text = "[ neofetch ]";
             asciiFitter.SetArt(DistroArtPresenter.Render(asciiLabel, asciiPlaceholder, unit));
-            unitNameLabel.text = displayName;
-            languagesLabel.text = $"{unit.PrimaryLanguage} / {unit.SecondaryLanguage}";
+            unitNameLabel.text = DistroPresentation.DisplayName(unit);
+            languagesLabel.text = DistroPresentation.FormatLanguages(unit);
             passiveLabel.text = string.IsNullOrWhiteSpace(unit.PassiveName) ? "--" : unit.PassiveName;
             bestWaveLabel.text = "--"; // TODO: Bind best-wave stats from SaveService when stats exist.
             SetAccent(ColorUtility.ToHtmlStringRGB(unit.AccentColor));
