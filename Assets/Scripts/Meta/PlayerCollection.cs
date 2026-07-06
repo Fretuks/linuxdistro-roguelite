@@ -13,7 +13,6 @@ namespace KernelPanic.Meta
         private int featuredIndex;
 
         // TODO: Populate owned units from SaveService during bootstrap.
-        // TODO: Add newly unlocked units from GachaService rewards when pulls exist.
         public IReadOnlyList<DistroDefinition> OwnedUnits => ownedUnits;
         public DistroDefinition FeaturedUnit => ownedUnits.Count == 0 ? null : ownedUnits[Math.Clamp(featuredIndex, 0, ownedUnits.Count - 1)];
 
@@ -21,7 +20,7 @@ namespace KernelPanic.Meta
 
         public void Add(DistroDefinition unit)
         {
-            if (unit == null || ownedUnits.Contains(unit))
+            if (unit == null)
             {
                 return;
             }
@@ -30,6 +29,26 @@ namespace KernelPanic.Meta
             ownedUnits.Add(unit);
             featuredIndex = Math.Clamp(featuredIndex, 0, ownedUnits.Count - 1);
             Changed?.Invoke();
+        }
+
+        public int GetOwnedCount(string unitId)
+        {
+            if (string.IsNullOrWhiteSpace(unitId))
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int i = 0; i < ownedUnits.Count; i++)
+            {
+                DistroDefinition unit = ownedUnits[i];
+                if (unit != null && string.Equals(unit.Id, unitId, StringComparison.OrdinalIgnoreCase))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         public void SelectNextFeatured()
