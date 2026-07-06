@@ -545,10 +545,10 @@ Button {
     background-color: var(--kp-panel);
 }
 
-.gacha-banner-detail {
+.gacha-banner-detail-scroll {
     flex-grow: 1;
     min-width: 0;
-    padding: 16px;
+    min-height: 0;
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
@@ -558,6 +558,15 @@ Button {
     border-top-color: var(--kp-border);
     border-bottom-color: var(--kp-border);
     background-color: var(--kp-panel);
+}
+
+.gacha-banner-detail-scroll .unity-scroll-view__content-container {
+    min-width: 0;
+}
+
+.gacha-banner-detail {
+    min-width: 0;
+    padding: 16px;
 }
 
 .gacha-banner-detail .kv-value {
@@ -593,16 +602,15 @@ Button {
 
 .gacha-detail-title {
     color: var(--kp-primary);
-    font-size: 22px;
+    font-size: 20px;
     -unity-font-style: bold;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .gacha-hero {
-    min-height: 310px;
-    max-height: 340px;
-    margin-bottom: 18px;
-    padding: 14px;
+    height: 230px;
+    margin-bottom: 12px;
+    padding: 10px;
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
@@ -623,13 +631,14 @@ Button {
 .gacha-art-card {
     flex-grow: 1;
     min-width: 0;
-    margin-right: 12px;
+    margin-right: 10px;
     align-items: center;
 }
 
 .gacha-art-shell {
     flex-grow: 1;
-    min-height: 220px;
+    min-height: 0;
+    height: 165px;
     width: 100%;
     align-items: center;
     justify-content: center;
@@ -640,47 +649,49 @@ Button {
 .gacha-ascii-art {
     width: 100%;
     min-width: 0;
-    height: 220px;
-    font-size: 18px;
+    height: 165px;
+    font-size: 14px;
 }
 
 .gacha-art-card .ascii-placeholder,
 .gacha-ascii-placeholder {
-    width: 180px;
-    height: 210px;
+    width: 150px;
+    height: 155px;
 }
 
 .gacha-art-name {
-    min-height: 24px;
-    font-size: 16px;
+    min-height: 20px;
+    font-size: 14px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
 }
 
 .gacha-hero-title {
     color: var(--kp-muted);
-    font-size: 15px;
-    margin-top: 8px;
+    font-size: 14px;
+    margin-top: 4px;
     -unity-text-align: middle-center;
 }
 
 .gacha-rules {
     color: var(--kp-muted);
     white-space: normal;
-    margin-top: 10px;
-    margin-bottom: 12px;
+    margin-top: 6px;
+    margin-bottom: 10px;
 }
 
 .gacha-actions {
     flex-direction: row;
-    margin-top: 8px;
-    margin-bottom: 12px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+    margin-bottom: 4px;
 }
 
 .gacha-action-button {
     width: 220px;
-    min-height: 58px;
+    min-height: 48px;
     margin-top: 0;
+    margin-bottom: 8px;
     margin-right: 12px;
     white-space: normal;
     -unity-text-align: middle-center;
