@@ -20,6 +20,7 @@ namespace KernelPanic.Data
         [SerializeField] private bool distroExclusive;
         [SerializeField] private bool isToken;
         [SerializeField, TextArea] private string designNotes;
+        [SerializeField] private List<string> requiresSystem = new();
         [SerializeField] private CardDefinition upgradeTarget;
         [SerializeField] private List<CardEffectDefinition> effects = new();
 
@@ -34,6 +35,7 @@ namespace KernelPanic.Data
         public bool DistroExclusive => distroExclusive;
         public bool IsToken => isToken;
         public string DesignNotes => designNotes;
+        public IReadOnlyList<string> RequiresSystem => requiresSystem;
         public CardDefinition UpgradeTarget => upgradeTarget;
         public IReadOnlyList<CardEffectDefinition> Effects => effects;
     }

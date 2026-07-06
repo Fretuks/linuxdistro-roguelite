@@ -528,9 +528,11 @@ Button {
 }
 
 .collection-tab {
-    width: 92px;
+    min-width: 92px;
     height: 30px;
     margin-right: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
     border-bottom-width: 2px;
     border-bottom-color: transparent;
     background-color: transparent;
@@ -612,6 +614,10 @@ Button {
     border-left-color: var(--kp-primary);
 }
 
+.collection-row.locked {
+    opacity: 0.55;
+}
+
 .collection-row-name {
     font-size: 16px;
     -unity-font-style: bold;
@@ -633,6 +639,18 @@ Button {
     white-space: normal;
     margin-top: 4px;
     margin-bottom: 12px;
+}
+
+.collection-command-row {
+    margin-top: 18px;
+}
+
+.collection-command-row .command-description {
+    width: 190px;
+}
+
+.collection-card-row {
+    margin-top: 6px;
 }
 
 .detail-section-title {
@@ -665,6 +683,10 @@ Button {
 .package-header {
     color: var(--kp-muted);
     margin-bottom: 6px;
+}
+
+.run-language-header {
+    margin-top: 14px;
 }
 
 .package-notice {

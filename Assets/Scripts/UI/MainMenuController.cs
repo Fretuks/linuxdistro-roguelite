@@ -38,6 +38,7 @@ namespace KernelPanic.UI
         [SerializeField] private string motdBody = "unstable userspace detected; keep a rollback shell open.";
         [SerializeField] private DistroDatabase distroDatabase;
         [SerializeField] private CardDatabase cardDatabase;
+        [SerializeField] private LanguageDeckDatabase languageDeckDatabase;
         [SerializeField] private FeaturedUnitPanel featuredUnitPanel = new();
         [SerializeField] private CollectionScreenController collectionScreen = new();
         [SerializeField] private StarterSelectionController starterSelection = new();
@@ -45,6 +46,7 @@ namespace KernelPanic.UI
         private readonly List<CommandMenuEntry> commandEntries = new();
         private readonly List<VisualElement> packageRows = new();
         private readonly List<VisualElement> loadoutRows = new();
+        private readonly List<Language> selectedRunLanguages = new();
         private UIDocument document;
         private VisualElement root;
         private VisualElement shellRoot;
@@ -58,6 +60,7 @@ namespace KernelPanic.UI
         private VisualElement backgroundLogLayer;
         private ScrollView runSetupList;
         private VisualElement runSetupDetail;
+        private ScrollView runSetupPackageScroll;
         private Label appIdLabel;
         private Label entropyLabel;
         private Label pullTokensLabel;
@@ -67,7 +70,7 @@ namespace KernelPanic.UI
         private Label motdBodyLabel;
         private VisualElement motdBlock;
         private Button collectionUnitsButton;
-        private Button collectionCardsButton;
+        private Button collectionLanguagesButton;
         private readonly ScreenFrameController runSetupFrame = new();
         private readonly ScreenFrameController collectionFrame = new();
         private readonly ScreenFrameController gachaFrame = new();
@@ -83,7 +86,7 @@ namespace KernelPanic.UI
         private int selectedCommandIndex;
         private int selectedPackageIndex;
         private string runSetupNotice;
-        private bool collectionShowingCards;
+        private bool collectionShowingLanguages;
         private float bootIntroElapsed;
         private int bootIntroCharacterCount;
         private bool cursorVisible;
@@ -111,7 +114,7 @@ namespace KernelPanic.UI
             BindCommandEntries();
             RegisterCommandEntryCallbacks();
             featuredUnitPanel.Bind(root, monospaceFont);
-            collectionScreen.Bind(root, monospaceFont);
+            collectionScreen.Bind(root, monospaceFont, languageDeckDatabase, cardDatabase, playerCollection);
             BindScreenFrames();
             starterSelection.Bind(root, distroDatabase, HandleStarterConfirmed);
             LoadMetaState();
@@ -171,13 +174,13 @@ namespace KernelPanic.UI
             motdBodyLabel = root.Q<Label>("MotdBodyLabel");
 
             collectionUnitsButton = root.Q<Button>("CollectionUnitsButton");
-            collectionCardsButton = root.Q<Button>("CollectionCardsButton");
+            collectionLanguagesButton = root.Q<Button>("CollectionLanguagesButton");
         }
 
         private void BindScreenFrames()
         {
             runSetupFrame.Bind(runSetupPanel, "$ ./start_run --configure", "[esc] back   [arrows] navigate   [enter] select   [b] boot run", ShowMainMenu);
-            collectionFrame.Bind(collectionPanel, "$ ls ~/collection", "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [enter] select", ShowMainMenu);
+            collectionFrame.Bind(collectionPanel, "$ ls ~/collection", "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [enter] select", HandleCollectionBack);
             gachaFrame.Bind(gachaPanel, "$ curl gacha.sh | sh", "[esc] back", ShowMainMenu);
             settingsFrame.Bind(settingsPanel, "$ dpkg-reconfigure kernel-panic", "[esc] back", ShowMainMenu);
         }
@@ -206,16 +209,18 @@ namespace KernelPanic.UI
         {
             root.RegisterCallback<KeyDownEvent>(HandleKeyDown);
             root.RegisterCallback<PointerDownEvent>(HandlePointerDown);
+            collectionScreen.ViewChanged += SyncCollectionFrame;
             collectionUnitsButton.RegisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
-            collectionCardsButton.RegisterCallback<ClickEvent>(HandleCollectionCardsTabClicked);
+            collectionLanguagesButton.RegisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
         }
 
         private void UnregisterCallbacks()
         {
             root.UnregisterCallback<KeyDownEvent>(HandleKeyDown);
             root.UnregisterCallback<PointerDownEvent>(HandlePointerDown);
+            collectionScreen.ViewChanged -= SyncCollectionFrame;
             collectionUnitsButton.UnregisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
-            collectionCardsButton.UnregisterCallback<ClickEvent>(HandleCollectionCardsTabClicked);
+            collectionLanguagesButton.UnregisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
         }
 
         private void HandleCollectionUnitsTabClicked(ClickEvent evt)
@@ -224,9 +229,9 @@ namespace KernelPanic.UI
             evt.StopPropagation();
         }
 
-        private void HandleCollectionCardsTabClicked(ClickEvent evt)
+        private void HandleCollectionLanguagesTabClicked(ClickEvent evt)
         {
-            ShowCollectionCards();
+            ShowCollectionLanguages();
             evt.StopPropagation();
         }
 
@@ -468,6 +473,13 @@ namespace KernelPanic.UI
                 return;
             }
 
+            if (evt.keyCode == KeyCode.Escape && IsCollectionVisible() && collectionScreen.BackFromSubview())
+            {
+                SyncCollectionFrame();
+                evt.StopPropagation();
+                return;
+            }
+
             if (evt.keyCode == KeyCode.Escape && IsSubScreenVisible())
             {
                 ShowMainMenu();
@@ -501,9 +513,32 @@ namespace KernelPanic.UI
 
             if (IsCollectionVisible())
             {
-                if (evt.keyCode == KeyCode.LeftArrow || evt.keyCode == KeyCode.RightArrow || evt.keyCode == KeyCode.Tab)
+                if (!collectionScreen.IsCardSubview &&
+                    (evt.keyCode == KeyCode.LeftArrow || evt.keyCode == KeyCode.RightArrow || evt.keyCode == KeyCode.Tab))
                 {
                     ToggleCollectionTab();
+                    evt.StopPropagation();
+                    return;
+                }
+
+                if (evt.keyCode == KeyCode.UpArrow)
+                {
+                    collectionScreen.SelectRelative(-1);
+                    evt.StopPropagation();
+                    return;
+                }
+
+                if (evt.keyCode == KeyCode.DownArrow)
+                {
+                    collectionScreen.SelectRelative(1);
+                    evt.StopPropagation();
+                    return;
+                }
+
+                if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+                {
+                    collectionScreen.ActivateSelected();
+                    SyncCollectionFrame();
                     evt.StopPropagation();
                     return;
                 }
@@ -568,6 +603,7 @@ namespace KernelPanic.UI
         {
             packageRows.Clear();
             loadoutRows.Clear();
+            selectedRunLanguages.Clear();
             cardLoadout.ClearAll();
             runSetupList?.Clear();
             runSetupDetail?.Clear();
@@ -634,6 +670,8 @@ namespace KernelPanic.UI
 
             selectedPackageIndex = (index + packageRows.Count) % packageRows.Count;
             cardLoadout.ClearLoadout(playerCollection.OwnedUnits[selectedPackageIndex]);
+            selectedRunLanguages.Clear();
+            runSetupPackageScroll = null;
             runSetupNotice = null;
             RefreshPackageSelection();
         }
@@ -650,6 +688,7 @@ namespace KernelPanic.UI
 
         private void RenderSelectedPackageDetail()
         {
+            Vector2 previousScrollOffset = runSetupPackageScroll == null ? Vector2.zero : runSetupPackageScroll.scrollOffset;
             runSetupDetail?.Clear();
             loadoutRows.Clear();
             if (runSetupDetail == null || selectedPackageIndex < 0 || selectedPackageIndex >= playerCollection.OwnedUnits.Count)
@@ -704,9 +743,31 @@ namespace KernelPanic.UI
                 packageList.ElementAt(packageList.childCount - 1).AddToClassList("package-empty");
             }
 
+            if (equippedCardIds.Count >= CardLoadout.MaxEquippedCards)
+            {
+                AddRunLanguageSelection(packageList);
+            }
+            else
+            {
+                selectedRunLanguages.Clear();
+            }
+
             packageScroll.Add(packageList);
             runSetupDetail.Add(packageScroll);
-            runSetupDetail.Add(BuildBootRow(unit, equippedCardIds.Count > 0));
+            runSetupDetail.Add(BuildBootRow(unit, CanBootRun(equippedCardIds)));
+            runSetupPackageScroll = packageScroll;
+            RestoreRunSetupPackageScroll(previousScrollOffset);
+        }
+
+        private void RestoreRunSetupPackageScroll(Vector2 offset)
+        {
+            if (runSetupPackageScroll == null)
+            {
+                return;
+            }
+
+            runSetupPackageScroll.scrollOffset = offset;
+            runSetupPackageScroll.schedule.Execute(() => runSetupPackageScroll.scrollOffset = offset).StartingIn(0);
         }
 
         private VisualElement BuildRunSetupReadout(DistroDefinition unit)
@@ -815,6 +876,80 @@ namespace KernelPanic.UI
             return row;
         }
 
+        private void AddRunLanguageSelection(VisualElement packageList)
+        {
+            IReadOnlyList<LanguageCatalogEntry> availableLanguages = GetAvailableRunLanguages();
+            packageList.Add(new Label("programming languages") { name = "RunSetupLanguagesHeader" });
+            packageList.ElementAt(packageList.childCount - 1).AddToClassList("package-header");
+            packageList.ElementAt(packageList.childCount - 1).AddToClassList("run-language-header");
+
+            if (selectedRunLanguages.Count < 2)
+            {
+                packageList.Add(new Label($"select {2 - selectedRunLanguages.Count} more language(s) before booting") { name = "RunSetupLanguagesNotice" });
+                packageList.ElementAt(packageList.childCount - 1).AddToClassList("package-notice");
+            }
+
+            if (availableLanguages.Count == 0)
+            {
+                packageList.Add(new Label("no programming languages unlocked") { name = "RunSetupLanguagesEmpty" });
+                packageList.ElementAt(packageList.childCount - 1).AddToClassList("package-empty");
+                return;
+            }
+
+            for (int i = 0; i < availableLanguages.Count; i++)
+            {
+                LanguageCatalogEntry language = availableLanguages[i];
+                packageList.Add(BuildRunLanguageRow(language, IsRunLanguageSelected(language.Language)));
+            }
+        }
+
+        private VisualElement BuildRunLanguageRow(LanguageCatalogEntry language, bool selected)
+        {
+            VisualElement row = new();
+            row.AddToClassList("package-row");
+            row.AddToClassList("run-language-row");
+            row.EnableInClassList("equipped", selected);
+            row.RegisterCallback<ClickEvent>(_ => ToggleRunLanguage(language.Language));
+
+            VisualElement summary = new();
+            summary.AddToClassList("package-summary");
+            summary.Add(new Label(selected ? "[x]" : "[ ]") { name = "RunSetupLanguageMarker" });
+            summary.ElementAt(0).AddToClassList("package-marker");
+
+            summary.Add(new Label(language.DisplayName) { name = "RunSetupLanguageName" });
+            summary.ElementAt(1).AddToClassList("package-name");
+
+            summary.Add(new Label(language.ResolutionTrack.ToString()) { name = "RunSetupLanguageTrack" });
+            summary.ElementAt(2).AddToClassList("package-meta");
+            row.Add(summary);
+
+            row.Add(new Label(language.IdentityTag) { name = "RunSetupLanguageDescription" });
+            row.ElementAt(1).AddToClassList("package-description");
+            return row;
+        }
+
+        private void ToggleRunLanguage(Language language)
+        {
+            if (IsRunLanguageSelected(language))
+            {
+                selectedRunLanguages.Remove(language);
+                runSetupNotice = null;
+                RenderSelectedPackageDetail();
+                return;
+            }
+
+            if (selectedRunLanguages.Count >= 2)
+            {
+                runSetupNotice = "language limit reached";
+                RenderSelectedPackageDetail();
+                return;
+            }
+
+            selectedRunLanguages.Add(language);
+            runSetupNotice = null;
+            RenderSelectedPackageDetail();
+        }
+
         private void ToggleCardInSelectedLoadout(DistroDefinition unit, CardDefinition card)
         {
             runSetupNotice = TryToggleLoadoutCard(unit, card);
@@ -849,6 +984,39 @@ namespace KernelPanic.UI
             }
 
             return false;
+        }
+
+        private IReadOnlyList<LanguageCatalogEntry> GetAvailableRunLanguages()
+        {
+            List<LanguageCatalogEntry> available = new();
+            IReadOnlyList<LanguageCatalogEntry> languages = LanguageCatalog.All;
+            for (int i = 0; i < languages.Count; i++)
+            {
+                if (LanguageUnlock.IsUnlocked(languages[i].Language, playerCollection))
+                {
+                    available.Add(languages[i]);
+                }
+            }
+
+            return available;
+        }
+
+        private bool IsRunLanguageSelected(Language language)
+        {
+            for (int i = 0; i < selectedRunLanguages.Count; i++)
+            {
+                if (selectedRunLanguages[i] == language)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool CanBootRun(IReadOnlyList<string> equippedCardIds)
+        {
+            return equippedCardIds.Count >= CardLoadout.MaxEquippedCards && selectedRunLanguages.Count == 2;
         }
 
         private static string FormatLoadoutFailure(CardLoadoutFailureReason reason)
@@ -890,9 +1058,18 @@ namespace KernelPanic.UI
 
             DistroDefinition unit = playerCollection.OwnedUnits[selectedPackageIndex];
             IReadOnlyList<string> equippedCardIds = cardLoadout.GetEquippedCardIds(unit.Id);
-            if (equippedCardIds.Count < 1)
+            if (equippedCardIds.Count < CardLoadout.MaxEquippedCards)
             {
-                runSetupNotice = "boot: no packages staged";
+                runSetupNotice = equippedCardIds.Count == 0
+                    ? "boot: no packages staged"
+                    : $"boot: stage {CardLoadout.MaxEquippedCards} packages";
+                RenderSelectedPackageDetail();
+                return;
+            }
+
+            if (selectedRunLanguages.Count < 2)
+            {
+                runSetupNotice = "boot: select 2 programming languages";
                 RenderSelectedPackageDetail();
                 return;
             }
@@ -950,6 +1127,7 @@ namespace KernelPanic.UI
         private void ShowMainMenu()
         {
             cardLoadout.ClearAll();
+            selectedRunLanguages.Clear();
             runSetupNotice = null;
             ShowPanel(mainMenuPanel);
             root.Focus();
@@ -961,35 +1139,50 @@ namespace KernelPanic.UI
             ShowPanel(collectionPanel);
         }
 
-        private void ShowCollectionUnits()
+        private void HandleCollectionBack()
         {
-            collectionShowingCards = false;
-            collectionUnitsButton.EnableInClassList(SelectedClassName, true);
-            collectionCardsButton.EnableInClassList(SelectedClassName, false);
-            collectionFrame.SetTitle("$ ls ~/collection");
-            collectionScreen.RefreshUnits(playerCollection.OwnedUnits);
+            if (collectionScreen.BackFromSubview())
+            {
+                SyncCollectionFrame();
+                return;
+            }
+
+            ShowMainMenu();
         }
 
-        private void ShowCollectionCards()
+        private void ShowCollectionUnits()
         {
-            collectionShowingCards = true;
+            collectionShowingLanguages = false;
+            collectionUnitsButton.EnableInClassList(SelectedClassName, true);
+            collectionLanguagesButton.EnableInClassList(SelectedClassName, false);
+            collectionScreen.RefreshUnits(playerCollection.OwnedUnits);
+            SyncCollectionFrame();
+        }
+
+        private void ShowCollectionLanguages()
+        {
+            collectionShowingLanguages = true;
             collectionUnitsButton.EnableInClassList(SelectedClassName, false);
-            collectionCardsButton.EnableInClassList(SelectedClassName, true);
-            DistroDefinition featuredUnit = playerCollection.FeaturedUnit;
-            string distroId = featuredUnit == null ? "--" : featuredUnit.Id;
-            collectionFrame.SetTitle($"$ dpkg -l --distro={distroId}");
-            collectionScreen.RefreshCards(playerCollection.FeaturedUnit);
+            collectionLanguagesButton.EnableInClassList(SelectedClassName, true);
+            collectionScreen.ShowLanguages();
+            SyncCollectionFrame();
         }
 
         private void ToggleCollectionTab()
         {
-            if (collectionShowingCards)
+            if (collectionShowingLanguages)
             {
                 ShowCollectionUnits();
                 return;
             }
 
-            ShowCollectionCards();
+            ShowCollectionLanguages();
+        }
+
+        private void SyncCollectionFrame()
+        {
+            collectionFrame.SetTitle(collectionScreen.CurrentTitle);
+            collectionFrame.SetHint(collectionScreen.CurrentHint);
         }
 
         private void ShowGacha()
