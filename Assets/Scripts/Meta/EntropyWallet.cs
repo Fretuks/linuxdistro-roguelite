@@ -7,6 +7,11 @@ namespace KernelPanic.Meta
     {
         public int Balance { get; private set; }
 
+        public void SetBalance(int amount)
+        {
+            Balance = amount < 0 ? 0 : amount;
+        }
+
         public void Add(int amount)
         {
             Balance += amount;

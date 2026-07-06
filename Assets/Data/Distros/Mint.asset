@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Mint
   primaryLanguage: 3
   secondaryLanguage: 4
-  passive: {fileID: 11400000, guid: a1100000000000000000000000000003, type: 2}
+  passive: {fileID: 11400000, guid: d97481a7d54be2045a96165d3977c980, type: 2}
   description: Comfort incarnate. No surprises, no drama, ever.
   playstyleSummary: zero-variance comfort. every number lands at its ceiling, so you always know exactly what a turn does -- at the cost of a high-roll upside.
   languageBlurbs:
@@ -30,8 +30,8 @@ MonoBehaviour:
   baseRam: 5
   baseCyclesPerTurn: 3
   exclusiveCards:
-  - {fileID: 11400000, guid: c1a50000000000000000000000000001, type: 2}
-  - {fileID: 11400000, guid: c1a50000000000000000000000000002, type: 2}
-  - {fileID: 11400000, guid: c1a50000000000000000000000000003, type: 2}
-  - {fileID: 11400000, guid: c1a50000000000000000000000000004, type: 2}
-  - {fileID: 11400000, guid: c1a50000000000000000000000000005, type: 2}
+  - {fileID: 11400000, guid: 258f2221f41c405468e0024e8e769614, type: 2}
+  - {fileID: 11400000, guid: ab370770e5f6c544996be970b87e7801, type: 2}
+  - {fileID: 11400000, guid: cdde7bad9bde5ff44a047263bce1bb4e, type: 2}
+  - {fileID: 11400000, guid: 698dfb4b10be9f2419ca74e0b3443d48, type: 2}
+  - {fileID: 11400000, guid: e6c02c38647698744903032f93fb30da, type: 2}

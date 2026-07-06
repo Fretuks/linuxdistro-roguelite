@@ -16,6 +16,7 @@
                 <ui:Label name="AppIdLabel" class="status-text" />
                 <ui:VisualElement class="status-right">
                     <ui:Label name="EntropyLabel" class="currency-text" />
+                    <ui:Button name="RootCreditsToEntropyButton" text="+" class="currency-plus-button" focusable="false" />
                     <ui:Label name="PullTokensLabel" class="currency-text" />
                     <ui:Label text="uid=1000(player)" class="status-text" />
                 </ui:VisualElement>
@@ -186,6 +187,36 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:Label name="StarterConfirmLabel" class="starter-confirm hidden" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="RootCreditExchangeModal" class="modal-overlay hidden">
+            <ui:VisualElement class="root-credit-dialog">
+                <ui:Label text="exchange root-credits" class="starter-title" />
+                <ui:Label text="convert root-credits into entropy at 1:1. entropy cannot be converted back." class="starter-instruction" />
+                <ui:VisualElement class="exchange-summary">
+                    <ui:VisualElement class="kv-row">
+                        <ui:Label text="root-credits" class="kv-key" />
+                        <ui:Label name="RootCreditExchangeBalanceLabel" class="kv-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="kv-row">
+                        <ui:Label text="entropy gain" class="kv-key" />
+                        <ui:Label name="RootCreditExchangePreviewLabel" class="kv-value" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:TextField name="RootCreditExchangeInput" label="amount" class="exchange-input" />
+                <ui:VisualElement class="exchange-step-row">
+                    <ui:Button name="RootCreditExchangeMinusHundredButton" text="-100" class="terminal-button exchange-step-button" />
+                    <ui:Button name="RootCreditExchangeMinusOneButton" text="-1" class="terminal-button exchange-step-button" />
+                    <ui:Button name="RootCreditExchangeNoneButton" text="none" class="terminal-button exchange-step-button" />
+                    <ui:Button name="RootCreditExchangePlusOneButton" text="+1" class="terminal-button exchange-step-button" />
+                    <ui:Button name="RootCreditExchangePlusHundredButton" text="+100" class="terminal-button exchange-step-button" />
+                    <ui:Button name="RootCreditExchangeMaxButton" text="max" class="terminal-button exchange-step-button" />
+                </ui:VisualElement>
+                <ui:Label name="RootCreditExchangeMessageLabel" class="starter-confirm hidden" />
+                <ui:VisualElement class="exchange-confirm-row">
+                    <ui:Button name="RootCreditExchangeCancelButton" text="git merge --abort" class="terminal-button exchange-confirm-button" />
+                    <ui:Button name="RootCreditExchangeConfirmButton" text="git merge root-credits --into entropy" class="terminal-button exchange-confirm-button" />
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

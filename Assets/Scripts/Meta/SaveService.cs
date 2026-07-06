@@ -58,8 +58,13 @@ namespace KernelPanic.Meta
     public sealed class SaveData
     {
         public bool starterChosen;
+        public int entropyBalance;
+        public int rootCredits;
+        public int standardPullCurrency;
+        public int limitedPullCurrency;
         public List<string> ownedUnitIds = new();
         public List<string> bannerPoolIds = new();
+        public GachaBannerState beginnerBannerState = new(GachaService.BeginnerBannerId);
         public LastRunLoadoutSaveEntry lastRunLoadout = new();
 
         public static SaveData CreateDefault()
@@ -71,6 +76,9 @@ namespace KernelPanic.Meta
         {
             ownedUnitIds ??= new List<string>();
             bannerPoolIds ??= new List<string>();
+            beginnerBannerState ??= new GachaBannerState(GachaService.BeginnerBannerId);
+            beginnerBannerState.bannerId = GachaService.BeginnerBannerId;
+            beginnerBannerState.EnsureLists();
             lastRunLoadout ??= new LastRunLoadoutSaveEntry();
             lastRunLoadout.EnsureLists();
         }
