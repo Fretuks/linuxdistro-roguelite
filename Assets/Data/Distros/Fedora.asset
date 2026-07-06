@@ -30,8 +30,8 @@ MonoBehaviour:
   baseRam: 5
   baseCyclesPerTurn: 3
   exclusiveCards:
-  - {fileID: 11400000, guid: 93ddfe2f35c5c4447b1e5f49b50c544d, type: 2}
-  - {fileID: 11400000, guid: e6a3f582f36bb2647ab6101d60a05075, type: 2}
-  - {fileID: 11400000, guid: e0a15eebcb5cb7b409a6afe60710e1e1, type: 2}
-  - {fileID: 11400000, guid: fde58599fc89f4f4ab515612f4f481f7, type: 2}
-  - {fileID: 11400000, guid: 7f1a9912cb72c5b448fa2cb101eb9785, type: 2}
+  - {fileID: 11400000, guid: 4dfd40ca206341ba9a1a486d69994611, type: 2}
+  - {fileID: 11400000, guid: 11e141b975f8ab190abf6c267067b575, type: 2}
+  - {fileID: 11400000, guid: b6e048c6b94f10920a31d4c7069ba20f, type: 2}
+  - {fileID: 11400000, guid: 856019cbd78921a9c8846de8f81029b2, type: 2}
+  - {fileID: 11400000, guid: 361650f1e83cad1119b747d294991569, type: 2}

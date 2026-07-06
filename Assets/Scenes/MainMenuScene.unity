@@ -306,6 +306,6 @@ MonoBehaviour:
   monospaceFont: {fileID: 0}
   motdBody: unstable userspace detected; keep a rollback shell open.
   distroDatabase: {fileID: 11400000, guid: 4d88ca5446fa4d80b2fbd4b12697cb7c, type: 2}
-  cardDatabase: {fileID: 11400000, guid: 6a8a9f37c98a4a7a9e67ab15d2d22208, type: 2}
+  cardDatabase: {fileID: 11400000, guid: 1632132e32bfc31e8a293140f5908aa3, type: 2}
   languageDeckDatabase: {fileID: 11400000, guid: a7d20000000000000000000000000001, type: 2}
   featuredUnitPanel: {}

@@ -10,41 +10,55 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4222a6b8-add3-4f43-9c42-fd6bb5a76169" name="Changes" comment="" />
+    <list default="true" id="4222a6b8-add3-4f43-9c42-fd6bb5a76169" name="Changes" comment="fix some stuff">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/CardDatabase.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/CardDatabase.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Data/Distros/Fedora.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Distros/Fedora.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Data/Distros/Mint.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Distros/Mint.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Data/Distros/Ubuntu.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Distros/Ubuntu.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/MainMenuScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/MainMenuScene.unity" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="32" />
+    <option name="cachedIndexableFilesCount" value="33" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="meta-fretux" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "Fretuks"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Fretuks&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Fretuks/LinuxDistrosButTheyAreBreedable.git",
-    "accountId": "6d14636d-cbde-4085-b66d-c0a0ec0a2b36"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Fretuks/LinuxDistrosButTheyAreBreedable.git&quot;,
+    &quot;accountId&quot;: &quot;6d14636d-cbde-4085-b66d-c0a0ec0a2b36&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Languages/Python/PyPrint.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Ubuntu/AskUbuntu.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Fedora.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Mint.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Data/LanguageDeckDatabase.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI.meta" root0="FORCE_HIGHLIGHTING" />
   </component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -52,23 +66,23 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.438509361801407" />
-      <entry key="MS500" value="3.790393521918326" />
-      <entry key="S2" value="5.310264559045734" />
-      <entry key="S5" value="7.282397907577572" />
-      <entry key="S10" value="15.927836578313265" />
-      <entry key="S30" value="42.46303584188099" />
-      <entry key="S60" value="58.552982439383754" />
-      <entry key="M2" value="77.01353109658214" />
-      <entry key="M5" value="124.26211764068626" />
-      <entry key="M10" value="187.4266114714968" />
-      <entry key="M15" value="232.21272534466814" />
-      <entry key="M30" value="307.8116124440359" />
-      <entry key="H1" value="377.3836648034463" />
-      <entry key="H2" value="498.1870804196365" />
-      <entry key="H4" value="744.4498046005001" />
-      <entry key="D1" value="1430.7019790438612" />
-      <entry key="W1" value="1661.1944647099226" />
+      <entry key="MS100" value="1.482178970328315" />
+      <entry key="MS500" value="5.220293323035407" />
+      <entry key="S2" value="15.110381437426224" />
+      <entry key="S5" value="29.93408509304169" />
+      <entry key="S10" value="44.33586870758566" />
+      <entry key="S30" value="64.56925559717953" />
+      <entry key="S60" value="80.1774081422394" />
+      <entry key="M2" value="109.60744216784741" />
+      <entry key="M5" value="187.35878170407776" />
+      <entry key="M10" value="278.0056725442425" />
+      <entry key="M15" value="339.84053538410393" />
+      <entry key="M30" value="443.79384409424625" />
+      <entry key="H1" value="535.4516600477386" />
+      <entry key="H2" value="668.6507349581034" />
+      <entry key="H4" value="921.1954281396248" />
+      <entry key="D1" value="1618.6864737623291" />
+      <entry key="W1" value="1853.3671876763735" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -77,36 +91,36 @@
       <entry key="S5" value="0.0" />
       <entry key="S10" value="0.0" />
       <entry key="S30" value="0.0" />
-      <entry key="S60" value="2.2539392675032193E-205" />
-      <entry key="M2" value="7.861676298626748E-103" />
-      <entry key="M5" value="2.7503540141502405E-41" />
-      <entry key="M10" value="9.065339519756739E-21" />
-      <entry key="M15" value="6.267607481808273E-14" />
-      <entry key="M30" value="4.33524801527939E-7" />
-      <entry key="H1" value="0.0011403631334612554" />
-      <entry key="H2" value="0.0584892562705743" />
-      <entry key="H4" value="0.41888725636908325" />
-      <entry key="D1" value="2.1608122068775386" />
-      <entry key="W1" value="2.8626186893709065" />
+      <entry key="S60" value="1.8521122000330198E-207" />
+      <entry key="M2" value="7.126523134420146E-104" />
+      <entry key="M5" value="1.0527702760328506E-41" />
+      <entry key="M10" value="5.608627310934019E-21" />
+      <entry key="M15" value="4.55075507927908E-14" />
+      <entry key="M30" value="3.694067137080059E-7" />
+      <entry key="H1" value="0.0010526611299911655" />
+      <entry key="H2" value="0.05619514654244392" />
+      <entry key="H4" value="0.41059012751703533" />
+      <entry key="D1" value="2.1536192130443483" />
+      <entry key="W1" value="2.861255429828971" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.3875301487723088" />
-      <entry key="MS500" value="3.341519097174889" />
-      <entry key="S2" value="4.620934944688695" />
-      <entry key="S5" value="6.797875372803498" />
-      <entry key="S10" value="15.62661706090063" />
-      <entry key="S30" value="42.344183639887014" />
-      <entry key="S60" value="58.49025243429429" />
-      <entry key="M2" value="76.97900973543229" />
-      <entry key="M5" value="124.24288430135377" />
-      <entry key="M10" value="187.4141399952993" />
-      <entry key="M15" value="232.2033968750635" />
-      <entry key="M30" value="307.80627055033676" />
-      <entry key="H1" value="377.38190086855104" />
-      <entry key="H2" value="498.2439668119673" />
-      <entry key="H4" value="744.8676908695711" />
-      <entry key="D1" value="1432.8624958433536" />
-      <entry key="W1" value="1664.0570341385317" />
+      <entry key="MS100" value="1.443374144570072" />
+      <entry key="MS500" value="5.186644773881211" />
+      <entry key="S2" value="15.084641466792414" />
+      <entry key="S5" value="29.912861953873257" />
+      <entry key="S10" value="44.31994416455515" />
+      <entry key="S30" value="64.56146656401751" />
+      <entry key="S60" value="80.17207805879922" />
+      <entry key="M2" value="109.6011939785042" />
+      <entry key="M5" value="187.349704546343" />
+      <entry key="M10" value="277.9969582996541" />
+      <entry key="M15" value="339.83305788436286" />
+      <entry key="M30" value="443.7889183946696" />
+      <entry key="H1" value="535.4498389336884" />
+      <entry key="H2" value="668.705292150319" />
+      <entry key="H4" value="921.6049877340809" />
+      <entry key="D1" value="1620.8397902672" />
+      <entry key="W1" value="1856.2283926840819" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -118,28 +132,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "cidr.known.project.marker": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "ml.llm.LLMThirdPartyAiProvidersConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMThirdPartyAiProvidersConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
     <configuration name="Start Unity" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Unity.exe" />
@@ -193,6 +207,8 @@
       <workItem from="1783260969262" duration="51000" />
       <workItem from="1783262049096" duration="2156000" />
       <workItem from="1783330590375" duration="18451000" />
+      <workItem from="1783371975450" duration="26000" />
+      <workItem from="1783372397891" duration="581000" />
     </task>
     <task id="LOCAL-00001" summary="implement main screen">
       <option name="closed" value="true" />
