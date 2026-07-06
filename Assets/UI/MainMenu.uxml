@@ -28,7 +28,7 @@
                             <ui:Label text="KERNEL PANIC" class="terminal-title" />
                             <ui:Label name="TitleCursorLabel" text="█" class="blink-cursor" />
                         </ui:VisualElement>
-                        <ui:Label text="roguelike kernel shell / unstable userspace" class="tagline" />
+                        <ui:Label text="boot media detected / choose a distro" class="tagline" />
 
                         <ui:VisualElement class="command-list">
                             <ui:VisualElement name="CommandStartRun" class="command-row">
