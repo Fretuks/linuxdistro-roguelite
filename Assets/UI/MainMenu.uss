@@ -1075,6 +1075,7 @@ ScrollView .unity-base-slider__dragger {
 }
 
 .root-credit-dialog {
+    position: relative;
     width: 82%;
     height: 72%;
     padding: 28px;
@@ -1088,6 +1089,35 @@ ScrollView .unity-base-slider__dragger {
     border-top-color: var(--kp-amber);
     border-bottom-color: var(--kp-amber);
     background-color: var(--kp-bg-solid);
+}
+
+.modal-close-button {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    padding-left: 0;
+    padding-right: 0;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-amber);
+    border-right-color: var(--kp-amber);
+    border-top-color: var(--kp-amber);
+    border-bottom-color: var(--kp-amber);
+    background-color: transparent;
+    color: var(--kp-amber);
+    -unity-text-align: middle-center;
+}
+
+.modal-close-button:hover {
+    color: var(--kp-primary);
+    border-left-color: var(--kp-primary);
+    border-right-color: var(--kp-primary);
+    border-top-color: var(--kp-primary);
+    border-bottom-color: var(--kp-primary);
 }
 
 .exchange-summary {

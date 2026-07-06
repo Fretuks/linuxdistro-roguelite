@@ -84,6 +84,7 @@ namespace KernelPanic.UI
         private Button rootCreditExchangeMaxButton;
         private Button rootCreditExchangeConfirmButton;
         private Button rootCreditExchangeCancelButton;
+        private Button rootCreditExchangeCloseButton;
         private Button collectionUnitsButton;
         private Button collectionLanguagesButton;
         private readonly ScreenFrameController runSetupFrame = new();
@@ -214,6 +215,7 @@ namespace KernelPanic.UI
             rootCreditExchangeMaxButton = root.Q<Button>("RootCreditExchangeMaxButton");
             rootCreditExchangeConfirmButton = root.Q<Button>("RootCreditExchangeConfirmButton");
             rootCreditExchangeCancelButton = root.Q<Button>("RootCreditExchangeCancelButton");
+            rootCreditExchangeCloseButton = root.Q<Button>("RootCreditExchangeCloseButton");
             collectionUnitsButton = root.Q<Button>("CollectionUnitsButton");
             collectionLanguagesButton = root.Q<Button>("CollectionLanguagesButton");
         }
@@ -304,6 +306,16 @@ namespace KernelPanic.UI
                 rootCreditExchangeCancelButton.clicked += CloseRootCreditExchange;
             }
 
+            if (rootCreditExchangeCloseButton != null)
+            {
+                rootCreditExchangeCloseButton.clicked += CloseRootCreditExchange;
+            }
+
+            if (rootCreditExchangeModal != null)
+            {
+                rootCreditExchangeModal.RegisterCallback<KeyDownEvent>(HandleRootCreditExchangeKeyDown, TrickleDown.TrickleDown);
+            }
+
             collectionScreen.ViewChanged += SyncCollectionFrame;
             collectionUnitsButton.RegisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
             collectionLanguagesButton.RegisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
@@ -363,6 +375,16 @@ namespace KernelPanic.UI
                 rootCreditExchangeCancelButton.clicked -= CloseRootCreditExchange;
             }
 
+            if (rootCreditExchangeCloseButton != null)
+            {
+                rootCreditExchangeCloseButton.clicked -= CloseRootCreditExchange;
+            }
+
+            if (rootCreditExchangeModal != null)
+            {
+                rootCreditExchangeModal.UnregisterCallback<KeyDownEvent>(HandleRootCreditExchangeKeyDown, TrickleDown.TrickleDown);
+            }
+
             collectionScreen.ViewChanged -= SyncCollectionFrame;
             collectionUnitsButton.UnregisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
             collectionLanguagesButton.UnregisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
@@ -398,6 +420,17 @@ namespace KernelPanic.UI
             rootCreditExchangeOpen = false;
             rootCreditExchangeModal?.AddToClassList(HiddenClassName);
             root.Focus();
+        }
+
+        private void HandleRootCreditExchangeKeyDown(KeyDownEvent evt)
+        {
+            if (!rootCreditExchangeOpen || evt.keyCode != KeyCode.Escape)
+            {
+                return;
+            }
+
+            CloseRootCreditExchange();
+            evt.StopImmediatePropagation();
         }
 
         private void HandleRootCreditExchangeInputChanged(ChangeEvent<string> evt)

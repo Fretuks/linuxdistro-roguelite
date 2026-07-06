@@ -191,6 +191,7 @@
         </ui:VisualElement>
         <ui:VisualElement name="RootCreditExchangeModal" class="modal-overlay hidden">
             <ui:VisualElement class="root-credit-dialog">
+                <ui:Button name="RootCreditExchangeCloseButton" text="X" class="modal-close-button" focusable="false" />
                 <ui:Label text="exchange root-credits" class="starter-title" />
                 <ui:Label text="convert root-credits into entropy at 1:1. entropy cannot be converted back." class="starter-instruction" />
                 <ui:VisualElement class="exchange-summary">
