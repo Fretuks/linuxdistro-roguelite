@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
+  m_Name: JsTypeof
+  m_EditorClassIdentifier: 
+  id: lang_js_typeof
+  displayName: typeof
+  description: deal 8; 25% chance to deal NaN (0) instead.
+  flavorText: the answer is probably object.
+  language: 4
+  rarity: 0
+  cycleCost: 1
+  resolutionTrack: 0
+  distroExclusive: 0
+  isToken: 0
+  designNotes: coercion gag - 25% roll converts hit to 0.
+  requiresSystem:
+  - damage-range-roll
+  upgradeTarget: {fileID: 0}
+  effects: []

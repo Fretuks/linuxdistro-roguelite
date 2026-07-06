@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
+  m_Name: JsConsoleLog
+  m_EditorClassIdentifier: 
+  id: lang_js_console_log
+  displayName: console.log()
+  description: deal 3-9.
+  flavorText: console.log('here'); console.log('here2');
+  language: 4
+  rarity: 0
+  cycleCost: 0
+  resolutionTrack: 0
+  distroExclusive: 0
+  isToken: 0
+  designNotes: JS variance roll 3-9 at resolution.
+  requiresSystem:
+  - damage-range-roll
+  upgradeTarget: {fileID: 0}
+  effects: []
