@@ -22,7 +22,7 @@ namespace KernelPanic.Data
             new(Language.Java, "Java", "warming vm", ResolutionTrack.Native, "TODO: Java starts expensive and gets cheaper as the combat warms up. Signature mechanic copy pending.", null, Distro("debian", "Debian"), Distro("fedora", "Fedora")),
             new(Language.Go, "Go", "small services", ResolutionTrack.Native, "TODO: Go uses direct native actions with simple scaling and concurrency hooks. Signature mechanic copy pending.", null, Distro("cachyos", "CachyOS"), Distro("nixos", "NixOS")),
             new(Language.Ruby, "Ruby", "sharp scripts", ResolutionTrack.InterpreterQueue, "TODO: Ruby queues expressive effects with combo-friendly timing. Signature mechanic copy pending.", null, Distro("kali", "Kali"), Distro("endeavouros", "EndeavourOS")),
-            new(Language.PHP, "PHP", "legacy glue", ResolutionTrack.InterpreterQueue, "TODO: PHP queues practical effects that improve when the board is messy. Signature mechanic copy pending.", null, Distro("debian", "Debian"), Distro("cachyos", "CachyOS")),
+            new(Language.Php, "PHP", "legacy glue", ResolutionTrack.InterpreterQueue, "TODO: PHP queues practical effects that improve when the board is messy. Signature mechanic copy pending.", null, Distro("debian", "Debian"), Distro("cachyos", "CachyOS")),
         };
 
         public static IReadOnlyList<LanguageCatalogEntry> All => Entries;

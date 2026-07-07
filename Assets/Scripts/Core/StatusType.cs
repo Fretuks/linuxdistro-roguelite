@@ -10,6 +10,7 @@ namespace KernelPanic.Core
         RaceCondition,
         Deprecated,
         DependencyError,
-        Deadlock
+        Deadlock,
+        UnattendedUpgrades
     }
 }

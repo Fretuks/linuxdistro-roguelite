@@ -9,12 +9,12 @@ namespace KernelPanic.Meta
     /// </summary>
     public sealed class PlayerCollection
     {
-        private readonly List<DistroDefinition> ownedUnits = new();
-        private int featuredIndex;
+        private readonly List<DistroDefinition> _ownedUnits = new();
+        private int _featuredIndex;
 
         // TODO: Populate owned units from SaveService during bootstrap.
-        public IReadOnlyList<DistroDefinition> OwnedUnits => ownedUnits;
-        public DistroDefinition FeaturedUnit => ownedUnits.Count == 0 ? null : ownedUnits[Math.Clamp(featuredIndex, 0, ownedUnits.Count - 1)];
+        public IReadOnlyList<DistroDefinition> OwnedUnits => _ownedUnits;
+        public DistroDefinition FeaturedUnit => _ownedUnits.Count == 0 ? null : _ownedUnits[Math.Clamp(_featuredIndex, 0, _ownedUnits.Count - 1)];
 
         public event Action Changed;
 
@@ -26,8 +26,8 @@ namespace KernelPanic.Meta
             }
 
             // Persistence is wired by the owner so this domain class stays IO-free.
-            ownedUnits.Add(unit);
-            featuredIndex = Math.Clamp(featuredIndex, 0, ownedUnits.Count - 1);
+            _ownedUnits.Add(unit);
+            _featuredIndex = Math.Clamp(_featuredIndex, 0, _ownedUnits.Count - 1);
             Changed?.Invoke();
         }
 
@@ -39,9 +39,9 @@ namespace KernelPanic.Meta
             }
 
             int count = 0;
-            for (int i = 0; i < ownedUnits.Count; i++)
+            for (int i = 0; i < _ownedUnits.Count; i++)
             {
-                DistroDefinition unit = ownedUnits[i];
+                DistroDefinition unit = _ownedUnits[i];
                 if (unit != null && string.Equals(unit.Id, unitId, StringComparison.OrdinalIgnoreCase))
                 {
                     count++;
@@ -53,12 +53,12 @@ namespace KernelPanic.Meta
 
         public void SelectNextFeatured()
         {
-            if (ownedUnits.Count < 2)
+            if (_ownedUnits.Count < 2)
             {
                 return;
             }
 
-            featuredIndex = (featuredIndex + 1) % ownedUnits.Count;
+            _featuredIndex = (_featuredIndex + 1) % _ownedUnits.Count;
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using KernelPanic.Core;
 using KernelPanic.Data;
 using KernelPanic.Meta;
+using KernelPanic.Run;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
@@ -23,7 +24,7 @@ namespace KernelPanic.UI
         private const string SelectedClassName = "selected";
         private const string CursorOnClassName = "cursor-on";
         private const float BootIntroSeconds = 1.5f;
-        private static bool bootIntroPlayed;
+        private static bool _bootIntroPlayed;
 
         // Static fields don't reset between Play sessions when the Editor's "Reload Domain"
         // option is disabled. RuntimeInitializeOnLoadMethod runs once per player/Play-mode
@@ -31,7 +32,7 @@ namespace KernelPanic.UI
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetSessionState()
         {
-            bootIntroPlayed = false;
+            _bootIntroPlayed = false;
         }
 
         [SerializeField] private FontAsset monospaceFont; // TODO: Assign a real monospace FontAsset when typography assets exist.
@@ -44,117 +45,117 @@ namespace KernelPanic.UI
         [SerializeField] private StarterSelectionController starterSelection = new();
         [SerializeField] private GachaScreenController gachaScreen = new();
 
-        private readonly List<CommandMenuEntry> commandEntries = new();
-        private readonly List<VisualElement> packageRows = new();
-        private readonly List<VisualElement> loadoutRows = new();
-        private readonly List<Language> selectedRunLanguages = new();
-        private UIDocument document;
-        private VisualElement root;
-        private VisualElement shellRoot;
-        private VisualElement bootIntroPanel;
-        private VisualElement mainMenuPanel;
-        private VisualElement collectionPanel;
-        private VisualElement runSetupPanel;
-        private VisualElement gachaPanel;
-        private VisualElement settingsPanel;
-        private VisualElement eventBanner;
-        private VisualElement backgroundLogLayer;
-        private ScrollView runSetupList;
-        private VisualElement runSetupDetail;
-        private ScrollView runSetupPackageScroll;
-        private Label appIdLabel;
-        private Label entropyLabel;
-        private Label pullTokensLabel;
-        private Label titleCursorLabel;
-        private Label promptCursorLabel;
-        private Label bootIntroLogLabel;
-        private Label motdBodyLabel;
-        private VisualElement motdBlock;
-        private Button rootCreditsToEntropyButton;
-        private VisualElement rootCreditExchangeModal;
-        private Label rootCreditExchangeBalanceLabel;
-        private Label rootCreditExchangePreviewLabel;
-        private Label rootCreditExchangeMessageLabel;
-        private TextField rootCreditExchangeInput;
-        private Button rootCreditExchangeMinusHundredButton;
-        private Button rootCreditExchangeMinusOneButton;
-        private Button rootCreditExchangeNoneButton;
-        private Button rootCreditExchangePlusOneButton;
-        private Button rootCreditExchangePlusHundredButton;
-        private Button rootCreditExchangeMaxButton;
-        private Button rootCreditExchangeConfirmButton;
-        private Button rootCreditExchangeCancelButton;
-        private Button rootCreditExchangeCloseButton;
-        private Button collectionUnitsButton;
-        private Button collectionLanguagesButton;
-        private readonly ScreenFrameController runSetupFrame = new();
-        private readonly ScreenFrameController collectionFrame = new();
-        private readonly ScreenFrameController gachaFrame = new();
-        private readonly ScreenFrameController settingsFrame = new();
-        private SaveService saveService;
-        private SaveData saveData;
-        private EntropyWallet wallet;
-        private GachaService gachaService;
-        private PlayerCollection playerCollection;
-        private CardLoadout cardLoadout;
-        private BackgroundLogRingBuffer backgroundLog;
-        private IEventBannerSource eventBannerSource;
-        private int selectedCommandIndex;
-        private int selectedPackageIndex;
-        private string runSetupNotice;
-        private bool collectionShowingLanguages;
-        private float bootIntroElapsed;
-        private int bootIntroCharacterCount;
-        private bool cursorVisible;
-        private bool suppressNextClick;
-        private bool warnedUnresolvedSaveId;
-        private bool rootCreditExchangeOpen;
-        private string bootIntroCopy;
-        private Action rootCreditExchangeMinusHundredClicked;
-        private Action rootCreditExchangeMinusOneClicked;
-        private Action rootCreditExchangePlusOneClicked;
-        private Action rootCreditExchangePlusHundredClicked;
-        private IVisualElementScheduledItem blinkSchedule;
-        private IVisualElementScheduledItem bootIntroSchedule;
+        private readonly List<CommandMenuEntry> _commandEntries = new();
+        private readonly List<VisualElement> _packageRows = new();
+        private readonly List<VisualElement> _loadoutRows = new();
+        private readonly List<Language> _selectedRunLanguages = new();
+        private UIDocument _document;
+        private VisualElement _root;
+        private VisualElement _shellRoot;
+        private VisualElement _bootIntroPanel;
+        private VisualElement _mainMenuPanel;
+        private VisualElement _collectionPanel;
+        private VisualElement _runSetupPanel;
+        private VisualElement _gachaPanel;
+        private VisualElement _settingsPanel;
+        private VisualElement _eventBanner;
+        private VisualElement _backgroundLogLayer;
+        private ScrollView _runSetupList;
+        private VisualElement _runSetupDetail;
+        private ScrollView _runSetupPackageScroll;
+        private Label _appIdLabel;
+        private Label _entropyLabel;
+        private Label _pullTokensLabel;
+        private Label _titleCursorLabel;
+        private Label _promptCursorLabel;
+        private Label _bootIntroLogLabel;
+        private Label _motdBodyLabel;
+        private VisualElement _motdBlock;
+        private Button _rootCreditsToEntropyButton;
+        private VisualElement _rootCreditExchangeModal;
+        private Label _rootCreditExchangeBalanceLabel;
+        private Label _rootCreditExchangePreviewLabel;
+        private Label _rootCreditExchangeMessageLabel;
+        private TextField _rootCreditExchangeInput;
+        private Button _rootCreditExchangeMinusHundredButton;
+        private Button _rootCreditExchangeMinusOneButton;
+        private Button _rootCreditExchangeNoneButton;
+        private Button _rootCreditExchangePlusOneButton;
+        private Button _rootCreditExchangePlusHundredButton;
+        private Button _rootCreditExchangeMaxButton;
+        private Button _rootCreditExchangeConfirmButton;
+        private Button _rootCreditExchangeCancelButton;
+        private Button _rootCreditExchangeCloseButton;
+        private Button _collectionUnitsButton;
+        private Button _collectionLanguagesButton;
+        private readonly ScreenFrameController _runSetupFrame = new();
+        private readonly ScreenFrameController _collectionFrame = new();
+        private readonly ScreenFrameController _gachaFrame = new();
+        private readonly ScreenFrameController _settingsFrame = new();
+        private SaveService _saveService;
+        private SaveData _saveData;
+        private EntropyWallet _wallet;
+        private GachaService _gachaService;
+        private PlayerCollection _playerCollection;
+        private CardLoadout _cardLoadout;
+        private BackgroundLogRingBuffer _backgroundLog;
+        private IEventBannerSource _eventBannerSource;
+        private int _selectedCommandIndex;
+        private int _selectedPackageIndex;
+        private string _runSetupNotice;
+        private bool _collectionShowingLanguages;
+        private float _bootIntroElapsed;
+        private int _bootIntroCharacterCount;
+        private bool _cursorVisible;
+        private bool _suppressNextClick;
+        private bool _warnedUnresolvedSaveId;
+        private bool _rootCreditExchangeOpen;
+        private string _bootIntroCopy;
+        private Action _rootCreditExchangeMinusHundredClicked;
+        private Action _rootCreditExchangeMinusOneClicked;
+        private Action _rootCreditExchangePlusOneClicked;
+        private Action _rootCreditExchangePlusHundredClicked;
+        private IVisualElementScheduledItem _blinkSchedule;
+        private IVisualElementScheduledItem _bootIntroSchedule;
 
         public void Initialize(EntropyWallet initializedWallet)
         {
-            wallet = initializedWallet ?? new EntropyWallet();
+            _wallet = initializedWallet ?? new EntropyWallet();
             RefreshCurrencyReadouts();
         }
 
         private void Awake()
         {
-            document = GetComponent<UIDocument>();
-            saveService = new SaveService();
-            gachaService = new GachaService();
-            playerCollection = new PlayerCollection(); // TODO: Replace with persistent player-collection service composition.
-            cardLoadout = new CardLoadout(playerCollection.OwnedUnits);
+            _document = GetComponent<UIDocument>();
+            _saveService = new SaveService();
+            _gachaService = new GachaService();
+            _playerCollection = new PlayerCollection(); // TODO: Replace with persistent player-collection service composition.
+            _cardLoadout = new CardLoadout(_playerCollection.OwnedUnits);
             Initialize(new EntropyWallet()); // TODO: Replace with persistent wallet service composition.
             BindElements();
             BindCommandEntries();
             RegisterCommandEntryCallbacks();
-            featuredUnitPanel.Bind(root, monospaceFont);
-            collectionScreen.Bind(root, monospaceFont, languageDeckDatabase, cardDatabase, playerCollection);
+            featuredUnitPanel.Bind(_root, monospaceFont);
+            collectionScreen.Bind(_root, monospaceFont, languageDeckDatabase, cardDatabase, _playerCollection);
             BindScreenFrames();
-            starterSelection.Bind(root, distroDatabase, HandleStarterConfirmed);
-            gachaScreen.Bind(root, distroDatabase, monospaceFont, gachaService, playerCollection, wallet, HandleMetaStateChanged, OpenRootCreditExchange);
+            starterSelection.Bind(_root, distroDatabase, HandleStarterConfirmed);
+            gachaScreen.Bind(_root, distroDatabase, monospaceFont, _gachaService, _playerCollection, _wallet, HandleMetaStateChanged, OpenRootCreditExchange);
             LoadMetaState();
-            playerCollection.Changed += HandleMetaStateChanged;
-            gachaService.Changed += HandleMetaStateChanged;
+            _playerCollection.Changed += HandleMetaStateChanged;
+            _gachaService.Changed += HandleMetaStateChanged;
             ApplyOptionalFont();
         }
 
         private void OnEnable()
         {
             RegisterCallbacks();
-            root.Focus();
-            shellRoot.EnableInClassList("reduced-motion", UIPreferences.ReducedMotion);
+            _root.Focus();
+            _shellRoot.EnableInClassList("reduced-motion", UIPreferences.ReducedMotion);
             RefreshStaticText();
             RefreshCurrencyReadouts();
             RefreshEventBanner();
-            featuredUnitPanel.Refresh(playerCollection.OwnedUnits, playerCollection.FeaturedUnit);
-            collectionScreen.RefreshUnits(playerCollection.OwnedUnits);
+            featuredUnitPanel.Refresh(_playerCollection.OwnedUnits, _playerCollection.FeaturedUnit);
+            collectionScreen.RefreshUnits(_playerCollection.OwnedUnits);
             gachaScreen.Refresh();
             SelectCommand(0);
             ShowMainMenu();
@@ -165,77 +166,77 @@ namespace KernelPanic.UI
         private void OnDisable()
         {
             UnregisterCallbacks();
-            blinkSchedule?.Pause();
-            backgroundLog?.Stop();
-            bootIntroSchedule?.Pause();
+            _blinkSchedule?.Pause();
+            _backgroundLog?.Stop();
+            _bootIntroSchedule?.Pause();
             starterSelection.PauseSchedules();
         }
 
         private void BindElements()
         {
-            root = document.rootVisualElement;
-            shellRoot = root.Q<VisualElement>("ShellRoot");
-            bootIntroPanel = root.Q<VisualElement>("BootIntroPanel");
-            mainMenuPanel = root.Q<VisualElement>("MainMenuPanel");
-            collectionPanel = root.Q<VisualElement>("CollectionPanel");
-            runSetupPanel = root.Q<VisualElement>("RunSetupPanel");
-            gachaPanel = root.Q<VisualElement>("GachaPanel");
-            settingsPanel = root.Q<VisualElement>("SettingsPanel");
-            eventBanner = root.Q<VisualElement>("EventBanner");
-            motdBlock = root.Q<VisualElement>("MotdBlock");
-            backgroundLogLayer = root.Q<VisualElement>("BackgroundLogLayer");
-            runSetupList = root.Q<ScrollView>("RunSetupList");
-            runSetupDetail = root.Q<VisualElement>("RunSetupDetail");
-            backgroundLog = new BackgroundLogRingBuffer(backgroundLogLayer, BootLogCopy.Lines);
+            _root = _document.rootVisualElement;
+            _shellRoot = _root.Q<VisualElement>("ShellRoot");
+            _bootIntroPanel = _root.Q<VisualElement>("BootIntroPanel");
+            _mainMenuPanel = _root.Q<VisualElement>("MainMenuPanel");
+            _collectionPanel = _root.Q<VisualElement>("CollectionPanel");
+            _runSetupPanel = _root.Q<VisualElement>("RunSetupPanel");
+            _gachaPanel = _root.Q<VisualElement>("GachaPanel");
+            _settingsPanel = _root.Q<VisualElement>("SettingsPanel");
+            _eventBanner = _root.Q<VisualElement>("EventBanner");
+            _motdBlock = _root.Q<VisualElement>("MotdBlock");
+            _backgroundLogLayer = _root.Q<VisualElement>("BackgroundLogLayer");
+            _runSetupList = _root.Q<ScrollView>("RunSetupList");
+            _runSetupDetail = _root.Q<VisualElement>("RunSetupDetail");
+            _backgroundLog = new BackgroundLogRingBuffer(_backgroundLogLayer, BootLogCopy.Lines);
 
-            appIdLabel = root.Q<Label>("AppIdLabel");
-            entropyLabel = root.Q<Label>("EntropyLabel");
-            pullTokensLabel = root.Q<Label>("PullTokensLabel");
-            titleCursorLabel = root.Q<Label>("TitleCursorLabel");
-            promptCursorLabel = root.Q<Label>("PromptCursorLabel");
-            bootIntroLogLabel = root.Q<Label>("BootIntroLogLabel");
-            motdBodyLabel = root.Q<Label>("MotdBodyLabel");
+            _appIdLabel = _root.Q<Label>("AppIdLabel");
+            _entropyLabel = _root.Q<Label>("EntropyLabel");
+            _pullTokensLabel = _root.Q<Label>("PullTokensLabel");
+            _titleCursorLabel = _root.Q<Label>("TitleCursorLabel");
+            _promptCursorLabel = _root.Q<Label>("PromptCursorLabel");
+            _bootIntroLogLabel = _root.Q<Label>("BootIntroLogLabel");
+            _motdBodyLabel = _root.Q<Label>("MotdBodyLabel");
 
-            rootCreditsToEntropyButton = root.Q<Button>("RootCreditsToEntropyButton");
-            if (rootCreditsToEntropyButton != null)
+            _rootCreditsToEntropyButton = _root.Q<Button>("RootCreditsToEntropyButton");
+            if (_rootCreditsToEntropyButton != null)
             {
-                rootCreditsToEntropyButton.focusable = false;
+                _rootCreditsToEntropyButton.focusable = false;
             }
 
-            rootCreditExchangeModal = root.Q<VisualElement>("RootCreditExchangeModal");
-            rootCreditExchangeBalanceLabel = root.Q<Label>("RootCreditExchangeBalanceLabel");
-            rootCreditExchangePreviewLabel = root.Q<Label>("RootCreditExchangePreviewLabel");
-            rootCreditExchangeMessageLabel = root.Q<Label>("RootCreditExchangeMessageLabel");
-            rootCreditExchangeInput = root.Q<TextField>("RootCreditExchangeInput");
-            rootCreditExchangeMinusHundredButton = root.Q<Button>("RootCreditExchangeMinusHundredButton");
-            rootCreditExchangeMinusOneButton = root.Q<Button>("RootCreditExchangeMinusOneButton");
-            rootCreditExchangeNoneButton = root.Q<Button>("RootCreditExchangeNoneButton");
-            rootCreditExchangePlusOneButton = root.Q<Button>("RootCreditExchangePlusOneButton");
-            rootCreditExchangePlusHundredButton = root.Q<Button>("RootCreditExchangePlusHundredButton");
-            rootCreditExchangeMaxButton = root.Q<Button>("RootCreditExchangeMaxButton");
-            rootCreditExchangeConfirmButton = root.Q<Button>("RootCreditExchangeConfirmButton");
-            rootCreditExchangeCancelButton = root.Q<Button>("RootCreditExchangeCancelButton");
-            rootCreditExchangeCloseButton = root.Q<Button>("RootCreditExchangeCloseButton");
-            collectionUnitsButton = root.Q<Button>("CollectionUnitsButton");
-            collectionLanguagesButton = root.Q<Button>("CollectionLanguagesButton");
+            _rootCreditExchangeModal = _root.Q<VisualElement>("RootCreditExchangeModal");
+            _rootCreditExchangeBalanceLabel = _root.Q<Label>("RootCreditExchangeBalanceLabel");
+            _rootCreditExchangePreviewLabel = _root.Q<Label>("RootCreditExchangePreviewLabel");
+            _rootCreditExchangeMessageLabel = _root.Q<Label>("RootCreditExchangeMessageLabel");
+            _rootCreditExchangeInput = _root.Q<TextField>("RootCreditExchangeInput");
+            _rootCreditExchangeMinusHundredButton = _root.Q<Button>("RootCreditExchangeMinusHundredButton");
+            _rootCreditExchangeMinusOneButton = _root.Q<Button>("RootCreditExchangeMinusOneButton");
+            _rootCreditExchangeNoneButton = _root.Q<Button>("RootCreditExchangeNoneButton");
+            _rootCreditExchangePlusOneButton = _root.Q<Button>("RootCreditExchangePlusOneButton");
+            _rootCreditExchangePlusHundredButton = _root.Q<Button>("RootCreditExchangePlusHundredButton");
+            _rootCreditExchangeMaxButton = _root.Q<Button>("RootCreditExchangeMaxButton");
+            _rootCreditExchangeConfirmButton = _root.Q<Button>("RootCreditExchangeConfirmButton");
+            _rootCreditExchangeCancelButton = _root.Q<Button>("RootCreditExchangeCancelButton");
+            _rootCreditExchangeCloseButton = _root.Q<Button>("RootCreditExchangeCloseButton");
+            _collectionUnitsButton = _root.Q<Button>("CollectionUnitsButton");
+            _collectionLanguagesButton = _root.Q<Button>("CollectionLanguagesButton");
         }
 
         private void BindScreenFrames()
         {
-            runSetupFrame.Bind(runSetupPanel, "$ ./start_run --configure", "[esc] back   [arrows] navigate   [enter] select   [b] boot run", ShowMainMenu);
-            collectionFrame.Bind(collectionPanel, "$ ls ~/collection", "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [enter] select", HandleCollectionBack);
-            gachaFrame.Bind(gachaPanel, "$ curl gacha.sh | sh", "[esc] back   click banner   click pull", ShowMainMenu);
-            settingsFrame.Bind(settingsPanel, "$ dpkg-reconfigure kernel-panic", "[esc] back", ShowMainMenu);
+            _runSetupFrame.Bind(_runSetupPanel, "$ ./start_run --configure", "[esc] back   [arrows] navigate   [enter] select   [b] boot run", ShowMainMenu);
+            _collectionFrame.Bind(_collectionPanel, "$ ls ~/collection", "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [enter] select", HandleCollectionBack);
+            _gachaFrame.Bind(_gachaPanel, "$ curl gacha.sh | sh", "[esc] back   click banner   click pull", ShowMainMenu);
+            _settingsFrame.Bind(_settingsPanel, "$ dpkg-reconfigure kernel-panic", "[esc] back", ShowMainMenu);
         }
 
         private void BindCommandEntries()
         {
-            commandEntries.Clear();
-            commandEntries.Add(new CommandMenuEntry(root.Q<VisualElement>("CommandStartRun"), HandleStartRunClicked));
-            commandEntries.Add(new CommandMenuEntry(root.Q<VisualElement>("CommandCollection"), ShowCollection));
-            commandEntries.Add(new CommandMenuEntry(root.Q<VisualElement>("CommandGacha"), ShowGacha));
-            commandEntries.Add(new CommandMenuEntry(root.Q<VisualElement>("CommandSettings"), ShowSettings));
-            commandEntries.Add(new CommandMenuEntry(root.Q<VisualElement>("CommandQuit"), HandleQuitClicked));
+            _commandEntries.Clear();
+            _commandEntries.Add(new CommandMenuEntry(_root.Q<VisualElement>("CommandStartRun"), HandleStartRunClicked));
+            _commandEntries.Add(new CommandMenuEntry(_root.Q<VisualElement>("CommandCollection"), ShowCollection));
+            _commandEntries.Add(new CommandMenuEntry(_root.Q<VisualElement>("CommandGacha"), ShowGacha));
+            _commandEntries.Add(new CommandMenuEntry(_root.Q<VisualElement>("CommandSettings"), ShowSettings));
+            _commandEntries.Add(new CommandMenuEntry(_root.Q<VisualElement>("CommandQuit"), HandleQuitClicked));
         }
 
         private void ApplyOptionalFont()
@@ -245,154 +246,154 @@ namespace KernelPanic.UI
                 return;
             }
 
-            root.style.unityFontDefinition = new StyleFontDefinition(monospaceFont);
+            _root.style.unityFontDefinition = new StyleFontDefinition(monospaceFont);
         }
 
         private void RegisterCallbacks()
         {
-            root.RegisterCallback<KeyDownEvent>(HandleKeyDown);
-            root.RegisterCallback<PointerDownEvent>(HandlePointerDown);
-            if (rootCreditsToEntropyButton != null)
+            _root.RegisterCallback<KeyDownEvent>(HandleKeyDown);
+            _root.RegisterCallback<PointerDownEvent>(HandlePointerDown);
+            if (_rootCreditsToEntropyButton != null)
             {
-                rootCreditsToEntropyButton.clicked += HandleRootCreditsToEntropyClicked;
+                _rootCreditsToEntropyButton.clicked += HandleRootCreditsToEntropyClicked;
             }
 
-            if (rootCreditExchangeInput != null)
+            if (_rootCreditExchangeInput != null)
             {
-                rootCreditExchangeInput.RegisterValueChangedCallback(HandleRootCreditExchangeInputChanged);
+                _rootCreditExchangeInput.RegisterValueChangedCallback(HandleRootCreditExchangeInputChanged);
             }
 
-            if (rootCreditExchangeMinusHundredButton != null)
+            if (_rootCreditExchangeMinusHundredButton != null)
             {
-                rootCreditExchangeMinusHundredClicked ??= () => AddRootCreditExchangeAmount(-100);
-                rootCreditExchangeMinusHundredButton.clicked += rootCreditExchangeMinusHundredClicked;
+                _rootCreditExchangeMinusHundredClicked ??= () => AddRootCreditExchangeAmount(-100);
+                _rootCreditExchangeMinusHundredButton.clicked += _rootCreditExchangeMinusHundredClicked;
             }
 
-            if (rootCreditExchangeMinusOneButton != null)
+            if (_rootCreditExchangeMinusOneButton != null)
             {
-                rootCreditExchangeMinusOneClicked ??= () => AddRootCreditExchangeAmount(-1);
-                rootCreditExchangeMinusOneButton.clicked += rootCreditExchangeMinusOneClicked;
+                _rootCreditExchangeMinusOneClicked ??= () => AddRootCreditExchangeAmount(-1);
+                _rootCreditExchangeMinusOneButton.clicked += _rootCreditExchangeMinusOneClicked;
             }
 
-            if (rootCreditExchangeNoneButton != null)
+            if (_rootCreditExchangeNoneButton != null)
             {
-                rootCreditExchangeNoneButton.clicked += SetRootCreditExchangeNone;
+                _rootCreditExchangeNoneButton.clicked += SetRootCreditExchangeNone;
             }
 
-            if (rootCreditExchangePlusOneButton != null)
+            if (_rootCreditExchangePlusOneButton != null)
             {
-                rootCreditExchangePlusOneClicked ??= () => AddRootCreditExchangeAmount(1);
-                rootCreditExchangePlusOneButton.clicked += rootCreditExchangePlusOneClicked;
+                _rootCreditExchangePlusOneClicked ??= () => AddRootCreditExchangeAmount(1);
+                _rootCreditExchangePlusOneButton.clicked += _rootCreditExchangePlusOneClicked;
             }
 
-            if (rootCreditExchangePlusHundredButton != null)
+            if (_rootCreditExchangePlusHundredButton != null)
             {
-                rootCreditExchangePlusHundredClicked ??= () => AddRootCreditExchangeAmount(100);
-                rootCreditExchangePlusHundredButton.clicked += rootCreditExchangePlusHundredClicked;
+                _rootCreditExchangePlusHundredClicked ??= () => AddRootCreditExchangeAmount(100);
+                _rootCreditExchangePlusHundredButton.clicked += _rootCreditExchangePlusHundredClicked;
             }
 
-            if (rootCreditExchangeMaxButton != null)
+            if (_rootCreditExchangeMaxButton != null)
             {
-                rootCreditExchangeMaxButton.clicked += SetRootCreditExchangeMax;
+                _rootCreditExchangeMaxButton.clicked += SetRootCreditExchangeMax;
             }
 
-            if (rootCreditExchangeConfirmButton != null)
+            if (_rootCreditExchangeConfirmButton != null)
             {
-                rootCreditExchangeConfirmButton.clicked += ConfirmRootCreditExchange;
+                _rootCreditExchangeConfirmButton.clicked += ConfirmRootCreditExchange;
             }
 
-            if (rootCreditExchangeCancelButton != null)
+            if (_rootCreditExchangeCancelButton != null)
             {
-                rootCreditExchangeCancelButton.clicked += CloseRootCreditExchange;
+                _rootCreditExchangeCancelButton.clicked += CloseRootCreditExchange;
             }
 
-            if (rootCreditExchangeCloseButton != null)
+            if (_rootCreditExchangeCloseButton != null)
             {
-                rootCreditExchangeCloseButton.clicked += CloseRootCreditExchange;
+                _rootCreditExchangeCloseButton.clicked += CloseRootCreditExchange;
             }
 
-            if (rootCreditExchangeModal != null)
+            if (_rootCreditExchangeModal != null)
             {
-                rootCreditExchangeModal.RegisterCallback<KeyDownEvent>(HandleRootCreditExchangeKeyDown, TrickleDown.TrickleDown);
+                _rootCreditExchangeModal.RegisterCallback<KeyDownEvent>(HandleRootCreditExchangeKeyDown, TrickleDown.TrickleDown);
             }
 
             collectionScreen.ViewChanged += SyncCollectionFrame;
-            collectionUnitsButton.RegisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
-            collectionLanguagesButton.RegisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
+            _collectionUnitsButton.RegisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
+            _collectionLanguagesButton.RegisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
         }
 
         private void UnregisterCallbacks()
         {
-            root.UnregisterCallback<KeyDownEvent>(HandleKeyDown);
-            root.UnregisterCallback<PointerDownEvent>(HandlePointerDown);
-            if (rootCreditsToEntropyButton != null)
+            _root.UnregisterCallback<KeyDownEvent>(HandleKeyDown);
+            _root.UnregisterCallback<PointerDownEvent>(HandlePointerDown);
+            if (_rootCreditsToEntropyButton != null)
             {
-                rootCreditsToEntropyButton.clicked -= HandleRootCreditsToEntropyClicked;
+                _rootCreditsToEntropyButton.clicked -= HandleRootCreditsToEntropyClicked;
             }
 
-            if (rootCreditExchangeInput != null)
+            if (_rootCreditExchangeInput != null)
             {
-                rootCreditExchangeInput.UnregisterValueChangedCallback(HandleRootCreditExchangeInputChanged);
+                _rootCreditExchangeInput.UnregisterValueChangedCallback(HandleRootCreditExchangeInputChanged);
             }
 
-            if (rootCreditExchangeMinusHundredButton != null)
+            if (_rootCreditExchangeMinusHundredButton != null)
             {
-                rootCreditExchangeMinusHundredButton.clicked -= rootCreditExchangeMinusHundredClicked;
+                _rootCreditExchangeMinusHundredButton.clicked -= _rootCreditExchangeMinusHundredClicked;
             }
 
-            if (rootCreditExchangeMinusOneButton != null)
+            if (_rootCreditExchangeMinusOneButton != null)
             {
-                rootCreditExchangeMinusOneButton.clicked -= rootCreditExchangeMinusOneClicked;
+                _rootCreditExchangeMinusOneButton.clicked -= _rootCreditExchangeMinusOneClicked;
             }
 
-            if (rootCreditExchangeNoneButton != null)
+            if (_rootCreditExchangeNoneButton != null)
             {
-                rootCreditExchangeNoneButton.clicked -= SetRootCreditExchangeNone;
+                _rootCreditExchangeNoneButton.clicked -= SetRootCreditExchangeNone;
             }
 
-            if (rootCreditExchangePlusOneButton != null)
+            if (_rootCreditExchangePlusOneButton != null)
             {
-                rootCreditExchangePlusOneButton.clicked -= rootCreditExchangePlusOneClicked;
+                _rootCreditExchangePlusOneButton.clicked -= _rootCreditExchangePlusOneClicked;
             }
 
-            if (rootCreditExchangePlusHundredButton != null)
+            if (_rootCreditExchangePlusHundredButton != null)
             {
-                rootCreditExchangePlusHundredButton.clicked -= rootCreditExchangePlusHundredClicked;
+                _rootCreditExchangePlusHundredButton.clicked -= _rootCreditExchangePlusHundredClicked;
             }
 
-            if (rootCreditExchangeMaxButton != null)
+            if (_rootCreditExchangeMaxButton != null)
             {
-                rootCreditExchangeMaxButton.clicked -= SetRootCreditExchangeMax;
+                _rootCreditExchangeMaxButton.clicked -= SetRootCreditExchangeMax;
             }
 
-            if (rootCreditExchangeConfirmButton != null)
+            if (_rootCreditExchangeConfirmButton != null)
             {
-                rootCreditExchangeConfirmButton.clicked -= ConfirmRootCreditExchange;
+                _rootCreditExchangeConfirmButton.clicked -= ConfirmRootCreditExchange;
             }
 
-            if (rootCreditExchangeCancelButton != null)
+            if (_rootCreditExchangeCancelButton != null)
             {
-                rootCreditExchangeCancelButton.clicked -= CloseRootCreditExchange;
+                _rootCreditExchangeCancelButton.clicked -= CloseRootCreditExchange;
             }
 
-            if (rootCreditExchangeCloseButton != null)
+            if (_rootCreditExchangeCloseButton != null)
             {
-                rootCreditExchangeCloseButton.clicked -= CloseRootCreditExchange;
+                _rootCreditExchangeCloseButton.clicked -= CloseRootCreditExchange;
             }
 
-            if (rootCreditExchangeModal != null)
+            if (_rootCreditExchangeModal != null)
             {
-                rootCreditExchangeModal.UnregisterCallback<KeyDownEvent>(HandleRootCreditExchangeKeyDown, TrickleDown.TrickleDown);
+                _rootCreditExchangeModal.UnregisterCallback<KeyDownEvent>(HandleRootCreditExchangeKeyDown, TrickleDown.TrickleDown);
             }
 
             collectionScreen.ViewChanged -= SyncCollectionFrame;
-            collectionUnitsButton.UnregisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
-            collectionLanguagesButton.UnregisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
+            _collectionUnitsButton.UnregisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
+            _collectionLanguagesButton.UnregisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
         }
 
         private void HandleRootCreditsToEntropyClicked()
         {
-            if (gachaService == null || wallet == null)
+            if (_gachaService == null || _wallet == null)
             {
                 return;
             }
@@ -402,29 +403,29 @@ namespace KernelPanic.UI
 
         private void OpenRootCreditExchange()
         {
-            if (rootCreditExchangeModal == null || gachaService == null || wallet == null)
+            if (_rootCreditExchangeModal == null || _gachaService == null || _wallet == null)
             {
                 return;
             }
 
-            rootCreditExchangeOpen = true;
-            rootCreditExchangeModal.RemoveFromClassList(HiddenClassName);
-            rootCreditExchangeMessageLabel?.AddToClassList(HiddenClassName);
-            SetRootCreditExchangeAmount(Math.Min(100, gachaService.RootCredits));
+            _rootCreditExchangeOpen = true;
+            _rootCreditExchangeModal.RemoveFromClassList(HiddenClassName);
+            _rootCreditExchangeMessageLabel?.AddToClassList(HiddenClassName);
+            SetRootCreditExchangeAmount(Math.Min(100, _gachaService.RootCredits));
             RefreshRootCreditExchange();
-            rootCreditExchangeInput?.Focus();
+            _rootCreditExchangeInput?.Focus();
         }
 
         private void CloseRootCreditExchange()
         {
-            rootCreditExchangeOpen = false;
-            rootCreditExchangeModal?.AddToClassList(HiddenClassName);
-            root.Focus();
+            _rootCreditExchangeOpen = false;
+            _rootCreditExchangeModal?.AddToClassList(HiddenClassName);
+            _root.Focus();
         }
 
         private void HandleRootCreditExchangeKeyDown(KeyDownEvent evt)
         {
-            if (!rootCreditExchangeOpen || evt.keyCode != KeyCode.Escape)
+            if (!_rootCreditExchangeOpen || evt.keyCode != KeyCode.Escape)
             {
                 return;
             }
@@ -445,7 +446,7 @@ namespace KernelPanic.UI
 
         private void SetRootCreditExchangeMax()
         {
-            SetRootCreditExchangeAmount(gachaService == null ? 0 : gachaService.RootCredits);
+            SetRootCreditExchangeAmount(_gachaService == null ? 0 : _gachaService.RootCredits);
         }
 
         private void SetRootCreditExchangeNone()
@@ -455,11 +456,11 @@ namespace KernelPanic.UI
 
         private void SetRootCreditExchangeAmount(int amount)
         {
-            int max = gachaService == null ? 0 : gachaService.RootCredits;
+            int max = _gachaService == null ? 0 : _gachaService.RootCredits;
             int clamped = Mathf.Clamp(amount, 0, max);
-            if (rootCreditExchangeInput != null)
+            if (_rootCreditExchangeInput != null)
             {
-                rootCreditExchangeInput.value = clamped.ToString();
+                _rootCreditExchangeInput.value = clamped.ToString();
             }
 
             RefreshRootCreditExchange();
@@ -467,62 +468,62 @@ namespace KernelPanic.UI
 
         private int GetRootCreditExchangeAmount()
         {
-            if (rootCreditExchangeInput == null || string.IsNullOrWhiteSpace(rootCreditExchangeInput.value))
+            if (_rootCreditExchangeInput == null || string.IsNullOrWhiteSpace(_rootCreditExchangeInput.value))
             {
                 return 0;
             }
 
-            if (!int.TryParse(rootCreditExchangeInput.value, out int amount))
+            if (!int.TryParse(_rootCreditExchangeInput.value, out int amount))
             {
                 return 0;
             }
 
-            int max = gachaService == null ? 0 : gachaService.RootCredits;
+            int max = _gachaService == null ? 0 : _gachaService.RootCredits;
             return Mathf.Clamp(amount, 0, max);
         }
 
         private void RefreshRootCreditExchange()
         {
-            if (gachaService == null)
+            if (_gachaService == null)
             {
                 return;
             }
 
             int amount = GetRootCreditExchangeAmount();
-            if (rootCreditExchangeInput != null && rootCreditExchangeInput.value != amount.ToString())
+            if (_rootCreditExchangeInput != null && _rootCreditExchangeInput.value != amount.ToString())
             {
-                rootCreditExchangeInput.SetValueWithoutNotify(amount.ToString());
+                _rootCreditExchangeInput.SetValueWithoutNotify(amount.ToString());
             }
 
-            if (rootCreditExchangeBalanceLabel != null)
+            if (_rootCreditExchangeBalanceLabel != null)
             {
-                rootCreditExchangeBalanceLabel.text = gachaService.RootCredits.ToString();
+                _rootCreditExchangeBalanceLabel.text = _gachaService.RootCredits.ToString();
             }
 
-            if (rootCreditExchangePreviewLabel != null)
+            if (_rootCreditExchangePreviewLabel != null)
             {
-                rootCreditExchangePreviewLabel.text = $"+{amount} entropy";
+                _rootCreditExchangePreviewLabel.text = $"+{amount} entropy";
             }
 
-            int max = gachaService.RootCredits;
-            rootCreditExchangeMinusHundredButton?.SetEnabled(amount > 0);
-            rootCreditExchangeMinusOneButton?.SetEnabled(amount > 0);
-            rootCreditExchangeNoneButton?.SetEnabled(amount > 0);
-            rootCreditExchangePlusOneButton?.SetEnabled(amount < max);
-            rootCreditExchangePlusHundredButton?.SetEnabled(amount < max);
-            rootCreditExchangeMaxButton?.SetEnabled(max > 0 && amount < max);
-            rootCreditExchangeConfirmButton?.SetEnabled(amount > 0);
+            int max = _gachaService.RootCredits;
+            _rootCreditExchangeMinusHundredButton?.SetEnabled(amount > 0);
+            _rootCreditExchangeMinusOneButton?.SetEnabled(amount > 0);
+            _rootCreditExchangeNoneButton?.SetEnabled(amount > 0);
+            _rootCreditExchangePlusOneButton?.SetEnabled(amount < max);
+            _rootCreditExchangePlusHundredButton?.SetEnabled(amount < max);
+            _rootCreditExchangeMaxButton?.SetEnabled(max > 0 && amount < max);
+            _rootCreditExchangeConfirmButton?.SetEnabled(amount > 0);
         }
 
         private void ConfirmRootCreditExchange()
         {
             int amount = GetRootCreditExchangeAmount();
-            if (!gachaService.ConvertRootCreditsToEntropy(wallet, amount, out string failureReason))
+            if (!_gachaService.ConvertRootCreditsToEntropy(_wallet, amount, out string failureReason))
             {
-                if (rootCreditExchangeMessageLabel != null)
+                if (_rootCreditExchangeMessageLabel != null)
                 {
-                    rootCreditExchangeMessageLabel.text = $"exchange failed: {failureReason}";
-                    rootCreditExchangeMessageLabel.RemoveFromClassList(HiddenClassName);
+                    _rootCreditExchangeMessageLabel.text = $"exchange failed: {failureReason}";
+                    _rootCreditExchangeMessageLabel.RemoveFromClassList(HiddenClassName);
                 }
 
                 RefreshRootCreditExchange();
@@ -549,38 +550,38 @@ namespace KernelPanic.UI
 
         private void LoadMetaState()
         {
-            saveData = saveService.Load();
-            saveData.EnsureLists();
-            wallet.SetBalance(saveData.entropyBalance);
+            _saveData = _saveService.Load();
+            _saveData.EnsureLists();
+            _wallet.SetBalance(_saveData.entropyBalance);
 
-            for (int i = 0; i < saveData.ownedUnitIds.Count; i++)
+            for (int i = 0; i < _saveData.ownedUnitIds.Count; i++)
             {
-                DistroDefinition unit = ResolveSavedDistro(saveData.ownedUnitIds[i]);
+                DistroDefinition unit = ResolveSavedDistro(_saveData.ownedUnitIds[i]);
                 if (unit != null)
                 {
-                    playerCollection.Add(unit);
+                    _playerCollection.Add(unit);
                 }
             }
 
-            for (int i = 0; i < saveData.bannerPoolIds.Count; i++)
+            for (int i = 0; i < _saveData.bannerPoolIds.Count; i++)
             {
-                DistroDefinition unit = ResolveSavedDistro(saveData.bannerPoolIds[i]);
+                DistroDefinition unit = ResolveSavedDistro(_saveData.bannerPoolIds[i]);
                 if (unit != null)
                 {
-                    gachaService.AddToBannerPool(unit);
+                    _gachaService.AddToBannerPool(unit);
                 }
             }
 
-            gachaService.LoadProgress(saveData);
+            _gachaService.LoadProgress(_saveData);
 
-            if (saveData.starterChosen)
+            if (_saveData.starterChosen)
             {
                 AddAllFourStarDistrosToBeginnerBannerPool();
             }
 
-            if (gachaService.BeginnerState.guaranteedDistroIds.Count == 0 && saveData.bannerPoolIds.Count > 0)
+            if (_gachaService.BeginnerState.guaranteedDistroIds.Count == 0 && _saveData.bannerPoolIds.Count > 0)
             {
-                gachaService.BeginnerState.guaranteedDistroIds.AddRange(saveData.bannerPoolIds);
+                _gachaService.BeginnerState.guaranteedDistroIds.AddRange(_saveData.bannerPoolIds);
             }
 
             SaveCurrentState();
@@ -596,16 +597,16 @@ namespace KernelPanic.UI
             IReadOnlyList<DistroDefinition> distros = distroDatabase.AllDistros;
             for (int i = 0; i < distros.Count; i++)
             {
-                gachaService.AddToBannerPool(distros[i]);
+                _gachaService.AddToBannerPool(distros[i]);
             }
         }
 
         private DistroDefinition ResolveSavedDistro(string id)
         {
             DistroDefinition unit = distroDatabase == null ? null : distroDatabase.FindById(id);
-            if (unit == null && !warnedUnresolvedSaveId)
+            if (unit == null && !_warnedUnresolvedSaveId)
             {
-                warnedUnresolvedSaveId = true;
+                _warnedUnresolvedSaveId = true;
                 Debug.LogWarning($"Save references a distro id that is not in DistroDatabase: {id}");
             }
 
@@ -615,64 +616,64 @@ namespace KernelPanic.UI
         private void HandleMetaStateChanged()
         {
             SaveCurrentState();
-            featuredUnitPanel.Refresh(playerCollection.OwnedUnits, playerCollection.FeaturedUnit);
-            collectionScreen.RefreshUnits(playerCollection.OwnedUnits);
+            featuredUnitPanel.Refresh(_playerCollection.OwnedUnits, _playerCollection.FeaturedUnit);
+            collectionScreen.RefreshUnits(_playerCollection.OwnedUnits);
             gachaScreen.Refresh();
             RefreshCurrencyReadouts();
         }
 
         private void HandleStarterConfirmed(DistroDefinition picked, IReadOnlyList<DistroDefinition> remaining)
         {
-            playerCollection.Add(picked);
+            _playerCollection.Add(picked);
             AddAllFourStarDistrosToBeginnerBannerPool();
-            gachaService.SetBeginnerGuaranteedDistros(remaining);
-            saveData.starterChosen = true;
+            _gachaService.SetBeginnerGuaranteedDistros(remaining);
+            _saveData.starterChosen = true;
             SaveCurrentState();
-            featuredUnitPanel.Refresh(playerCollection.OwnedUnits, playerCollection.FeaturedUnit);
-            collectionScreen.RefreshUnits(playerCollection.OwnedUnits);
+            featuredUnitPanel.Refresh(_playerCollection.OwnedUnits, _playerCollection.FeaturedUnit);
+            collectionScreen.RefreshUnits(_playerCollection.OwnedUnits);
             gachaScreen.Refresh();
         }
 
         private void SaveCurrentState()
         {
-            saveData ??= SaveData.CreateDefault();
-            saveData.EnsureLists();
-            saveData.entropyBalance = wallet == null ? 0 : wallet.Balance;
-            saveData.ownedUnitIds.Clear();
-            saveData.bannerPoolIds.Clear();
-            gachaService.WriteProgress(saveData);
+            _saveData ??= SaveData.CreateDefault();
+            _saveData.EnsureLists();
+            _saveData.entropyBalance = _wallet == null ? 0 : _wallet.Balance;
+            _saveData.ownedUnitIds.Clear();
+            _saveData.bannerPoolIds.Clear();
+            _gachaService.WriteProgress(_saveData);
 
-            for (int i = 0; i < playerCollection.OwnedUnits.Count; i++)
+            for (int i = 0; i < _playerCollection.OwnedUnits.Count; i++)
             {
-                DistroDefinition unit = playerCollection.OwnedUnits[i];
+                DistroDefinition unit = _playerCollection.OwnedUnits[i];
                 if (unit != null && !string.IsNullOrWhiteSpace(unit.Id))
                 {
-                    saveData.ownedUnitIds.Add(unit.Id);
+                    _saveData.ownedUnitIds.Add(unit.Id);
                 }
             }
 
-            for (int i = 0; i < gachaService.BannerPool.Count; i++)
+            for (int i = 0; i < _gachaService.BannerPool.Count; i++)
             {
-                DistroDefinition unit = gachaService.BannerPool[i];
+                DistroDefinition unit = _gachaService.BannerPool[i];
                 if (unit != null && !string.IsNullOrWhiteSpace(unit.Id))
                 {
-                    saveData.bannerPoolIds.Add(unit.Id);
+                    _saveData.bannerPoolIds.Add(unit.Id);
                 }
             }
 
-            saveService.Save(saveData);
+            _saveService.Save(_saveData);
         }
 
         private void SaveLastRunLoadout(DistroDefinition unit, IReadOnlyList<string> cardIds)
         {
-            saveData ??= SaveData.CreateDefault();
-            saveData.EnsureLists();
-            saveData.lastRunLoadout.distroId = unit == null ? null : unit.Id;
-            saveData.lastRunLoadout.cardIds.Clear();
+            _saveData ??= SaveData.CreateDefault();
+            _saveData.EnsureLists();
+            _saveData.lastRunLoadout.distroId = unit == null ? null : unit.Id;
+            _saveData.lastRunLoadout.cardIds.Clear();
 
             for (int i = 0; i < cardIds.Count; i++)
             {
-                saveData.lastRunLoadout.cardIds.Add(cardIds[i]);
+                _saveData.lastRunLoadout.cardIds.Add(cardIds[i]);
             }
 
             SaveCurrentState();
@@ -680,103 +681,103 @@ namespace KernelPanic.UI
 
         private void RefreshStaticText()
         {
-            appIdLabel.text = $"kernel-panic v{Application.version} - tty1";
-            motdBodyLabel.text = motdBody ?? string.Empty;
-            motdBlock.EnableInClassList(HiddenClassName, string.IsNullOrWhiteSpace(motdBody));
-            bootIntroCopy = string.Join("\n", BootLogCopy.Lines);
+            _appIdLabel.text = $"kernel-panic v{Application.version} - tty1";
+            _motdBodyLabel.text = motdBody ?? string.Empty;
+            _motdBlock.EnableInClassList(HiddenClassName, string.IsNullOrWhiteSpace(motdBody));
+            _bootIntroCopy = string.Join("\n", BootLogCopy.Lines);
         }
 
         private void RegisterCommandEntryCallbacks()
         {
-            for (int i = 0; i < commandEntries.Count; i++)
+            for (int i = 0; i < _commandEntries.Count; i++)
             {
                 int index = i;
-                commandEntries[i].Row.RegisterCallback<PointerEnterEvent>(_ => SelectCommand(index));
-                commandEntries[i].Row.RegisterCallback<ClickEvent>(_ => HandleCommandClicked(index));
+                _commandEntries[i].Row.RegisterCallback<PointerEnterEvent>(_ => SelectCommand(index));
+                _commandEntries[i].Row.RegisterCallback<ClickEvent>(_ => HandleCommandClicked(index));
             }
         }
 
         private void RefreshCurrencyReadouts()
         {
-            if (entropyLabel == null || pullTokensLabel == null || gachaService == null || wallet == null)
+            if (_entropyLabel == null || _pullTokensLabel == null || _gachaService == null || _wallet == null)
             {
                 return;
             }
 
-            entropyLabel.text = $"entropy={wallet.Balance}";
-            rootCreditsToEntropyButton?.SetEnabled(true);
+            _entropyLabel.text = $"entropy={_wallet.Balance}";
+            _rootCreditsToEntropyButton?.SetEnabled(true);
             bool showPullTokens = IsGachaVisible();
-            pullTokensLabel.text = showPullTokens
-                ? $"stable-pull-token={gachaService.PullTokens} feature-pull-token={gachaService.LimitedPullTokens}"
+            _pullTokensLabel.text = showPullTokens
+                ? $"commits={_gachaService.PullTokens} compute-credits={_gachaService.LimitedPullTokens}"
                 : string.Empty;
-            pullTokensLabel.EnableInClassList(HiddenClassName, !showPullTokens);
+            _pullTokensLabel.EnableInClassList(HiddenClassName, !showPullTokens);
         }
 
         private void RefreshEventBanner()
         {
-            EventBannerContent banner = eventBannerSource?.GetBanner();
+            EventBannerContent banner = _eventBannerSource?.GetBanner();
             if (banner == null || string.IsNullOrWhiteSpace(banner.Text))
             {
-                eventBanner.AddToClassList(HiddenClassName);
+                _eventBanner.AddToClassList(HiddenClassName);
                 return;
             }
 
-            eventBanner.RemoveFromClassList(HiddenClassName);
-            root.Q<Label>("EventBannerLabel").text = banner.RemainingTime.HasValue
+            _eventBanner.RemoveFromClassList(HiddenClassName);
+            _root.Q<Label>("EventBannerLabel").text = banner.RemainingTime.HasValue
                 ? $"{banner.Text}  {banner.RemainingTime.Value:g}"
                 : banner.Text;
         }
 
         private void StartAmbientSchedules()
         {
-            blinkSchedule?.Pause();
-            backgroundLog?.Stop();
-            cursorVisible = true;
-            titleCursorLabel.EnableInClassList(CursorOnClassName, true);
-            promptCursorLabel.EnableInClassList(CursorOnClassName, true);
+            _blinkSchedule?.Pause();
+            _backgroundLog?.Stop();
+            _cursorVisible = true;
+            _titleCursorLabel.EnableInClassList(CursorOnClassName, true);
+            _promptCursorLabel.EnableInClassList(CursorOnClassName, true);
 
             if (UIPreferences.ReducedMotion)
             {
                 return;
             }
 
-            blinkSchedule = root.schedule.Execute(() =>
+            _blinkSchedule = _root.schedule.Execute(() =>
             {
-                cursorVisible = !cursorVisible;
-                titleCursorLabel.EnableInClassList(CursorOnClassName, cursorVisible);
-                promptCursorLabel.EnableInClassList(CursorOnClassName, cursorVisible);
+                _cursorVisible = !_cursorVisible;
+                _titleCursorLabel.EnableInClassList(CursorOnClassName, _cursorVisible);
+                _promptCursorLabel.EnableInClassList(CursorOnClassName, _cursorVisible);
             }).Every(500);
         }
 
         private void PlayBootIntroIfNeeded()
         {
-            if (bootIntroPlayed || UIPreferences.ReducedMotion)
+            if (_bootIntroPlayed || UIPreferences.ReducedMotion)
             {
                 CompleteBootIntro();
                 return;
             }
 
-            bootIntroPlayed = true;
-            bootIntroElapsed = 0f;
-            bootIntroCharacterCount = 0;
-            bootIntroLogLabel.text = string.Empty;
-            bootIntroPanel.RemoveFromClassList(HiddenClassName);
-            shellRoot.AddToClassList("boot-hidden");
+            _bootIntroPlayed = true;
+            _bootIntroElapsed = 0f;
+            _bootIntroCharacterCount = 0;
+            _bootIntroLogLabel.text = string.Empty;
+            _bootIntroPanel.RemoveFromClassList(HiddenClassName);
+            _shellRoot.AddToClassList("boot-hidden");
 
-            bootIntroSchedule = root.schedule.Execute(UpdateBootIntro).Every(16);
+            _bootIntroSchedule = _root.schedule.Execute(UpdateBootIntro).Every(16);
         }
 
         private void UpdateBootIntro()
         {
-            bootIntroElapsed += 0.016f;
-            int targetCount = Mathf.Clamp(Mathf.CeilToInt(bootIntroCopy.Length * (bootIntroElapsed / BootIntroSeconds)), 0, bootIntroCopy.Length);
-            if (targetCount != bootIntroCharacterCount)
+            _bootIntroElapsed += 0.016f;
+            int targetCount = Mathf.Clamp(Mathf.CeilToInt(_bootIntroCopy.Length * (_bootIntroElapsed / BootIntroSeconds)), 0, _bootIntroCopy.Length);
+            if (targetCount != _bootIntroCharacterCount)
             {
-                bootIntroCharacterCount = targetCount;
-                bootIntroLogLabel.text = bootIntroCopy.Substring(0, bootIntroCharacterCount);
+                _bootIntroCharacterCount = targetCount;
+                _bootIntroLogLabel.text = _bootIntroCopy.Substring(0, _bootIntroCharacterCount);
             }
 
-            if (bootIntroElapsed >= BootIntroSeconds)
+            if (_bootIntroElapsed >= BootIntroSeconds)
             {
                 CompleteBootIntro();
             }
@@ -784,18 +785,18 @@ namespace KernelPanic.UI
 
         private void CompleteBootIntro()
         {
-            bootIntroSchedule?.Pause();
-            bootIntroPanel.AddToClassList(HiddenClassName);
-            shellRoot.RemoveFromClassList("boot-hidden");
-            shellRoot.AddToClassList("boot-visible");
-            backgroundLog?.Start(UIPreferences.ReducedMotion);
-            starterSelection.ShowIfNeeded(saveData == null || saveData.starterChosen);
-            root.Focus();
+            _bootIntroSchedule?.Pause();
+            _bootIntroPanel.AddToClassList(HiddenClassName);
+            _shellRoot.RemoveFromClassList("boot-hidden");
+            _shellRoot.AddToClassList("boot-visible");
+            _backgroundLog?.Start(UIPreferences.ReducedMotion);
+            starterSelection.ShowIfNeeded(_saveData == null || _saveData.starterChosen);
+            _root.Focus();
         }
 
         private bool SkipBootIntro()
         {
-            if (bootIntroPanel.ClassListContains(HiddenClassName))
+            if (_bootIntroPanel.ClassListContains(HiddenClassName))
             {
                 return false;
             }
@@ -819,7 +820,7 @@ namespace KernelPanic.UI
                 return;
             }
 
-            if (rootCreditExchangeOpen)
+            if (_rootCreditExchangeOpen)
             {
                 if (evt.keyCode == KeyCode.Escape)
                 {
@@ -856,14 +857,14 @@ namespace KernelPanic.UI
             {
                 if (evt.keyCode == KeyCode.UpArrow)
                 {
-                    SelectPackage(selectedPackageIndex - 1);
+                    SelectPackage(_selectedPackageIndex - 1);
                     evt.StopPropagation();
                     return;
                 }
 
                 if (evt.keyCode == KeyCode.DownArrow)
                 {
-                    SelectPackage(selectedPackageIndex + 1);
+                    SelectPackage(_selectedPackageIndex + 1);
                     evt.StopPropagation();
                     return;
                 }
@@ -917,29 +918,29 @@ namespace KernelPanic.UI
 
             if (evt.keyCode == KeyCode.UpArrow)
             {
-                SelectCommand(selectedCommandIndex - 1);
+                SelectCommand(_selectedCommandIndex - 1);
                 evt.StopPropagation();
                 return;
             }
 
             if (evt.keyCode == KeyCode.DownArrow)
             {
-                SelectCommand(selectedCommandIndex + 1);
+                SelectCommand(_selectedCommandIndex + 1);
                 evt.StopPropagation();
                 return;
             }
 
             if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Space)
             {
-                ActivateCommand(selectedCommandIndex);
+                ActivateCommand(_selectedCommandIndex);
                 evt.StopPropagation();
                 return;
             }
 
             if (evt.keyCode == KeyCode.Tab)
             {
-                playerCollection.SelectNextFeatured();
-                featuredUnitPanel.Refresh(playerCollection.OwnedUnits, playerCollection.FeaturedUnit);
+                _playerCollection.SelectNextFeatured();
+                featuredUnitPanel.Refresh(_playerCollection.OwnedUnits, _playerCollection.FeaturedUnit);
                 evt.StopPropagation();
                 return;
             }
@@ -955,54 +956,54 @@ namespace KernelPanic.UI
 
         private bool IsRunSetupVisible()
         {
-            return runSetupPanel != null && !runSetupPanel.ClassListContains(HiddenClassName);
+            return _runSetupPanel != null && !_runSetupPanel.ClassListContains(HiddenClassName);
         }
 
         private bool IsCollectionVisible()
         {
-            return collectionPanel != null && !collectionPanel.ClassListContains(HiddenClassName);
+            return _collectionPanel != null && !_collectionPanel.ClassListContains(HiddenClassName);
         }
 
         private bool IsGachaVisible()
         {
-            return gachaPanel != null && !gachaPanel.ClassListContains(HiddenClassName);
+            return _gachaPanel != null && !_gachaPanel.ClassListContains(HiddenClassName);
         }
 
         private bool IsSubScreenVisible()
         {
             return IsRunSetupVisible() || IsCollectionVisible() ||
                    IsGachaVisible() ||
-                   (settingsPanel != null && !settingsPanel.ClassListContains(HiddenClassName));
+                   (_settingsPanel != null && !_settingsPanel.ClassListContains(HiddenClassName));
         }
 
         private void RefreshRunSetup()
         {
-            packageRows.Clear();
-            loadoutRows.Clear();
-            selectedRunLanguages.Clear();
-            cardLoadout.ClearAll();
-            runSetupList?.Clear();
-            runSetupDetail?.Clear();
-            runSetupNotice = null;
+            _packageRows.Clear();
+            _loadoutRows.Clear();
+            _selectedRunLanguages.Clear();
+            _cardLoadout.ClearAll();
+            _runSetupList?.Clear();
+            _runSetupDetail?.Clear();
+            _runSetupNotice = null;
 
-            if (runSetupList == null || runSetupDetail == null)
+            if (_runSetupList == null || _runSetupDetail == null)
             {
                 return;
             }
 
-            if (playerCollection.OwnedUnits.Count == 0)
+            if (_playerCollection.OwnedUnits.Count == 0)
             {
-                runSetupDetail.Add(new Label("no units installed") { name = "RunSetupEmptyTitle" });
-                runSetupDetail.Add(new Label("install a starter or summon a unit before starting a run") { name = "RunSetupEmptyHint" });
+                _runSetupDetail.Add(new Label("no units installed") { name = "RunSetupEmptyTitle" });
+                _runSetupDetail.Add(new Label("install a starter or summon a unit before starting a run") { name = "RunSetupEmptyHint" });
                 return;
             }
 
-            selectedPackageIndex = Mathf.Clamp(selectedPackageIndex, 0, playerCollection.OwnedUnits.Count - 1);
+            _selectedPackageIndex = Mathf.Clamp(_selectedPackageIndex, 0, _playerCollection.OwnedUnits.Count - 1);
 
-            for (int i = 0; i < playerCollection.OwnedUnits.Count; i++)
+            for (int i = 0; i < _playerCollection.OwnedUnits.Count; i++)
             {
                 int index = i;
-                DistroDefinition unit = playerCollection.OwnedUnits[i];
+                DistroDefinition unit = _playerCollection.OwnedUnits[i];
                 VisualElement row = new();
                 row.AddToClassList("package-row");
                 row.RegisterCallback<PointerEnterEvent>(_ => SelectPackage(index));
@@ -1013,10 +1014,10 @@ namespace KernelPanic.UI
                 summary.Add(new Label(">") { name = $"RunSetupMarker{index}" });
                 summary.ElementAt(0).AddToClassList("package-marker");
 
-                Label name = new(DistroPresentation.DisplayName(unit));
-                name.AddToClassList("package-name");
-                name.style.color = new StyleColor(unit.AccentColor);
-                summary.Add(name);
+                Label label = new(DistroPresentation.DisplayName(unit));
+                label.AddToClassList("package-name");
+                label.style.color = new StyleColor(unit.AccentColor);
+                summary.Add(label);
 
                 Label meta = new(DistroPresentation.FormatLanguages(unit));
                 meta.AddToClassList("package-meta");
@@ -1030,8 +1031,8 @@ namespace KernelPanic.UI
                 });
                 row.ElementAt(1).AddToClassList("package-description");
 
-                runSetupList.Add(row);
-                packageRows.Add(row);
+                _runSetupList.Add(row);
+                _packageRows.Add(row);
             }
 
             RefreshPackageSelection();
@@ -1039,24 +1040,24 @@ namespace KernelPanic.UI
 
         private void SelectPackage(int index)
         {
-            if (packageRows.Count == 0)
+            if (_packageRows.Count == 0)
             {
                 return;
             }
 
-            selectedPackageIndex = (index + packageRows.Count) % packageRows.Count;
-            cardLoadout.ClearLoadout(playerCollection.OwnedUnits[selectedPackageIndex]);
-            selectedRunLanguages.Clear();
-            runSetupPackageScroll = null;
-            runSetupNotice = null;
+            _selectedPackageIndex = (index + _packageRows.Count) % _packageRows.Count;
+            _cardLoadout.ClearLoadout(_playerCollection.OwnedUnits[_selectedPackageIndex]);
+            _selectedRunLanguages.Clear();
+            _runSetupPackageScroll = null;
+            _runSetupNotice = null;
             RefreshPackageSelection();
         }
 
         private void RefreshPackageSelection()
         {
-            for (int i = 0; i < packageRows.Count; i++)
+            for (int i = 0; i < _packageRows.Count; i++)
             {
-                packageRows[i].EnableInClassList(SelectedClassName, i == selectedPackageIndex);
+                _packageRows[i].EnableInClassList(SelectedClassName, i == _selectedPackageIndex);
             }
 
             RenderSelectedPackageDetail();
@@ -1064,17 +1065,17 @@ namespace KernelPanic.UI
 
         private void RenderSelectedPackageDetail()
         {
-            Vector2 previousScrollOffset = runSetupPackageScroll == null ? Vector2.zero : runSetupPackageScroll.scrollOffset;
-            runSetupDetail?.Clear();
-            loadoutRows.Clear();
-            if (runSetupDetail == null || selectedPackageIndex < 0 || selectedPackageIndex >= playerCollection.OwnedUnits.Count)
+            Vector2 previousScrollOffset = _runSetupPackageScroll == null ? Vector2.zero : _runSetupPackageScroll.scrollOffset;
+            _runSetupDetail?.Clear();
+            _loadoutRows.Clear();
+            if (_runSetupDetail == null || _selectedPackageIndex < 0 || _selectedPackageIndex >= _playerCollection.OwnedUnits.Count)
             {
                 return;
             }
 
-            DistroDefinition unit = playerCollection.OwnedUnits[selectedPackageIndex];
-            runSetupDetail.Add(BuildRunSetupReadout(unit));
-            AddRunSetupPassive(unit, runSetupDetail);
+            DistroDefinition unit = _playerCollection.OwnedUnits[_selectedPackageIndex];
+            _runSetupDetail.Add(BuildRunSetupReadout(unit));
+            AddRunSetupPassive(unit, _runSetupDetail);
 
             ScrollView packageScroll = new(ScrollViewMode.Vertical);
             packageScroll.AddToClassList("package-scroll");
@@ -1084,10 +1085,10 @@ namespace KernelPanic.UI
             packageList.Add(new Label("equipped cards") { name = "RunSetupCardsHeader" });
             packageList.ElementAt(0).AddToClassList("package-header");
 
-            IReadOnlyList<string> equippedCardIds = cardLoadout.GetEquippedCardIds(unit.Id);
-            if (!string.IsNullOrWhiteSpace(runSetupNotice))
+            IReadOnlyList<string> equippedCardIds = _cardLoadout.GetEquippedCardIds(unit.Id);
+            if (!string.IsNullOrWhiteSpace(_runSetupNotice))
             {
-                packageList.Add(new Label(runSetupNotice) { name = "RunSetupNotice" });
+                packageList.Add(new Label(_runSetupNotice) { name = "RunSetupNotice" });
                 packageList.ElementAt(packageList.childCount - 1).AddToClassList("package-notice");
             }
 
@@ -1101,7 +1102,7 @@ namespace KernelPanic.UI
             for (int i = 0; i < unit.ExclusiveCards.Count; i++)
             {
                 CardDefinition card = unit.ExclusiveCards[i];
-                if (card == null || card.IsToken)
+                if (card == null || card.IsToken || card.IsRunOnly)
                 {
                     continue;
                 }
@@ -1109,7 +1110,7 @@ namespace KernelPanic.UI
                 bool equipped = ContainsCardId(equippedCardIds, card.Id);
                 VisualElement row = BuildCardLoadoutRow(unit, card, equipped);
                 packageList.Add(row);
-                loadoutRows.Add(row);
+                _loadoutRows.Add(row);
                 addedCards = true;
             }
 
@@ -1125,25 +1126,25 @@ namespace KernelPanic.UI
             }
             else
             {
-                selectedRunLanguages.Clear();
+                _selectedRunLanguages.Clear();
             }
 
             packageScroll.Add(packageList);
-            runSetupDetail.Add(packageScroll);
-            runSetupDetail.Add(BuildBootRow(unit, CanBootRun(equippedCardIds)));
-            runSetupPackageScroll = packageScroll;
+            _runSetupDetail.Add(packageScroll);
+            _runSetupDetail.Add(BuildBootRow(unit, CanBootRun(equippedCardIds)));
+            _runSetupPackageScroll = packageScroll;
             RestoreRunSetupPackageScroll(previousScrollOffset);
         }
 
         private void RestoreRunSetupPackageScroll(Vector2 offset)
         {
-            if (runSetupPackageScroll == null)
+            if (_runSetupPackageScroll == null)
             {
                 return;
             }
 
-            runSetupPackageScroll.scrollOffset = offset;
-            runSetupPackageScroll.schedule.Execute(() => runSetupPackageScroll.scrollOffset = offset).StartingIn(0);
+            _runSetupPackageScroll.scrollOffset = offset;
+            _runSetupPackageScroll.schedule.Execute(() => _runSetupPackageScroll.scrollOffset = offset).StartingIn(0);
         }
 
         private VisualElement BuildRunSetupReadout(DistroDefinition unit)
@@ -1162,10 +1163,10 @@ namespace KernelPanic.UI
             VisualElement copy = new();
             copy.AddToClassList("run-readout-copy");
 
-            Label name = new(DistroPresentation.DisplayName(unit));
-            name.AddToClassList("collection-detail-name");
-            name.style.color = new StyleColor(unit.AccentColor);
-            copy.Add(name);
+            Label label = new(DistroPresentation.DisplayName(unit));
+            label.AddToClassList("collection-detail-name");
+            label.style.color = new StyleColor(unit.AccentColor);
+            copy.Add(label);
 
             Label languages = new(DistroPresentation.FormatLanguages(unit));
             languages.AddToClassList("collection-detail-description");
@@ -1259,9 +1260,9 @@ namespace KernelPanic.UI
             packageList.ElementAt(packageList.childCount - 1).AddToClassList("package-header");
             packageList.ElementAt(packageList.childCount - 1).AddToClassList("run-language-header");
 
-            if (selectedRunLanguages.Count < 2)
+            if (_selectedRunLanguages.Count < 2)
             {
-                packageList.Add(new Label($"select {2 - selectedRunLanguages.Count} more language(s) before booting") { name = "RunSetupLanguagesNotice" });
+                packageList.Add(new Label($"select {2 - _selectedRunLanguages.Count} more language(s) before booting") { name = "RunSetupLanguagesNotice" });
                 packageList.ElementAt(packageList.childCount - 1).AddToClassList("package-notice");
             }
 
@@ -1308,27 +1309,27 @@ namespace KernelPanic.UI
         {
             if (IsRunLanguageSelected(language))
             {
-                selectedRunLanguages.Remove(language);
-                runSetupNotice = null;
+                _selectedRunLanguages.Remove(language);
+                _runSetupNotice = null;
                 RenderSelectedPackageDetail();
                 return;
             }
 
-            if (selectedRunLanguages.Count >= 2)
+            if (_selectedRunLanguages.Count >= 2)
             {
-                runSetupNotice = "language limit reached";
+                _runSetupNotice = "language limit reached";
                 RenderSelectedPackageDetail();
                 return;
             }
 
-            selectedRunLanguages.Add(language);
-            runSetupNotice = null;
+            _selectedRunLanguages.Add(language);
+            _runSetupNotice = null;
             RenderSelectedPackageDetail();
         }
 
         private void ToggleCardInSelectedLoadout(DistroDefinition unit, CardDefinition card)
         {
-            runSetupNotice = TryToggleLoadoutCard(unit, card);
+            _runSetupNotice = TryToggleLoadoutCard(unit, card);
             RenderSelectedPackageDetail();
         }
 
@@ -1339,12 +1340,12 @@ namespace KernelPanic.UI
                 return "loadout change failed";
             }
 
-            IReadOnlyList<string> equippedCardIds = cardLoadout.GetEquippedCardIds(unit.Id);
+            IReadOnlyList<string> equippedCardIds = _cardLoadout.GetEquippedCardIds(unit.Id);
             bool equipped = ContainsCardId(equippedCardIds, card.Id);
             CardLoadoutFailureReason reason;
             bool changed = equipped
-                ? cardLoadout.TryUnequip(unit.Id, card.Id, out reason)
-                : cardLoadout.TryEquip(unit.Id, card.Id, out reason);
+                ? _cardLoadout.TryUnequip(unit.Id, card.Id, out reason)
+                : _cardLoadout.TryEquip(unit.Id, card.Id, out reason);
 
             return changed ? null : FormatLoadoutFailure(reason);
         }
@@ -1368,7 +1369,7 @@ namespace KernelPanic.UI
             IReadOnlyList<LanguageCatalogEntry> languages = LanguageCatalog.All;
             for (int i = 0; i < languages.Count; i++)
             {
-                if (LanguageUnlock.IsUnlocked(languages[i].Language, playerCollection))
+                if (LanguageUnlock.IsUnlocked(languages[i].Language, _playerCollection))
                 {
                     available.Add(languages[i]);
                 }
@@ -1379,9 +1380,9 @@ namespace KernelPanic.UI
 
         private bool IsRunLanguageSelected(Language language)
         {
-            for (int i = 0; i < selectedRunLanguages.Count; i++)
+            for (int i = 0; i < _selectedRunLanguages.Count; i++)
             {
-                if (selectedRunLanguages[i] == language)
+                if (_selectedRunLanguages[i] == language)
                 {
                     return true;
                 }
@@ -1392,7 +1393,7 @@ namespace KernelPanic.UI
 
         private bool CanBootRun(IReadOnlyList<string> equippedCardIds)
         {
-            return equippedCardIds.Count >= CardLoadout.MaxEquippedCards && selectedRunLanguages.Count == 2;
+            return equippedCardIds.Count >= CardLoadout.MaxEquippedCards && _selectedRunLanguages.Count == 2;
         }
 
         private static string FormatLoadoutFailure(CardLoadoutFailureReason reason)
@@ -1427,58 +1428,94 @@ namespace KernelPanic.UI
 
         private void BootSelectedPackage()
         {
-            if (selectedPackageIndex < 0 || selectedPackageIndex >= playerCollection.OwnedUnits.Count)
+            if (_selectedPackageIndex < 0 || _selectedPackageIndex >= _playerCollection.OwnedUnits.Count)
             {
                 return;
             }
 
-            DistroDefinition unit = playerCollection.OwnedUnits[selectedPackageIndex];
-            IReadOnlyList<string> equippedCardIds = cardLoadout.GetEquippedCardIds(unit.Id);
+            DistroDefinition unit = _playerCollection.OwnedUnits[_selectedPackageIndex];
+            IReadOnlyList<string> equippedCardIds = _cardLoadout.GetEquippedCardIds(unit.Id);
             if (equippedCardIds.Count < CardLoadout.MaxEquippedCards)
             {
-                runSetupNotice = equippedCardIds.Count == 0
+                _runSetupNotice = equippedCardIds.Count == 0
                     ? "boot: no packages staged"
                     : $"boot: stage {CardLoadout.MaxEquippedCards} packages";
                 RenderSelectedPackageDetail();
                 return;
             }
 
-            if (selectedRunLanguages.Count < 2)
+            if (_selectedRunLanguages.Count < 2)
             {
-                runSetupNotice = "boot: select 2 programming languages";
+                _runSetupNotice = "boot: select 2 programming languages";
                 RenderSelectedPackageDetail();
                 return;
             }
 
             SaveLastRunLoadout(unit, equippedCardIds);
+            RunContext.Set(unit, BuildEquippedCardDefinitions(unit, equippedCardIds), _selectedRunLanguages[0], _selectedRunLanguages[1]);
             SceneLoader.LoadGame();
+        }
+
+        private IReadOnlyList<CardDefinition> BuildEquippedCardDefinitions(DistroDefinition unit, IReadOnlyList<string> equippedCardIds)
+        {
+            List<CardDefinition> cards = new();
+            for (int i = 0; i < equippedCardIds.Count; i++)
+            {
+                CardDefinition card = cardDatabase == null ? null : cardDatabase.FindById(equippedCardIds[i]);
+                card ??= FindExclusiveCard(unit, equippedCardIds[i]);
+                if (card != null)
+                {
+                    cards.Add(card);
+                }
+            }
+
+            return cards;
+        }
+
+        private static CardDefinition FindExclusiveCard(DistroDefinition unit, string cardId)
+        {
+            if (unit == null || string.IsNullOrWhiteSpace(cardId))
+            {
+                return null;
+            }
+
+            for (int i = 0; i < unit.ExclusiveCards.Count; i++)
+            {
+                CardDefinition card = unit.ExclusiveCards[i];
+                if (card != null && !card.IsRunOnly && string.Equals(card.Id, cardId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return card;
+                }
+            }
+
+            return null;
         }
 
         private void HandlePointerDown(PointerDownEvent evt)
         {
-            root.Focus();
-            suppressNextClick = SkipBootIntro();
+            _root.Focus();
+            _suppressNextClick = SkipBootIntro();
         }
 
         private void SelectCommand(int index)
         {
-            selectedCommandIndex = (index + commandEntries.Count) % commandEntries.Count;
-            for (int i = 0; i < commandEntries.Count; i++)
+            _selectedCommandIndex = (index + _commandEntries.Count) % _commandEntries.Count;
+            for (int i = 0; i < _commandEntries.Count; i++)
             {
-                commandEntries[i].SetSelected(i == selectedCommandIndex);
+                _commandEntries[i].SetSelected(i == _selectedCommandIndex);
             }
         }
 
         private void ActivateCommand(int index)
         {
-            commandEntries[index].Activate();
+            _commandEntries[index].Activate();
         }
 
         private void HandleCommandClicked(int index)
         {
-            if (suppressNextClick)
+            if (_suppressNextClick)
             {
-                suppressNextClick = false;
+                _suppressNextClick = false;
                 return;
             }
 
@@ -1488,7 +1525,7 @@ namespace KernelPanic.UI
         private void HandleStartRunClicked()
         {
             RefreshRunSetup();
-            ShowPanel(runSetupPanel);
+            ShowPanel(_runSetupPanel);
         }
 
         private void HandleQuitClicked()
@@ -1502,17 +1539,17 @@ namespace KernelPanic.UI
 
         private void ShowMainMenu()
         {
-            cardLoadout.ClearAll();
-            selectedRunLanguages.Clear();
-            runSetupNotice = null;
-            ShowPanel(mainMenuPanel);
-            root.Focus();
+            _cardLoadout.ClearAll();
+            _selectedRunLanguages.Clear();
+            _runSetupNotice = null;
+            ShowPanel(_mainMenuPanel);
+            _root.Focus();
         }
 
         private void ShowCollection()
         {
             ShowCollectionUnits();
-            ShowPanel(collectionPanel);
+            ShowPanel(_collectionPanel);
         }
 
         private void HandleCollectionBack()
@@ -1528,25 +1565,25 @@ namespace KernelPanic.UI
 
         private void ShowCollectionUnits()
         {
-            collectionShowingLanguages = false;
-            collectionUnitsButton.EnableInClassList(SelectedClassName, true);
-            collectionLanguagesButton.EnableInClassList(SelectedClassName, false);
-            collectionScreen.RefreshUnits(playerCollection.OwnedUnits);
+            _collectionShowingLanguages = false;
+            _collectionUnitsButton.EnableInClassList(SelectedClassName, true);
+            _collectionLanguagesButton.EnableInClassList(SelectedClassName, false);
+            collectionScreen.RefreshUnits(_playerCollection.OwnedUnits);
             SyncCollectionFrame();
         }
 
         private void ShowCollectionLanguages()
         {
-            collectionShowingLanguages = true;
-            collectionUnitsButton.EnableInClassList(SelectedClassName, false);
-            collectionLanguagesButton.EnableInClassList(SelectedClassName, true);
+            _collectionShowingLanguages = true;
+            _collectionUnitsButton.EnableInClassList(SelectedClassName, false);
+            _collectionLanguagesButton.EnableInClassList(SelectedClassName, true);
             collectionScreen.ShowLanguages();
             SyncCollectionFrame();
         }
 
         private void ToggleCollectionTab()
         {
-            if (collectionShowingLanguages)
+            if (_collectionShowingLanguages)
             {
                 ShowCollectionUnits();
                 return;
@@ -1557,32 +1594,32 @@ namespace KernelPanic.UI
 
         private void SyncCollectionFrame()
         {
-            collectionFrame.SetTitle(collectionScreen.CurrentTitle);
-            collectionFrame.SetHint(collectionScreen.CurrentHint);
+            _collectionFrame.SetTitle(collectionScreen.CurrentTitle);
+            _collectionFrame.SetHint(collectionScreen.CurrentHint);
         }
 
         private void ShowGacha()
         {
             gachaScreen.Open();
-            ShowPanel(gachaPanel);
+            ShowPanel(_gachaPanel);
         }
 
         private void ShowSettings()
         {
-            ShowPanel(settingsPanel);
+            ShowPanel(_settingsPanel);
         }
 
         // TODO: Replace this direct toggle with a screen-stack/router when menu flows need history or transitions.
         private void ShowPanel(VisualElement activePanel)
         {
-            mainMenuPanel.EnableInClassList(HiddenClassName, mainMenuPanel != activePanel);
-            collectionPanel.EnableInClassList(HiddenClassName, collectionPanel != activePanel);
-            runSetupPanel.EnableInClassList(HiddenClassName, runSetupPanel != activePanel);
-            gachaPanel.EnableInClassList(HiddenClassName, gachaPanel != activePanel);
-            settingsPanel.EnableInClassList(HiddenClassName, settingsPanel != activePanel);
+            _mainMenuPanel.EnableInClassList(HiddenClassName, _mainMenuPanel != activePanel);
+            _collectionPanel.EnableInClassList(HiddenClassName, _collectionPanel != activePanel);
+            _runSetupPanel.EnableInClassList(HiddenClassName, _runSetupPanel != activePanel);
+            _gachaPanel.EnableInClassList(HiddenClassName, _gachaPanel != activePanel);
+            _settingsPanel.EnableInClassList(HiddenClassName, _settingsPanel != activePanel);
 
-            bool showingMainMenu = mainMenuPanel == activePanel;
-            motdBlock.EnableInClassList(HiddenClassName, !showingMainMenu || string.IsNullOrWhiteSpace(motdBody));
+            bool showingMainMenu = _mainMenuPanel == activePanel;
+            _motdBlock.EnableInClassList(HiddenClassName, !showingMainMenu || string.IsNullOrWhiteSpace(motdBody));
 
             if (showingMainMenu)
             {
@@ -1590,7 +1627,7 @@ namespace KernelPanic.UI
             }
             else
             {
-                eventBanner.AddToClassList(HiddenClassName);
+                _eventBanner.AddToClassList(HiddenClassName);
             }
 
             RefreshCurrencyReadouts();
@@ -1598,14 +1635,14 @@ namespace KernelPanic.UI
 
         private sealed class CommandMenuEntry
         {
-            private readonly Label cursor;
-            private readonly Action action;
+            private readonly Label _cursor;
+            private readonly Action _action;
 
             public CommandMenuEntry(VisualElement row, Action action)
             {
                 Row = row;
-                this.action = action;
-                cursor = row.Q<Label>(className: "command-cursor");
+                this._action = action;
+                _cursor = row.Q<Label>(className: "command-cursor");
             }
 
             public VisualElement Row { get; }
@@ -1613,12 +1650,12 @@ namespace KernelPanic.UI
             public void SetSelected(bool selected)
             {
                 Row.EnableInClassList(SelectedClassName, selected);
-                cursor.visible = selected;
+                _cursor.visible = selected;
             }
 
             public void Activate()
             {
-                action.Invoke();
+                _action.Invoke();
             }
         }
     }

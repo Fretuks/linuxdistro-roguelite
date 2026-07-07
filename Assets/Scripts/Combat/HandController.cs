@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 namespace KernelPanic.Combat
@@ -8,7 +7,7 @@ namespace KernelPanic.Combat
     /// </summary>
     public sealed class HandController
     {
-        private readonly List<CardInstance> cards = new();
+        private readonly List<CardInstance> _cards = new();
 
         public HandController(int ramCapacity)
         {
@@ -16,26 +15,32 @@ namespace KernelPanic.Combat
         }
 
         public int RamCapacity { get; private set; }
-        public IReadOnlyList<CardInstance> Cards => cards;
+        public IReadOnlyList<CardInstance> Cards => _cards;
 
         public bool CanAdd(CardInstance card)
         {
-            throw new NotImplementedException();
+            return card != null && _cards.Count < RamCapacity;
         }
 
-        public void Add(CardInstance card)
+        public bool Add(CardInstance card)
         {
-            throw new NotImplementedException();
+            if (!CanAdd(card))
+            {
+                return false;
+            }
+
+            _cards.Add(card);
+            return true;
         }
 
         public bool Remove(CardInstance card)
         {
-            throw new NotImplementedException();
+            return card != null && _cards.Remove(card);
         }
 
         public void Clear()
         {
-            throw new NotImplementedException();
+            _cards.Clear();
         }
     }
 }

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using KernelPanic.Data;
 
@@ -11,7 +10,8 @@ namespace KernelPanic.Run
     {
         public IReadOnlyList<RewardChoice> GeneratePostWaveChoices(RunConfig runConfig, int waveNumber)
         {
-            throw new NotImplementedException();
+            // TODO: Generate real post-wave rewards once card reward pools and upgrade rules exist.
+            return new[] { new RewardChoice(RewardChoiceType.Skip, null) };
         }
     }
 

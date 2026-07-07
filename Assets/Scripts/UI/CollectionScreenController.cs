@@ -15,50 +15,50 @@ namespace KernelPanic.UI
     [Serializable]
     public sealed class CollectionScreenController
     {
-        private readonly List<VisualElement> rows = new();
+        private readonly List<VisualElement> _rows = new();
 
-        private VisualElement list;
-        private VisualElement detail;
-        private FontAsset monospaceFont;
-        private LanguageDeckDatabase languageDeckDatabase;
-        private CardDatabase cardDatabase;
-        private PlayerCollection playerCollection;
-        private IReadOnlyList<DistroDefinition> units = Array.Empty<DistroDefinition>();
-        private IReadOnlyList<LanguageCatalogEntry> languages = LanguageCatalog.All;
-        private IReadOnlyList<CardEntry> cards = Array.Empty<CardEntry>();
-        private CollectionMode mode;
-        private CollectionMode returnMode;
-        private int selectedUnitIndex;
-        private int selectedLanguageIndex;
-        private int selectedCardIndex;
-        private string emptyCardMessage = "no cards installed";
+        private VisualElement _list;
+        private VisualElement _detail;
+        private FontAsset _monospaceFont;
+        private LanguageDeckDatabase _languageDeckDatabase;
+        private CardDatabase _cardDatabase;
+        private PlayerCollection _playerCollection;
+        private IReadOnlyList<DistroDefinition> _units = Array.Empty<DistroDefinition>();
+        private IReadOnlyList<LanguageCatalogEntry> _languages = LanguageCatalog.All;
+        private IReadOnlyList<CardEntry> _cards = Array.Empty<CardEntry>();
+        private CollectionMode _mode;
+        private CollectionMode _returnMode;
+        private int _selectedUnitIndex;
+        private int _selectedLanguageIndex;
+        private int _selectedCardIndex;
+        private string _emptyCardMessage = "no cards installed";
 
         public event Action ViewChanged;
 
         public void Bind(VisualElement root, FontAsset artFont, LanguageDeckDatabase deckDatabase, CardDatabase cardsDatabase, PlayerCollection collection)
         {
-            monospaceFont = artFont;
-            languageDeckDatabase = deckDatabase;
-            cardDatabase = cardsDatabase;
-            playerCollection = collection;
-            list = root.Q<VisualElement>("CollectionList");
-            detail = root.Q<VisualElement>("CollectionDetail");
+            _monospaceFont = artFont;
+            _languageDeckDatabase = deckDatabase;
+            _cardDatabase = cardsDatabase;
+            _playerCollection = collection;
+            _list = root.Q<VisualElement>("CollectionList");
+            _detail = root.Q<VisualElement>("CollectionDetail");
         }
 
-        public bool IsCardSubview => mode == CollectionMode.CardSubview;
+        public bool IsCardSubview => _mode == CollectionMode.CardSubview;
 
         public string CurrentTitle { get; private set; } = "$ ls ~/collection";
         public string CurrentHint { get; private set; } = "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [enter] select";
 
         public void RefreshUnits(IReadOnlyList<DistroDefinition> ownedUnits)
         {
-            units = ownedUnits ?? Array.Empty<DistroDefinition>();
+            _units = ownedUnits ?? Array.Empty<DistroDefinition>();
             ShowUnits();
         }
 
         public void ShowUnits()
         {
-            mode = CollectionMode.Units;
+            _mode = CollectionMode.Units;
             CurrentTitle = "$ ls ~/collection";
             CurrentHint = "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [enter] select";
             RenderUnits();
@@ -67,7 +67,7 @@ namespace KernelPanic.UI
 
         public void ShowLanguages()
         {
-            mode = CollectionMode.Languages;
+            _mode = CollectionMode.Languages;
             CurrentTitle = "$ ls ~/collection/languages";
             CurrentHint = "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [enter] select";
             RenderLanguages();
@@ -81,7 +81,7 @@ namespace KernelPanic.UI
                 return false;
             }
 
-            if (returnMode == CollectionMode.Languages)
+            if (_returnMode == CollectionMode.Languages)
             {
                 ShowLanguages();
             }
@@ -95,33 +95,33 @@ namespace KernelPanic.UI
 
         public void SelectRelative(int delta)
         {
-            if (mode == CollectionMode.Units)
+            if (_mode == CollectionMode.Units)
             {
-                SelectUnit(selectedUnitIndex + delta);
+                SelectUnit(_selectedUnitIndex + delta);
                 return;
             }
 
-            if (mode == CollectionMode.Languages)
+            if (_mode == CollectionMode.Languages)
             {
-                SelectLanguage(selectedLanguageIndex + delta);
+                SelectLanguage(_selectedLanguageIndex + delta);
                 return;
             }
 
-            SelectCard(selectedCardIndex + delta);
+            SelectCard(_selectedCardIndex + delta);
         }
 
         public void ActivateSelected()
         {
-            if (mode == CollectionMode.Units && units.Count > 0)
+            if (_mode == CollectionMode.Units && _units.Count > 0)
             {
-                OpenUnitCards(units[selectedUnitIndex]);
+                OpenUnitCards(_units[_selectedUnitIndex]);
                 return;
             }
 
-            if (mode == CollectionMode.Languages && languages.Count > 0)
+            if (_mode == CollectionMode.Languages && _languages.Count > 0)
             {
-                LanguageCatalogEntry language = languages[selectedLanguageIndex];
-                if (LanguageUnlock.IsUnlocked(language.Language, playerCollection))
+                LanguageCatalogEntry language = _languages[_selectedLanguageIndex];
+                if (LanguageUnlock.IsUnlocked(language.Language, _playerCollection))
                 {
                     OpenLanguageDeck(language);
                 }
@@ -130,27 +130,27 @@ namespace KernelPanic.UI
 
         private void RenderUnits()
         {
-            if (list == null || detail == null)
+            if (_list == null || _detail == null)
             {
                 return;
             }
 
-            rows.Clear();
-            list.Clear();
+            _rows.Clear();
+            _list.Clear();
 
-            if (units.Count == 0)
+            if (_units.Count == 0)
             {
-                detail.Clear();
-                detail.Add(new Label("no units installed") { name = "CollectionEmptyTitle" });
-                detail.Add(new Label("run: curl gacha.sh | sh") { name = "CollectionEmptyHint" });
+                _detail.Clear();
+                _detail.Add(new Label("no units installed") { name = "CollectionEmptyTitle" });
+                _detail.Add(new Label("run: curl gacha.sh | sh") { name = "CollectionEmptyHint" });
                 return;
             }
 
-            selectedUnitIndex = Mathf.Clamp(selectedUnitIndex, 0, units.Count - 1);
-            for (int i = 0; i < units.Count; i++)
+            _selectedUnitIndex = Mathf.Clamp(_selectedUnitIndex, 0, _units.Count - 1);
+            for (int i = 0; i < _units.Count; i++)
             {
                 int index = i;
-                DistroDefinition unit = units[i];
+                DistroDefinition unit = _units[i];
                 VisualElement row = new();
                 row.AddToClassList("collection-row");
                 row.RegisterCallback<PointerEnterEvent>(_ => SelectUnit(index));
@@ -165,29 +165,29 @@ namespace KernelPanic.UI
 
                 row.Add(name);
                 row.Add(unitLanguages);
-                list.Add(row);
-                rows.Add(row);
+                _list.Add(row);
+                _rows.Add(row);
             }
 
-            SelectUnit(selectedUnitIndex);
+            SelectUnit(_selectedUnitIndex);
         }
 
         private void RenderLanguages()
         {
-            if (list == null || detail == null)
+            if (_list == null || _detail == null)
             {
                 return;
             }
 
-            rows.Clear();
-            list.Clear();
-            selectedLanguageIndex = Mathf.Clamp(selectedLanguageIndex, 0, languages.Count - 1);
+            _rows.Clear();
+            _list.Clear();
+            _selectedLanguageIndex = Mathf.Clamp(_selectedLanguageIndex, 0, _languages.Count - 1);
 
-            for (int i = 0; i < languages.Count; i++)
+            for (int i = 0; i < _languages.Count; i++)
             {
                 int index = i;
-                LanguageCatalogEntry language = languages[i];
-                bool unlocked = LanguageUnlock.IsUnlocked(language.Language, playerCollection);
+                LanguageCatalogEntry language = _languages[i];
+                bool unlocked = LanguageUnlock.IsUnlocked(language.Language, _playerCollection);
                 VisualElement row = new();
                 row.AddToClassList("collection-row");
                 row.EnableInClassList("locked", !unlocked);
@@ -202,72 +202,72 @@ namespace KernelPanic.UI
 
                 row.Add(name);
                 row.Add(tag);
-                list.Add(row);
-                rows.Add(row);
+                _list.Add(row);
+                _rows.Add(row);
             }
 
-            SelectLanguage(selectedLanguageIndex);
+            SelectLanguage(_selectedLanguageIndex);
         }
 
         private void SelectUnit(int index)
         {
-            if (units.Count == 0)
+            if (_units.Count == 0)
             {
                 return;
             }
 
-            selectedUnitIndex = Mathf.Clamp(index, 0, units.Count - 1);
-            ApplySelection(selectedUnitIndex);
-            RenderUnitDetail(units[selectedUnitIndex]);
+            _selectedUnitIndex = Mathf.Clamp(index, 0, _units.Count - 1);
+            ApplySelection(_selectedUnitIndex);
+            RenderUnitDetail(_units[_selectedUnitIndex]);
         }
 
         private void SelectLanguage(int index)
         {
-            selectedLanguageIndex = Mathf.Clamp(index, 0, languages.Count - 1);
-            ApplySelection(selectedLanguageIndex);
-            RenderLanguageDetail(languages[selectedLanguageIndex]);
+            _selectedLanguageIndex = Mathf.Clamp(index, 0, _languages.Count - 1);
+            ApplySelection(_selectedLanguageIndex);
+            RenderLanguageDetail(_languages[_selectedLanguageIndex]);
         }
 
         private void SelectCard(int index)
         {
-            if (cards.Count == 0)
+            if (_cards.Count == 0)
             {
                 return;
             }
 
-            selectedCardIndex = Mathf.Clamp(index, 0, cards.Count - 1);
-            ApplySelection(selectedCardIndex);
-            RenderCardDetail(cards[selectedCardIndex]);
+            _selectedCardIndex = Mathf.Clamp(index, 0, _cards.Count - 1);
+            ApplySelection(_selectedCardIndex);
+            RenderCardDetail(_cards[_selectedCardIndex]);
         }
 
         private void ApplySelection(int selectedIndex)
         {
-            for (int i = 0; i < rows.Count; i++)
+            for (int i = 0; i < _rows.Count; i++)
             {
-                rows[i].EnableInClassList("selected", i == selectedIndex);
+                _rows[i].EnableInClassList("selected", i == selectedIndex);
             }
         }
 
         private void RenderUnitDetail(DistroDefinition unit)
         {
-            detail.Clear();
+            _detail.Clear();
 
             Label name = new(DistroPresentation.DisplayName(unit));
             name.AddToClassList("collection-detail-name");
             name.style.color = new StyleColor(unit.AccentColor);
-            detail.Add(name);
+            _detail.Add(name);
 
             Label description = new(string.IsNullOrWhiteSpace(unit.Description) ? "--" : unit.Description);
             description.AddToClassList("collection-detail-description");
-            detail.Add(description);
-            AddPassiveDetails(detail, unit);
+            _detail.Add(description);
+            AddPassiveDetails(_detail, unit);
 
             VisualElement readout = new();
             readout.AddToClassList("collection-detail-readout");
 
             Label artLabel = new();
-            DistroArtPresenter.ConfigureArtLabel(artLabel, monospaceFont);
-            AsciiArtFitter artFitter = new(artLabel, monospaceFont);
+            DistroArtPresenter.ConfigureArtLabel(artLabel, _monospaceFont);
+            AsciiArtFitter artFitter = new(artLabel, _monospaceFont);
             VisualElement artPlaceholder = DistroArtPresenter.CreatePlaceholder();
             artFitter.SetArt(DistroArtPresenter.Render(artLabel, artPlaceholder, unit));
             readout.Add(artPlaceholder);
@@ -281,23 +281,23 @@ namespace KernelPanic.UI
             details.Add(BuildDetailLine("cycles", unit.BaseCyclesPerTurn.ToString()));
 
             readout.Add(details);
-            detail.Add(readout);
-            detail.Add(BuildSubviewCommand($"> cat ~/units/{unit.Id}/cards", "exclusive packages", HasListableCards(unit), () => OpenUnitCards(unit), "no packages installed"));
+            _detail.Add(readout);
+            _detail.Add(BuildSubviewCommand($"> cat ~/units/{unit.Id}/cards", "exclusive packages", HasListableCards(unit), () => OpenUnitCards(unit), "no packages installed"));
         }
 
         private void RenderLanguageDetail(LanguageCatalogEntry language)
         {
-            detail.Clear();
-            bool unlocked = LanguageUnlock.IsUnlocked(language.Language, playerCollection);
+            _detail.Clear();
+            bool unlocked = LanguageUnlock.IsUnlocked(language.Language, _playerCollection);
 
             Label name = new(language.DisplayName);
             name.AddToClassList("collection-detail-name");
-            detail.Add(name);
-            detail.Add(BuildDetailLine("track", language.ResolutionTrack.ToString()));
+            _detail.Add(name);
+            _detail.Add(BuildDetailLine("track", language.ResolutionTrack.ToString()));
 
             Label how = new(language.HowItWorks);
             how.AddToClassList("collection-detail-description");
-            detail.Add(how);
+            _detail.Add(how);
 
             if (!unlocked)
             {
@@ -306,11 +306,11 @@ namespace KernelPanic.UI
                     : language.UnlockHint;
                 Label hint = new(hintText);
                 hint.AddToClassList("package-notice");
-                detail.Add(hint);
+                _detail.Add(hint);
                 return;
             }
 
-            detail.Add(BuildSubviewCommand($"> cat ~/lang/{GetLanguageId(language.Language)}/deck", "starter deck", true, () => OpenLanguageDeck(language), null));
+            _detail.Add(BuildSubviewCommand($"> cat ~/lang/{GetLanguageId(language.Language)}/deck", "starter deck", true, () => OpenLanguageDeck(language), null));
         }
 
         private void OpenUnitCards(DistroDefinition unit)
@@ -320,9 +320,9 @@ namespace KernelPanic.UI
                 return;
             }
 
-            returnMode = CollectionMode.Units;
-            cards = BuildUnitCardEntries(unit);
-            emptyCardMessage = "no packages installed";
+            _returnMode = CollectionMode.Units;
+            _cards = BuildUnitCardEntries(unit);
+            _emptyCardMessage = "no packages installed";
             CurrentTitle = $"$ cat ~/units/{unit.Id}/cards";
             CurrentHint = "[esc] back   [arrows] navigate";
             RenderCardSubview();
@@ -331,9 +331,9 @@ namespace KernelPanic.UI
 
         private void OpenLanguageDeck(LanguageCatalogEntry language)
         {
-            returnMode = CollectionMode.Languages;
-            cards = BuildStarterDeckEntries(language);
-            emptyCardMessage = "starter deck not yet available";
+            _returnMode = CollectionMode.Languages;
+            _cards = BuildStarterDeckEntries(language);
+            _emptyCardMessage = "starter deck not yet available";
             CurrentTitle = $"$ cat ~/lang/{GetLanguageId(language.Language)}/deck";
             CurrentHint = "[esc] back   [arrows] navigate";
             RenderCardSubview();
@@ -342,31 +342,31 @@ namespace KernelPanic.UI
 
         private void RenderCardSubview()
         {
-            mode = CollectionMode.CardSubview;
-            rows.Clear();
-            list.Clear();
-            detail.Clear();
-            selectedCardIndex = Mathf.Clamp(selectedCardIndex, 0, Math.Max(0, cards.Count - 1));
+            _mode = CollectionMode.CardSubview;
+            _rows.Clear();
+            _list.Clear();
+            _detail.Clear();
+            _selectedCardIndex = Mathf.Clamp(_selectedCardIndex, 0, Math.Max(0, _cards.Count - 1));
 
-            if (cards.Count == 0)
+            if (_cards.Count == 0)
             {
-                detail.Add(new Label(emptyCardMessage) { name = "CollectionEmptyTitle" });
-                detail.Add(new Label("check back after deck data is installed") { name = "CollectionEmptyHint" });
+                _detail.Add(new Label(_emptyCardMessage) { name = "CollectionEmptyTitle" });
+                _detail.Add(new Label("check back after deck data is installed") { name = "CollectionEmptyHint" });
                 return;
             }
 
-            for (int i = 0; i < cards.Count; i++)
+            for (int i = 0; i < _cards.Count; i++)
             {
                 int index = i;
-                CardEntry entry = cards[i];
+                CardEntry entry = _cards[i];
                 VisualElement row = BuildCardRow(entry);
                 row.RegisterCallback<PointerEnterEvent>(_ => SelectCard(index));
                 row.RegisterCallback<ClickEvent>(_ => SelectCard(index));
-                list.Add(row);
-                rows.Add(row);
+                _list.Add(row);
+                _rows.Add(row);
             }
 
-            SelectCard(selectedCardIndex);
+            SelectCard(_selectedCardIndex);
         }
 
         private VisualElement BuildCardRow(CardEntry entry)
@@ -398,28 +398,28 @@ namespace KernelPanic.UI
 
         private void RenderCardDetail(CardEntry entry)
         {
-            detail.Clear();
+            _detail.Clear();
 
             CardDefinition card = entry.Card;
             Label name = new(GetCardDisplayName(card));
             name.AddToClassList("collection-detail-name");
-            detail.Add(name);
+            _detail.Add(name);
 
             Label description = new(card == null || string.IsNullOrWhiteSpace(card.Description) ? "--" : card.Description);
             description.AddToClassList("collection-detail-description");
-            detail.Add(description);
+            _detail.Add(description);
 
             if (card != null && !string.IsNullOrWhiteSpace(card.FlavorText))
             {
                 Label flavor = new(card.FlavorText);
                 flavor.AddToClassList("flavor-text");
-                detail.Add(flavor);
+                _detail.Add(flavor);
             }
 
-            detail.Add(BuildDetailLine("lang", card == null ? "--" : card.Language.ToString()));
-            detail.Add(BuildDetailLine("rarity", card == null ? "--" : card.Rarity.ToString()));
-            detail.Add(BuildDetailLine("cost", card == null ? "--" : card.CycleCost.ToString()));
-            detail.Add(BuildDetailLine("track", card == null ? "--" : card.ResolutionTrack.ToString()));
+            _detail.Add(BuildDetailLine("lang", card == null ? "--" : card.Language.ToString()));
+            _detail.Add(BuildDetailLine("rarity", card == null ? "--" : card.Rarity.ToString()));
+            _detail.Add(BuildDetailLine("cost", card == null ? "--" : card.CycleCost.ToString()));
+            _detail.Add(BuildDetailLine("track", card == null ? "--" : card.ResolutionTrack.ToString()));
         }
 
         private static VisualElement BuildDetailLine(string key, string value)
@@ -497,7 +497,7 @@ namespace KernelPanic.UI
             for (int cardIndex = 0; cardIndex < unit.ExclusiveCards.Count; cardIndex++)
             {
                 CardDefinition card = unit.ExclusiveCards[cardIndex];
-                if (card == null || card.IsToken)
+                if (card == null || card.IsToken || card.IsRunOnly)
                 {
                     continue;
                 }
@@ -510,7 +510,7 @@ namespace KernelPanic.UI
 
         private IReadOnlyList<CardEntry> BuildStarterDeckEntries(LanguageCatalogEntry language)
         {
-            LanguageDeckDefinition deck = languageDeckDatabase == null ? null : languageDeckDatabase.FindByLanguage(language.Language);
+            LanguageDeckDefinition deck = _languageDeckDatabase == null ? null : _languageDeckDatabase.FindByLanguage(language.Language);
             if (deck == null)
             {
                 return BuildRegisteredStarterDeckEntries(language.Language);
@@ -520,7 +520,7 @@ namespace KernelPanic.UI
             for (int i = 0; i < deck.Entries.Count; i++)
             {
                 LanguageDeckDefinition.LanguageDeckEntry deckEntry = deck.Entries[i];
-                if (deckEntry.Card == null || deckEntry.Count <= 0)
+                if (deckEntry.Card == null || deckEntry.Card.IsRunOnly || deckEntry.Count <= 0)
                 {
                     continue;
                 }
@@ -533,7 +533,7 @@ namespace KernelPanic.UI
 
         private IReadOnlyList<CardEntry> BuildRegisteredStarterDeckEntries(Language language)
         {
-            if (cardDatabase == null)
+            if (_cardDatabase == null)
             {
                 return Array.Empty<CardEntry>();
             }
@@ -557,8 +557,8 @@ namespace KernelPanic.UI
             List<CardEntry> entries = new();
             for (int i = 0; i < cardRefs.Length; i++)
             {
-                CardDefinition card = cardDatabase.FindById(cardRefs[i].Id);
-                if (card == null)
+                CardDefinition card = _cardDatabase.FindById(cardRefs[i].Id);
+                if (card == null || card.IsRunOnly)
                 {
                     continue;
                 }

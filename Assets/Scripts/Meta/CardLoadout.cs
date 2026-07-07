@@ -21,24 +21,24 @@ namespace KernelPanic.Meta
     {
         public const int MaxEquippedCards = 4;
 
-        private readonly IReadOnlyList<DistroDefinition> ownedUnits;
-        private readonly Dictionary<string, List<string>> equippedByDistro = new(StringComparer.OrdinalIgnoreCase);
+        private readonly IReadOnlyList<DistroDefinition> _ownedUnits;
+        private readonly Dictionary<string, List<string>> _equippedByDistro = new(StringComparer.OrdinalIgnoreCase);
 
         public CardLoadout(IReadOnlyList<DistroDefinition> ownedUnits)
         {
-            this.ownedUnits = ownedUnits ?? Array.Empty<DistroDefinition>();
+            this._ownedUnits = ownedUnits ?? Array.Empty<DistroDefinition>();
         }
 
         public IReadOnlyList<string> GetEquippedCardIds(string distroId)
         {
-            return equippedByDistro.TryGetValue(distroId, out List<string> equipped)
+            return _equippedByDistro.TryGetValue(distroId, out List<string> equipped)
                 ? equipped
                 : Array.Empty<string>();
         }
 
         public bool HasLoadout(string distroId)
         {
-            return !string.IsNullOrWhiteSpace(distroId) && equippedByDistro.ContainsKey(distroId);
+            return !string.IsNullOrWhiteSpace(distroId) && _equippedByDistro.ContainsKey(distroId);
         }
 
         public void EnsureLoadout(DistroDefinition distro)
@@ -48,12 +48,12 @@ namespace KernelPanic.Meta
                 return;
             }
 
-            equippedByDistro[distro.Id] = new List<string>();
+            _equippedByDistro[distro.Id] = new List<string>();
         }
 
         public void ClearAll()
         {
-            equippedByDistro.Clear();
+            _equippedByDistro.Clear();
         }
 
         public void ClearLoadout(DistroDefinition distro)
@@ -63,7 +63,7 @@ namespace KernelPanic.Meta
                 return;
             }
 
-            equippedByDistro[distro.Id] = new List<string>();
+            _equippedByDistro[distro.Id] = new List<string>();
         }
 
         public bool TryLoad(string distroId, IEnumerable<string> cardIds, out bool skippedInvalid)
@@ -80,7 +80,7 @@ namespace KernelPanic.Meta
             foreach (string cardId in cardIds ?? Array.Empty<string>())
             {
                 CardDefinition card = FindExclusiveCard(distro, cardId);
-                if (card == null || card.IsToken || equipped.Contains(card.Id))
+                if (card == null || card.IsToken || card.IsRunOnly || equipped.Contains(card.Id))
                 {
                     skippedInvalid = true;
                     continue;
@@ -96,7 +96,7 @@ namespace KernelPanic.Meta
                 }
             }
 
-            equippedByDistro[distro.Id] = equipped;
+            _equippedByDistro[distro.Id] = equipped;
             return true;
         }
 
@@ -116,14 +116,14 @@ namespace KernelPanic.Meta
                 return false;
             }
 
-            if (card.IsToken)
+            if (card.IsToken || card.IsRunOnly)
             {
                 reason = CardLoadoutFailureReason.Token;
                 return false;
             }
 
             EnsureLoadout(distro);
-            List<string> equipped = equippedByDistro[distro.Id];
+            List<string> equipped = _equippedByDistro[distro.Id];
             if (equipped.Contains(card.Id))
             {
                 reason = CardLoadoutFailureReason.Duplicate;
@@ -151,7 +151,7 @@ namespace KernelPanic.Meta
             }
 
             EnsureLoadout(distro);
-            List<string> equipped = equippedByDistro[distro.Id];
+            List<string> equipped = _equippedByDistro[distro.Id];
             if (!equipped.Remove(cardId))
             {
                 reason = CardLoadoutFailureReason.NotEquipped;
@@ -169,9 +169,9 @@ namespace KernelPanic.Meta
                 return null;
             }
 
-            for (int i = 0; i < ownedUnits.Count; i++)
+            for (int i = 0; i < _ownedUnits.Count; i++)
             {
-                DistroDefinition distro = ownedUnits[i];
+                DistroDefinition distro = _ownedUnits[i];
                 if (distro != null && string.Equals(distro.Id, distroId, StringComparison.OrdinalIgnoreCase))
                 {
                     return distro;
@@ -191,7 +191,7 @@ namespace KernelPanic.Meta
             for (int i = 0; i < distro.ExclusiveCards.Count; i++)
             {
                 CardDefinition card = distro.ExclusiveCards[i];
-                if (card != null && string.Equals(card.Id, cardId, StringComparison.OrdinalIgnoreCase))
+                if (card != null && !card.IsRunOnly && string.Equals(card.Id, cardId, StringComparison.OrdinalIgnoreCase))
                 {
                     return card;
                 }

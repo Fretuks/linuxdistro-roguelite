@@ -59,7 +59,7 @@ namespace KernelPanic.Meta
     {
         public bool starterChosen;
         public int entropyBalance;
-        public int rootCredits;
+        public int rootCredits = GachaService.TestRootCreditsBalance;
         public int standardPullCurrency;
         public int limitedPullCurrency;
         public List<string> ownedUnitIds = new();

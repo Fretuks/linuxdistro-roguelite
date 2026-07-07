@@ -12,7 +12,17 @@ namespace KernelPanic.Core
         public static event Action<CardResolvedEvent> CardResolved;
         public static event Action<PhaseChangedEvent> PhaseChanged;
         public static event Action<DamageDealtEvent> DamageDealt;
+        public static event Action<CombatantDefeatedEvent> CombatantDefeated;
+        public static event Action<EnemyWouldActEvent> EnemyWouldAct;
+        public static event Action<EnemyActedEvent> EnemyActed;
+        public static event Action<PlayerDamagedEvent> PlayerDamaged;
+        public static event Action<EncounterWonEvent> EncounterWon;
+        public static event Action<EncounterLostEvent> EncounterLost;
         public static event Action<WaveClearedEvent> WaveCleared;
+        public static event Action<WaveAdvancedEvent> WaveAdvanced;
+        public static event Action<StatusAppliedEvent> StatusApplied;
+        public static event Action<StatusExpiredEvent> StatusExpired;
+        public static event Action<StatusCleansedEvent> StatusCleansed;
         public static event Action<RunEndedEvent> RunEnded;
 
         public static void RaiseCardPlayed(CardPlayedEvent payload)
@@ -35,9 +45,59 @@ namespace KernelPanic.Core
             DamageDealt?.Invoke(payload);
         }
 
+        public static void RaiseCombatantDefeated(CombatantDefeatedEvent payload)
+        {
+            CombatantDefeated?.Invoke(payload);
+        }
+
+        public static void RaiseEnemyWouldAct(EnemyWouldActEvent payload)
+        {
+            EnemyWouldAct?.Invoke(payload);
+        }
+
+        public static void RaiseEnemyActed(EnemyActedEvent payload)
+        {
+            EnemyActed?.Invoke(payload);
+        }
+
+        public static void RaisePlayerDamaged(PlayerDamagedEvent payload)
+        {
+            PlayerDamaged?.Invoke(payload);
+        }
+
+        public static void RaiseEncounterWon(EncounterWonEvent payload)
+        {
+            EncounterWon?.Invoke(payload);
+        }
+
+        public static void RaiseEncounterLost(EncounterLostEvent payload)
+        {
+            EncounterLost?.Invoke(payload);
+        }
+
         public static void RaiseWaveCleared(WaveClearedEvent payload)
         {
             WaveCleared?.Invoke(payload);
+        }
+
+        public static void RaiseWaveAdvanced(WaveAdvancedEvent payload)
+        {
+            WaveAdvanced?.Invoke(payload);
+        }
+
+        public static void RaiseStatusApplied(StatusAppliedEvent payload)
+        {
+            StatusApplied?.Invoke(payload);
+        }
+
+        public static void RaiseStatusExpired(StatusExpiredEvent payload)
+        {
+            StatusExpired?.Invoke(payload);
+        }
+
+        public static void RaiseStatusCleansed(StatusCleansedEvent payload)
+        {
+            StatusCleansed?.Invoke(payload);
         }
 
         public static void RaiseRunEnded(RunEndedEvent payload)
@@ -111,6 +171,76 @@ namespace KernelPanic.Core
     }
 
     /// <summary>
+    /// Describes a combatant reaching zero uptime through the damage pipeline.
+    /// </summary>
+    public readonly struct CombatantDefeatedEvent
+    {
+        public CombatantDefeatedEvent(CombatantState combatant)
+        {
+            Combatant = combatant;
+        }
+
+        public CombatantState Combatant { get; }
+    }
+
+    /// <summary>
+    /// Describes an enemy placeholder reaching its structural action point.
+    /// </summary>
+    public readonly struct EnemyWouldActEvent
+    {
+        public EnemyWouldActEvent(EnemyInstance enemy)
+        {
+            Enemy = enemy;
+        }
+
+        public EnemyInstance Enemy { get; }
+    }
+
+    public readonly struct EnemyActedEvent
+    {
+        public EnemyActedEvent(EnemyInstance enemy, EnemyIntent intent)
+        {
+            Enemy = enemy;
+            Intent = intent;
+        }
+
+        public EnemyInstance Enemy { get; }
+        public EnemyIntent Intent { get; }
+    }
+
+    public readonly struct PlayerDamagedEvent
+    {
+        public PlayerDamagedEvent(EnemyInstance enemy, int amount)
+        {
+            Enemy = enemy;
+            Amount = amount;
+        }
+
+        public EnemyInstance Enemy { get; }
+        public int Amount { get; }
+    }
+
+    public readonly struct EncounterWonEvent
+    {
+        public EncounterWonEvent(int waveNumber)
+        {
+            WaveNumber = waveNumber;
+        }
+
+        public int WaveNumber { get; }
+    }
+
+    public readonly struct EncounterLostEvent
+    {
+        public EncounterLostEvent(int waveNumber)
+        {
+            WaveNumber = waveNumber;
+        }
+
+        public int WaveNumber { get; }
+    }
+
+    /// <summary>
     /// Describes a completed enemy wave.
     /// </summary>
     public readonly struct WaveClearedEvent
@@ -121,6 +251,58 @@ namespace KernelPanic.Core
         }
 
         public int WaveNumber { get; }
+    }
+
+    public readonly struct WaveAdvancedEvent
+    {
+        public WaveAdvancedEvent(int waveNumber)
+        {
+            WaveNumber = waveNumber;
+        }
+
+        public int WaveNumber { get; }
+    }
+
+    public readonly struct StatusAppliedEvent
+    {
+        public StatusAppliedEvent(CombatantState source, CombatantState target, StatusType statusType, int stacks, int duration)
+        {
+            Source = source;
+            Target = target;
+            StatusType = statusType;
+            Stacks = stacks;
+            Duration = duration;
+        }
+
+        public CombatantState Source { get; }
+        public CombatantState Target { get; }
+        public StatusType StatusType { get; }
+        public int Stacks { get; }
+        public int Duration { get; }
+    }
+
+    public readonly struct StatusExpiredEvent
+    {
+        public StatusExpiredEvent(CombatantState target, StatusType statusType)
+        {
+            Target = target;
+            StatusType = statusType;
+        }
+
+        public CombatantState Target { get; }
+        public StatusType StatusType { get; }
+    }
+
+    public readonly struct StatusCleansedEvent
+    {
+        public StatusCleansedEvent(CombatantState target, StatusType statusType)
+        {
+            Target = target;
+            StatusType = statusType;
+        }
+
+        public CombatantState Target { get; }
+        public StatusType StatusType { get; }
     }
 
     /// <summary>

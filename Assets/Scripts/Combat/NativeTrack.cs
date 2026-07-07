@@ -1,4 +1,4 @@
-using System;
+using KernelPanic.Core;
 
 namespace KernelPanic.Combat
 {
@@ -9,12 +9,15 @@ namespace KernelPanic.Combat
     {
         public void Enqueue(CardInstance card)
         {
-            throw new NotImplementedException();
+            if (card != null)
+            {
+                GameEvents.RaiseCardPlayed(new CardPlayedEvent(card, ResolutionTrack.Native));
+            }
         }
 
         public void Resolve(CombatContext context)
         {
-            throw new NotImplementedException();
+            // Native cards resolve immediately in CombatManager.PlayCard; this track has no queue.
         }
     }
 }

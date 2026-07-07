@@ -15,43 +15,43 @@ namespace KernelPanic.UI
     {
         private const string EmptyAccent = "5cff91";
 
-        private VisualElement panel;
-        private Label titleLabel;
-        private Label asciiLabel;
-        private VisualElement asciiPlaceholder;
-        private Label unitNameLabel;
-        private Label languagesLabel;
-        private Label passiveLabel;
-        private Label bestWaveLabel;
-        private Label emptyTitleLabel;
-        private Label emptyHintLabel;
-        private VisualElement populatedState;
-        private VisualElement emptyState;
-        private FontAsset monospaceFont;
-        private AsciiArtFitter asciiFitter;
-        private IReadOnlyList<DistroDefinition> units = Array.Empty<DistroDefinition>();
-        private int selectedIndex;
+        private VisualElement _panel;
+        private Label _titleLabel;
+        private Label _asciiLabel;
+        private VisualElement _asciiPlaceholder;
+        private Label _unitNameLabel;
+        private Label _languagesLabel;
+        private Label _passiveLabel;
+        private Label _bestWaveLabel;
+        private Label _emptyTitleLabel;
+        private Label _emptyHintLabel;
+        private VisualElement _populatedState;
+        private VisualElement _emptyState;
+        private FontAsset _monospaceFont;
+        private AsciiArtFitter _asciiFitter;
+        private IReadOnlyList<DistroDefinition> _units = Array.Empty<DistroDefinition>();
+        private int _selectedIndex;
 
         public void Bind(VisualElement root, FontAsset artFont)
         {
-            monospaceFont = artFont;
-            panel = root.Q<VisualElement>("FeaturedUnitPanel");
-            titleLabel = root.Q<Label>("FeaturedUnitTitle");
-            asciiLabel = root.Q<Label>("FeaturedUnitAscii");
-            unitNameLabel = root.Q<Label>("FeaturedUnitName");
-            languagesLabel = root.Q<Label>("FeaturedUnitLanguages");
-            passiveLabel = root.Q<Label>("FeaturedUnitPassive");
-            bestWaveLabel = root.Q<Label>("FeaturedUnitBestWave");
-            emptyTitleLabel = root.Q<Label>("FeaturedUnitEmptyTitle");
-            emptyHintLabel = root.Q<Label>("FeaturedUnitEmptyHint");
-            populatedState = root.Q<VisualElement>("FeaturedUnitPopulatedState");
-            emptyState = root.Q<VisualElement>("FeaturedUnitEmptyState");
+            _monospaceFont = artFont;
+            _panel = root.Q<VisualElement>("FeaturedUnitPanel");
+            _titleLabel = root.Q<Label>("FeaturedUnitTitle");
+            _asciiLabel = root.Q<Label>("FeaturedUnitAscii");
+            _unitNameLabel = root.Q<Label>("FeaturedUnitName");
+            _languagesLabel = root.Q<Label>("FeaturedUnitLanguages");
+            _passiveLabel = root.Q<Label>("FeaturedUnitPassive");
+            _bestWaveLabel = root.Q<Label>("FeaturedUnitBestWave");
+            _emptyTitleLabel = root.Q<Label>("FeaturedUnitEmptyTitle");
+            _emptyHintLabel = root.Q<Label>("FeaturedUnitEmptyHint");
+            _populatedState = root.Q<VisualElement>("FeaturedUnitPopulatedState");
+            _emptyState = root.Q<VisualElement>("FeaturedUnitEmptyState");
 
-            DistroArtPresenter.ConfigureArtLabel(asciiLabel, monospaceFont);
-            asciiFitter = new AsciiArtFitter(asciiLabel, monospaceFont);
-            asciiPlaceholder = DistroArtPresenter.CreatePlaceholder();
-            asciiPlaceholder.AddToClassList("hidden");
-            populatedState.Insert(0, asciiPlaceholder);
+            DistroArtPresenter.ConfigureArtLabel(_asciiLabel, _monospaceFont);
+            _asciiFitter = new AsciiArtFitter(_asciiLabel, _monospaceFont);
+            _asciiPlaceholder = DistroArtPresenter.CreatePlaceholder();
+            _asciiPlaceholder.AddToClassList("hidden");
+            _populatedState.Insert(0, _asciiPlaceholder);
         }
 
         public void Refresh(IReadOnlyList<DistroDefinition> ownedUnits)
@@ -61,7 +61,7 @@ namespace KernelPanic.UI
 
         public void Refresh(IReadOnlyList<DistroDefinition> ownedUnits, DistroDefinition featuredUnit)
         {
-            units = ownedUnits ?? Array.Empty<DistroDefinition>();
+            _units = ownedUnits ?? Array.Empty<DistroDefinition>();
             Refresh(featuredUnit);
         }
 
@@ -72,25 +72,25 @@ namespace KernelPanic.UI
 
         private void Refresh(DistroDefinition featuredUnit)
         {
-            if (units == null || units.Count == 0)
+            if (_units == null || _units.Count == 0)
             {
                 ShowEmptyState();
                 return;
             }
 
-            selectedIndex = ResolveSelectedIndex(featuredUnit);
-            ShowUnit(units[selectedIndex]);
+            _selectedIndex = ResolveSelectedIndex(featuredUnit);
+            ShowUnit(_units[_selectedIndex]);
         }
 
         public void SelectNext()
         {
-            int unitCount = units?.Count ?? 0;
+            int unitCount = _units?.Count ?? 0;
             if (unitCount < 2)
             {
                 return;
             }
 
-            selectedIndex = (selectedIndex + 1) % unitCount;
+            _selectedIndex = (_selectedIndex + 1) % unitCount;
             Refresh();
         }
 
@@ -98,40 +98,40 @@ namespace KernelPanic.UI
         {
             if (featuredUnit != null)
             {
-                for (int i = 0; i < units.Count; i++)
+                for (int i = 0; i < _units.Count; i++)
                 {
-                    if (units[i] == featuredUnit)
+                    if (_units[i] == featuredUnit)
                     {
                         return i;
                     }
                 }
             }
 
-            return Mathf.Clamp(selectedIndex, 0, units.Count - 1);
+            return Mathf.Clamp(_selectedIndex, 0, _units.Count - 1);
         }
 
         private void ShowEmptyState()
         {
-            populatedState.AddToClassList("hidden");
-            emptyState.RemoveFromClassList("hidden");
+            _populatedState.AddToClassList("hidden");
+            _emptyState.RemoveFromClassList("hidden");
 
-            titleLabel.text = "[ neofetch ]";
-            emptyTitleLabel.text = "no units installed";
-            emptyHintLabel.text = "run: curl gacha.sh | sh";
+            _titleLabel.text = "[ neofetch ]";
+            _emptyTitleLabel.text = "no units installed";
+            _emptyHintLabel.text = "run: curl gacha.sh | sh";
             SetAccent(EmptyAccent);
         }
 
         private void ShowUnit(DistroDefinition unit)
         {
-            populatedState.RemoveFromClassList("hidden");
-            emptyState.AddToClassList("hidden");
+            _populatedState.RemoveFromClassList("hidden");
+            _emptyState.AddToClassList("hidden");
 
-            titleLabel.text = "[ neofetch ]";
-            asciiFitter.SetArt(DistroArtPresenter.Render(asciiLabel, asciiPlaceholder, unit));
-            unitNameLabel.text = DistroPresentation.DisplayName(unit);
-            languagesLabel.text = DistroPresentation.FormatLanguages(unit);
-            passiveLabel.text = unit.Passive == null || string.IsNullOrWhiteSpace(unit.Passive.Name) ? "--" : unit.Passive.Name;
-            bestWaveLabel.text = "--"; // TODO: Bind best-wave stats from SaveService when stats exist.
+            _titleLabel.text = "[ neofetch ]";
+            _asciiFitter.SetArt(DistroArtPresenter.Render(_asciiLabel, _asciiPlaceholder, unit));
+            _unitNameLabel.text = DistroPresentation.DisplayName(unit);
+            _languagesLabel.text = DistroPresentation.FormatLanguages(unit);
+            _passiveLabel.text = unit.Passive == null || string.IsNullOrWhiteSpace(unit.Passive.Name) ? "--" : unit.Passive.Name;
+            _bestWaveLabel.text = "--"; // TODO: Bind best-wave stats from SaveService when stats exist.
             SetAccent(ColorUtility.ToHtmlStringRGB(unit.AccentColor));
         }
 
@@ -139,12 +139,12 @@ namespace KernelPanic.UI
         {
             string color = $"#{htmlColor}";
             Color parsedColor = ColorUtility.TryParseHtmlString(color, out Color parsed) ? parsed : Color.green;
-            panel.style.borderTopColor = new StyleColor(parsedColor);
-            panel.style.borderRightColor = new StyleColor(parsedColor);
-            panel.style.borderBottomColor = new StyleColor(parsedColor);
-            panel.style.borderLeftColor = new StyleColor(parsedColor);
-            titleLabel.style.color = new StyleColor(parsedColor);
-            unitNameLabel.style.color = new StyleColor(parsedColor);
+            _panel.style.borderTopColor = new StyleColor(parsedColor);
+            _panel.style.borderRightColor = new StyleColor(parsedColor);
+            _panel.style.borderBottomColor = new StyleColor(parsedColor);
+            _panel.style.borderLeftColor = new StyleColor(parsedColor);
+            _titleLabel.style.color = new StyleColor(parsedColor);
+            _unitNameLabel.style.color = new StyleColor(parsedColor);
         }
     }
 }

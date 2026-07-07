@@ -16,6 +16,6 @@ namespace KernelPanic.Core
         Java,
         Go,
         Ruby,
-        PHP
+        Php
     }
 }

@@ -8,39 +8,39 @@ namespace KernelPanic.UI
     /// </summary>
     public sealed class ScreenFrameController
     {
-        private Label titleLabel;
-        private Label hintLabel;
+        private Label _titleLabel;
+        private Label _hintLabel;
 
         public void Bind(VisualElement panel, string title, string hint, Action onBack)
         {
-            titleLabel = panel.Q<Label>(className: "screen-frame-title");
-            hintLabel = panel.Q<Label>(className: "screen-frame-hint");
+            _titleLabel = panel.Q<Label>(className: "screen-frame-title");
+            _hintLabel = panel.Q<Label>(className: "screen-frame-hint");
 
-            if (titleLabel != null)
+            if (_titleLabel != null)
             {
-                titleLabel.text = title;
+                _titleLabel.text = title;
             }
 
-            if (hintLabel != null)
+            if (_hintLabel != null)
             {
-                hintLabel.text = hint;
-                hintLabel.RegisterCallback<ClickEvent>(_ => onBack?.Invoke());
+                _hintLabel.text = hint;
+                _hintLabel.RegisterCallback<ClickEvent>(_ => onBack?.Invoke());
             }
         }
 
         public void SetHint(string hint)
         {
-            if (hintLabel != null)
+            if (_hintLabel != null)
             {
-                hintLabel.text = hint;
+                _hintLabel.text = hint;
             }
         }
 
         public void SetTitle(string title)
         {
-            if (titleLabel != null)
+            if (_titleLabel != null)
             {
-                titleLabel.text = title;
+                _titleLabel.text = title;
             }
         }
     }

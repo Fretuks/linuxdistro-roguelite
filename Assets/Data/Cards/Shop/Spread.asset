@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
+  m_Name: Spread
+  m_EditorClassIdentifier: 
+  id: shop_js_spread
+  displayName: spread ...
+  description: 'TODO: copy the lowest-cost card in hand.'
+  flavorText: cloning by punctuation, naturally.
+  language: 4
+  rarity: 1
+  cycleCost: 1
+  resolutionTrack: 0
+  distroExclusive: 0
+  isToken: 0
+  isRunOnly: 1
+  designNotes: Run-only Repository card. Requires card-copy.
+  requiresSystem:
+  - card-copy
+  upgradeTarget: {fileID: 0}
+  effects: []

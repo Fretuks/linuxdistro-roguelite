@@ -18,40 +18,40 @@ namespace KernelPanic.UI
         private const float MonospaceTolerance = 0.02f;
         private static readonly Dictionary<FontAsset, float> AdvanceRatioByFont = new();
         private static readonly HashSet<FontAsset> WarnedFonts = new();
-        private static bool hasDefaultAdvanceRatio;
-        private static float defaultAdvanceRatio;
+        private static bool _hasDefaultAdvanceRatio;
+        private static float _defaultAdvanceRatio;
 
-        private readonly Label label;
-        private readonly FontAsset font;
-        private string art;
+        private readonly Label _label;
+        private readonly FontAsset _font;
+        private string _art;
 
         public AsciiArtFitter(Label label, FontAsset font)
         {
-            this.label = label;
-            this.font = font;
+            this._label = label;
+            this._font = font;
             label.RegisterCallback<GeometryChangedEvent>(_ => Fit());
         }
 
         public void SetArt(string value)
         {
-            art = value;
+            _art = value;
             Fit();
         }
 
         private void Fit()
         {
-            if (string.IsNullOrWhiteSpace(art))
+            if (string.IsNullOrWhiteSpace(_art))
             {
                 return;
             }
 
-            Rect region = label.layout;
+            Rect region = _label.layout;
             if (!IsUsable(region.width) || !IsUsable(region.height))
             {
                 return;
             }
 
-            GetArtDimensions(art, out int rows, out int columns);
+            GetArtDimensions(_art, out int rows, out int columns);
             if (rows <= 0 || columns <= 0)
             {
                 return;
@@ -64,49 +64,49 @@ namespace KernelPanic.UI
             float blockWidth = columns * fontSize * advanceRatio;
             float blockHeight = rows * fontSize * LineHeightRatio;
 
-            label.style.fontSize = fontSize;
-            label.style.paddingLeft = Mathf.Max(0f, (region.width - blockWidth) * 0.5f);
-            label.style.paddingTop = Mathf.Max(0f, (region.height - blockHeight) * 0.5f);
-            label.style.paddingRight = 0f;
-            label.style.paddingBottom = 0f;
+            _label.style.fontSize = fontSize;
+            _label.style.paddingLeft = Mathf.Max(0f, (region.width - blockWidth) * 0.5f);
+            _label.style.paddingTop = Mathf.Max(0f, (region.height - blockHeight) * 0.5f);
+            _label.style.paddingRight = 0f;
+            _label.style.paddingBottom = 0f;
         }
 
         private float GetAdvanceRatio()
         {
-            if (font == null && hasDefaultAdvanceRatio)
+            if (_font == null && _hasDefaultAdvanceRatio)
             {
-                return defaultAdvanceRatio;
+                return _defaultAdvanceRatio;
             }
 
-            if (font != null && AdvanceRatioByFont.TryGetValue(font, out float cached))
+            if (_font != null && AdvanceRatioByFont.TryGetValue(_font, out float cached))
             {
                 return cached;
             }
 
-            float previousFontSize = label.resolvedStyle.fontSize;
-            label.style.fontSize = ReferenceFontSize;
+            float previousFontSize = _label.resolvedStyle.fontSize;
+            _label.style.fontSize = ReferenceFontSize;
 
-            float mWidth = label.MeasureTextSize("MMMMMMMMMM", 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
-            float iWidth = label.MeasureTextSize("iiiiiiiiii", 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
-            label.style.fontSize = previousFontSize;
+            float mWidth = _label.MeasureTextSize("MMMMMMMMMM", 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
+            float iWidth = _label.MeasureTextSize("iiiiiiiiii", 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined).x;
+            _label.style.fontSize = previousFontSize;
 
             float advanceRatio = mWidth > 0f ? mWidth / (10f * ReferenceFontSize) : 0.6f;
-            if (font == null)
+            if (_font == null)
             {
-                defaultAdvanceRatio = advanceRatio;
-                hasDefaultAdvanceRatio = true;
+                _defaultAdvanceRatio = advanceRatio;
+                _hasDefaultAdvanceRatio = true;
             }
             else
             {
-                AdvanceRatioByFont[font] = advanceRatio;
+                AdvanceRatioByFont[_font] = advanceRatio;
             }
 
-            if (font != null && mWidth > 0f && iWidth > 0f)
+            if (_font != null && mWidth > 0f && iWidth > 0f)
             {
                 float difference = Mathf.Abs(mWidth - iWidth) / Mathf.Max(mWidth, iWidth);
-                if (difference > MonospaceTolerance && WarnedFonts.Add(font))
+                if (difference > MonospaceTolerance && WarnedFonts.Add(_font))
                 {
-                    Debug.LogWarning($"ASCII art font '{font.name}' is not monospace; art may misalign.");
+                    Debug.LogWarning($"ASCII art font '{_font.name}' is not monospace; art may misalign.");
                 }
             }
 

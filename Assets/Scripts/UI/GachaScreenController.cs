@@ -16,49 +16,49 @@ namespace KernelPanic.UI
     {
         private const string SelectedClassName = "selected";
 
-        private readonly List<VisualElement> bannerRows = new();
-        private readonly string[] bannerIds =
+        private readonly List<VisualElement> _bannerRows = new();
+        private readonly string[] _bannerIds =
         {
             GachaService.BeginnerBannerId,
             GachaService.StandardBannerId,
             GachaService.LimitedBannerId
         };
 
-        private VisualElement bannerList;
-        private VisualElement bannerDetail;
-        private DistroDatabase distroDatabase;
-        private FontAsset monospaceFont;
-        private GachaService gachaService;
-        private PlayerCollection playerCollection;
-        private EntropyWallet wallet;
-        private Action onChanged;
-        private Action requestRootCreditExchange;
-        private int selectedBannerIndex;
-        private int pendingPullCount;
-        private int pendingMissingTokens;
-        private bool hasOpened;
-        private string resultBannerId;
-        private string resultText;
+        private VisualElement _bannerList;
+        private VisualElement _bannerDetail;
+        private DistroDatabase _distroDatabase;
+        private FontAsset _monospaceFont;
+        private GachaService _gachaService;
+        private PlayerCollection _playerCollection;
+        private EntropyWallet _wallet;
+        private Action _onChanged;
+        private Action _requestRootCreditExchange;
+        private int _selectedBannerIndex;
+        private int _pendingPullCount;
+        private int _pendingMissingTokens;
+        private bool _hasOpened;
+        private string _resultBannerId;
+        private string _resultText;
 
         public void Bind(VisualElement root, DistroDatabase database, FontAsset artFont, GachaService service, PlayerCollection collection, EntropyWallet entropyWallet, Action changedCallback, Action rootCreditExchangeCallback)
         {
-            distroDatabase = database;
-            monospaceFont = artFont;
-            gachaService = service;
-            playerCollection = collection;
-            wallet = entropyWallet;
-            onChanged = changedCallback;
-            requestRootCreditExchange = rootCreditExchangeCallback;
-            bannerList = root.Q<VisualElement>("GachaBannerList");
-            bannerDetail = root.Q<VisualElement>("GachaBannerDetail");
+            _distroDatabase = database;
+            _monospaceFont = artFont;
+            _gachaService = service;
+            _playerCollection = collection;
+            _wallet = entropyWallet;
+            _onChanged = changedCallback;
+            _requestRootCreditExchange = rootCreditExchangeCallback;
+            _bannerList = root.Q<VisualElement>("GachaBannerList");
+            _bannerDetail = root.Q<VisualElement>("GachaBannerDetail");
         }
 
         public void Open()
         {
-            if (!hasOpened)
+            if (!_hasOpened)
             {
-                selectedBannerIndex = 0;
-                hasOpened = true;
+                _selectedBannerIndex = 0;
+                _hasOpened = true;
             }
 
             Refresh();
@@ -66,24 +66,24 @@ namespace KernelPanic.UI
 
         public void Refresh()
         {
-            if (bannerList == null || bannerDetail == null || gachaService == null)
+            if (_bannerList == null || _bannerDetail == null || _gachaService == null)
             {
                 return;
             }
 
-            bannerRows.Clear();
-            bannerList.Clear();
+            _bannerRows.Clear();
+            _bannerList.Clear();
 
-            for (int i = 0; i < bannerIds.Length; i++)
+            for (int i = 0; i < _bannerIds.Length; i++)
             {
                 int index = i;
-                VisualElement row = BuildBannerRow(bannerIds[i]);
+                VisualElement row = BuildBannerRow(_bannerIds[i]);
                 row.RegisterCallback<ClickEvent>(_ => SelectBanner(index));
-                bannerList.Add(row);
-                bannerRows.Add(row);
+                _bannerList.Add(row);
+                _bannerRows.Add(row);
             }
 
-            selectedBannerIndex = Mathf.Clamp(selectedBannerIndex, 0, bannerRows.Count - 1);
+            _selectedBannerIndex = Mathf.Clamp(_selectedBannerIndex, 0, _bannerRows.Count - 1);
             ApplySelectedBanner();
         }
 
@@ -111,22 +111,22 @@ namespace KernelPanic.UI
 
         private void SelectBanner(int index)
         {
-            if (bannerRows.Count == 0)
+            if (_bannerRows.Count == 0)
             {
                 return;
             }
 
-            selectedBannerIndex = (index + bannerRows.Count) % bannerRows.Count;
+            _selectedBannerIndex = (index + _bannerRows.Count) % _bannerRows.Count;
             ApplySelectedBanner();
         }
 
         private void ApplySelectedBanner()
         {
-            for (int i = 0; i < bannerRows.Count; i++)
+            for (int i = 0; i < _bannerRows.Count; i++)
             {
-                bool selected = i == selectedBannerIndex;
-                bannerRows[i].EnableInClassList(SelectedClassName, selected);
-                bannerRows[i].Q<Label>(className: "command-cursor").visible = selected;
+                bool selected = i == _selectedBannerIndex;
+                _bannerRows[i].EnableInClassList(SelectedClassName, selected);
+                _bannerRows[i].Q<Label>(className: "command-cursor").visible = selected;
             }
 
             RenderSelectedBanner();
@@ -134,8 +134,8 @@ namespace KernelPanic.UI
 
         private void RenderSelectedBanner()
         {
-            bannerDetail.Clear();
-            string bannerId = bannerIds[selectedBannerIndex];
+            _bannerDetail.Clear();
+            string bannerId = _bannerIds[_selectedBannerIndex];
             if (bannerId == GachaService.BeginnerBannerId)
             {
                 RenderBeginnerBanner();
@@ -147,22 +147,22 @@ namespace KernelPanic.UI
 
         private void RenderBeginnerBanner()
         {
-            GachaBannerState state = gachaService.BeginnerState;
-            bannerDetail.Add(BuildBannerHero("beginner install media"));
+            GachaBannerState state = _gachaService.BeginnerState;
+            _bannerDetail.Add(BuildBannerHero("beginner install media"));
 
             Label title = new("beginner install media");
             title.AddToClassList("gacha-detail-title");
-            bannerDetail.Add(title);
+            _bannerDetail.Add(title);
 
-            bannerDetail.Add(BuildInfoLine("entropy", wallet == null ? "--" : wallet.Balance.ToString()));
-            bannerDetail.Add(BuildInfoLine("pulls", $"{state.totalPulls}/{GachaService.BeginnerMaxPulls}"));
-            bannerDetail.Add(BuildInfoLine("4-star pity", $"{state.pityCounter}/{GachaService.FourStarHardPity}"));
-            bannerDetail.Add(BuildInfoLine("ten pull", $"{GachaService.BeginnerTenPullCost} stable-pull-tokens for 10 pulls"));
-            bannerDetail.Add(BuildInfoLine("guarantees", FormatBeginnerGuarantees()));
+            _bannerDetail.Add(BuildInfoLine("entropy", _wallet == null ? "--" : _wallet.Balance.ToString()));
+            _bannerDetail.Add(BuildInfoLine("pulls", $"{state.totalPulls}/{GachaService.BeginnerMaxPulls}"));
+            _bannerDetail.Add(BuildInfoLine("4-star pity", $"{state.pityCounter}/{GachaService.FourStarHardPity}"));
+            _bannerDetail.Add(BuildInfoLine("ten pull", $"{GachaService.BeginnerTenPullCost} Commits for 10 pulls"));
+            _bannerDetail.Add(BuildInfoLine("guarantees", FormatBeginnerGuarantees()));
 
             Label rules = new("Base result is a 3-star equipment cache. A 4-star equipment cache or starter distro can appear early, with one 4-star+ result guaranteed every 10 pulls.");
             rules.AddToClassList("gacha-rules");
-            bannerDetail.Add(rules);
+            _bannerDetail.Add(rules);
 
             VisualElement actions = new();
             actions.AddToClassList("gacha-actions");
@@ -185,62 +185,62 @@ namespace KernelPanic.UI
             tenButton.SetEnabled(CanAttemptBeginnerPull(10));
             actions.Add(tenButton);
 
-            bannerDetail.Add(actions);
+            _bannerDetail.Add(actions);
 
-            if (pendingPullCount > 0)
+            if (_pendingPullCount > 0)
             {
-                bannerDetail.Add(BuildEntropyPrompt());
+                _bannerDetail.Add(BuildEntropyPrompt());
             }
 
-            if (resultBannerId == GachaService.BeginnerBannerId && !string.IsNullOrWhiteSpace(resultText))
+            if (_resultBannerId == GachaService.BeginnerBannerId && !string.IsNullOrWhiteSpace(_resultText))
             {
-                Label result = new(resultText);
+                Label result = new(_resultText);
                 result.AddToClassList("gacha-result");
-                bannerDetail.Add(result);
+                _bannerDetail.Add(result);
             }
         }
 
         private void RenderFutureBanner(string bannerId)
         {
-            bannerDetail.Add(BuildBannerHero(GetBannerTitle(bannerId)));
+            _bannerDetail.Add(BuildBannerHero(GetBannerTitle(bannerId)));
 
             Label title = new(GetBannerTitle(bannerId));
             title.AddToClassList("gacha-detail-title");
-            bannerDetail.Add(title);
+            _bannerDetail.Add(title);
 
             string currency = bannerId == GachaService.StandardBannerId
                 ? GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)
                 : GachaService.FormatCurrencyName(GachaCurrencyType.LimitedPull);
-            bannerDetail.Add(BuildInfoLine("pull currency", currency));
-            bannerDetail.Add(BuildInfoLine("status", "not implemented yet"));
-            bannerDetail.Add(BuildInfoLine("pity", "own counter, 10-pull 4-star+ guarantee"));
-            bannerDetail.Add(new Label("Use the beginner implementation as the template: define the banner pool, persist a separate GachaBannerState, then route single/ten pulls through GachaService.") { name = "FutureBannerHint" });
-            bannerDetail.ElementAt(bannerDetail.childCount - 1).AddToClassList("gacha-rules");
+            _bannerDetail.Add(BuildInfoLine("pull currency", currency));
+            _bannerDetail.Add(BuildInfoLine("status", "not implemented yet"));
+            _bannerDetail.Add(BuildInfoLine("pity", "own counter, 10-pull 4-star+ guarantee"));
+            _bannerDetail.Add(new Label("Use the beginner implementation as the template: define the banner pool, persist a separate GachaBannerState, then route single/ten pulls through GachaService.") { name = "FutureBannerHint" });
+            _bannerDetail.ElementAt(_bannerDetail.childCount - 1).AddToClassList("gacha-rules");
 
-            if (resultBannerId == bannerId && !string.IsNullOrWhiteSpace(resultText))
+            if (_resultBannerId == bannerId && !string.IsNullOrWhiteSpace(_resultText))
             {
-                Label result = new(resultText);
+                Label result = new(_resultText);
                 result.AddToClassList("gacha-result");
-                bannerDetail.Add(result);
+                _bannerDetail.Add(result);
             }
         }
 
         private void PullSelectedBanner(int pullCount, int entropyTokenCount)
         {
-            string bannerId = bannerIds[selectedBannerIndex];
+            string bannerId = _bannerIds[_selectedBannerIndex];
             if (bannerId != GachaService.BeginnerBannerId)
             {
-                resultBannerId = bannerId;
-                resultText = $"git pull origin {bannerId}: remote not implemented yet";
+                _resultBannerId = bannerId;
+                _resultText = $"git pull origin {bannerId}: remote not implemented yet";
                 RenderSelectedBanner();
                 return;
             }
 
-            GachaPullResult result = gachaService.PerformBeginnerPull(pullCount, wallet, entropyTokenCount);
+            GachaPullResult result = _gachaService.PerformBeginnerPull(pullCount, _wallet, entropyTokenCount);
             if (!result.Success)
             {
-                resultBannerId = bannerId;
-                resultText = $"git pull failed: {result.FailureReason}";
+                _resultBannerId = bannerId;
+                _resultText = $"git pull failed: {result.FailureReason}";
                 RenderSelectedBanner();
                 return;
             }
@@ -255,10 +255,10 @@ namespace KernelPanic.UI
             for (int i = 0; i < result.Rewards.Count; i++)
             {
                 GachaReward reward = result.Rewards[i];
-                bool duplicate = reward.Distro != null && playerCollection.GetOwnedCount(reward.Distro.Id) > 0;
+                bool duplicate = reward.Distro != null && _playerCollection.GetOwnedCount(reward.Distro.Id) > 0;
                 if (reward.Distro != null)
                 {
-                    playerCollection.Add(reward.Distro);
+                    _playerCollection.Add(reward.Distro);
                 }
 
                 string suffix = reward.Guaranteed ? " guaranteed" : reward.PityTriggered ? " pity" : string.Empty;
@@ -266,23 +266,23 @@ namespace KernelPanic.UI
                 lines.Add($"{i + 1:00}: {reward.StarRating}-star {reward.DisplayName}{suffix}{duplicateText}");
             }
 
-            resultBannerId = bannerId;
-            resultText = string.Join("\n", lines);
-            onChanged?.Invoke();
+            _resultBannerId = bannerId;
+            _resultText = string.Join("\n", lines);
+            _onChanged?.Invoke();
             Refresh();
         }
 
         private void RequestPullSelectedBanner(int pullCount)
         {
-            string bannerId = bannerIds[selectedBannerIndex];
+            string bannerId = _bannerIds[_selectedBannerIndex];
             if (bannerId != GachaService.BeginnerBannerId)
             {
                 PullSelectedBanner(pullCount, 0);
                 return;
             }
 
-            int cost = gachaService.GetBeginnerPullCost(pullCount);
-            int missingTokens = gachaService.GetMissingPullTokens(GachaCurrencyType.StandardPull, cost);
+            int cost = _gachaService.GetBeginnerPullCost(pullCount);
+            int missingTokens = _gachaService.GetMissingPullTokens(GachaCurrencyType.StandardPull, cost);
             if (missingTokens <= 0)
             {
                 ClearEntropyPrompt();
@@ -290,24 +290,24 @@ namespace KernelPanic.UI
                 return;
             }
 
-            if (!gachaService.CanCoverMissingPullTokensWithEntropy(wallet, missingTokens))
+            if (!_gachaService.CanCoverMissingPullTokensWithEntropy(_wallet, missingTokens))
             {
-                if (gachaService.RootCredits > 0)
+                if (_gachaService.RootCredits > 0)
                 {
-                    requestRootCreditExchange?.Invoke();
+                    _requestRootCreditExchange?.Invoke();
                     return;
                 }
 
-                resultBannerId = bannerId;
-                resultText = $"git pull failed: need {missingTokens} {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)} or {missingTokens * GachaService.EntropyPerPullToken} entropy";
+                _resultBannerId = bannerId;
+                _resultText = $"git pull failed: need {missingTokens} {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)} or {missingTokens * GachaService.EntropyPerPullToken} entropy";
                 RenderSelectedBanner();
                 return;
             }
 
-            pendingPullCount = pullCount;
-            pendingMissingTokens = missingTokens;
-            resultBannerId = bannerId;
-            resultText = null;
+            _pendingPullCount = pullCount;
+            _pendingMissingTokens = missingTokens;
+            _resultBannerId = bannerId;
+            _resultText = null;
             RenderSelectedBanner();
         }
 
@@ -316,8 +316,8 @@ namespace KernelPanic.UI
             VisualElement prompt = new();
             prompt.AddToClassList("gacha-entropy-prompt");
 
-            int entropyCost = pendingMissingTokens * GachaService.EntropyPerPullToken;
-            Label copy = new($"missing {pendingMissingTokens} stable-pull-token(s). spend {entropyCost} entropy to complete git pull?");
+            int entropyCost = _pendingMissingTokens * GachaService.EntropyPerPullToken;
+            Label copy = new($"missing {_pendingMissingTokens} Commits. spend {entropyCost} entropy to complete git pull?");
             copy.AddToClassList("gacha-result");
             prompt.Add(copy);
 
@@ -338,8 +338,8 @@ namespace KernelPanic.UI
 
             Button confirm = new(() =>
             {
-                int pullCount = pendingPullCount;
-                int missingTokens = pendingMissingTokens;
+                int pullCount = _pendingPullCount;
+                int missingTokens = _pendingMissingTokens;
                 ClearEntropyPrompt();
                 PullSelectedBanner(pullCount, missingTokens);
             })
@@ -356,26 +356,26 @@ namespace KernelPanic.UI
 
         private bool CanAttemptBeginnerPull(int pullCount)
         {
-            if (gachaService.CanPullBeginner(pullCount, out _))
+            if (_gachaService.CanPullBeginner(pullCount, out _))
             {
                 return true;
             }
 
-            if (!gachaService.IsBeginnerBannerAvailable || pullCount > GachaService.BeginnerMaxPulls - gachaService.BeginnerState.totalPulls)
+            if (!_gachaService.IsBeginnerBannerAvailable || pullCount > GachaService.BeginnerMaxPulls - _gachaService.BeginnerState.totalPulls)
             {
                 return false;
             }
 
-            int missingTokens = gachaService.GetMissingPullTokens(GachaCurrencyType.StandardPull, gachaService.GetBeginnerPullCost(pullCount));
+            int missingTokens = _gachaService.GetMissingPullTokens(GachaCurrencyType.StandardPull, _gachaService.GetBeginnerPullCost(pullCount));
             return missingTokens > 0 &&
-                   (gachaService.CanCoverMissingPullTokensWithEntropy(wallet, missingTokens) ||
-                    gachaService.RootCredits > 0);
+                   (_gachaService.CanCoverMissingPullTokensWithEntropy(_wallet, missingTokens) ||
+                    _gachaService.RootCredits > 0);
         }
 
         private void ClearEntropyPrompt()
         {
-            pendingPullCount = 0;
-            pendingMissingTokens = 0;
+            _pendingPullCount = 0;
+            _pendingMissingTokens = 0;
         }
 
         private VisualElement BuildBannerHero(string bannerTitle)
@@ -386,7 +386,7 @@ namespace KernelPanic.UI
             VisualElement artRow = new();
             artRow.AddToClassList("gacha-hero-art-row");
 
-            IReadOnlyList<DistroDefinition> distros = distroDatabase == null ? Array.Empty<DistroDefinition>() : distroDatabase.AllDistros;
+            IReadOnlyList<DistroDefinition> distros = _distroDatabase == null ? Array.Empty<DistroDefinition>() : _distroDatabase.AllDistros;
             int artCount = Mathf.Min(3, distros.Count);
             for (int i = 0; i < artCount; i++)
             {
@@ -417,11 +417,11 @@ namespace KernelPanic.UI
             artShell.AddToClassList("gacha-art-shell");
 
             Label artLabel = new();
-            DistroArtPresenter.ConfigureArtLabel(artLabel, monospaceFont);
+            DistroArtPresenter.ConfigureArtLabel(artLabel, _monospaceFont);
             artLabel.AddToClassList("gacha-ascii-art");
             VisualElement placeholder = DistroArtPresenter.CreatePlaceholder();
             placeholder.AddToClassList("gacha-ascii-placeholder");
-            AsciiArtFitter artFitter = new(artLabel, monospaceFont);
+            AsciiArtFitter artFitter = new(artLabel, _monospaceFont);
             artFitter.SetArt(DistroArtPresenter.Render(artLabel, placeholder, distro));
             if (distro != null)
             {
@@ -445,7 +445,7 @@ namespace KernelPanic.UI
 
         private string FormatBeginnerGuarantees()
         {
-            IReadOnlyList<string> ids = gachaService.BeginnerState.guaranteedDistroIds;
+            IReadOnlyList<string> ids = _gachaService.BeginnerState.guaranteedDistroIds;
             string first = ids.Count > 0 ? ids[0] : "--";
             string second = ids.Count > 1 ? ids[1] : "--";
             return $"20={first}, 40={second}, 50=future standard 5-star";
@@ -466,7 +466,7 @@ namespace KernelPanic.UI
         {
             return bannerId switch
             {
-                GachaService.BeginnerBannerId => gachaService.IsBeginnerBannerAvailable ? $"{gachaService.BeginnerState.totalPulls}/{GachaService.BeginnerMaxPulls}" : "closed",
+                GachaService.BeginnerBannerId => _gachaService.IsBeginnerBannerAvailable ? $"{_gachaService.BeginnerState.totalPulls}/{GachaService.BeginnerMaxPulls}" : "closed",
                 GachaService.StandardBannerId => "soon",
                 GachaService.LimitedBannerId => "soon",
                 _ => "--"

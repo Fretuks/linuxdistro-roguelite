@@ -1,5 +1,5 @@
-using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace KernelPanic.Combat
 {
@@ -8,42 +8,88 @@ namespace KernelPanic.Combat
     /// </summary>
     public sealed class DeckController
     {
-        private readonly List<CardInstance> drawPile = new();
-        private readonly List<CardInstance> discardPile = new();
-        private readonly List<CardInstance> exhaustPile = new();
+        private readonly List<CardInstance> _drawPile = new();
+        private readonly List<CardInstance> _discardPile = new();
+        private readonly List<CardInstance> _exhaustPile = new();
 
-        public IReadOnlyList<CardInstance> DrawPile => drawPile;
-        public IReadOnlyList<CardInstance> DiscardPile => discardPile;
-        public IReadOnlyList<CardInstance> ExhaustPile => exhaustPile;
+        public IReadOnlyList<CardInstance> DrawPile => _drawPile;
+        public IReadOnlyList<CardInstance> DiscardPile => _discardPile;
+        public IReadOnlyList<CardInstance> ExhaustPile => _exhaustPile;
+        public int AvailableToDrawCount => _drawPile.Count + _discardPile.Count;
 
         public void Initialize(IEnumerable<CardInstance> cards)
         {
-            throw new NotImplementedException();
+            _drawPile.Clear();
+            _discardPile.Clear();
+            _exhaustPile.Clear();
+
+            if (cards != null)
+            {
+                _drawPile.AddRange(cards.Where(card => card != null));
+            }
+
+            ShuffleDrawPile();
         }
 
         public IReadOnlyList<CardInstance> Draw(int count)
         {
-            throw new NotImplementedException();
+            List<CardInstance> drawn = new();
+            for (int i = 0; i < count; i++)
+            {
+                if (_drawPile.Count == 0)
+                {
+                    ReshuffleDiscardIntoDraw();
+                }
+
+                if (_drawPile.Count == 0)
+                {
+                    break;
+                }
+
+                int topIndex = _drawPile.Count - 1;
+                CardInstance card = _drawPile[topIndex];
+                _drawPile.RemoveAt(topIndex);
+                drawn.Add(card);
+            }
+
+            return drawn;
         }
 
         public void Discard(CardInstance card)
         {
-            throw new NotImplementedException();
+            if (card != null)
+            {
+                _discardPile.Add(card);
+            }
         }
 
         public void Exhaust(CardInstance card)
         {
-            throw new NotImplementedException();
+            if (card != null)
+            {
+                _exhaustPile.Add(card);
+            }
         }
 
         public void ShuffleDrawPile()
         {
-            throw new NotImplementedException();
+            for (int i = _drawPile.Count - 1; i > 0; i--)
+            {
+                int swapIndex = RandomRoll.RollRange(0, i, RollContext.None);
+                (_drawPile[i], _drawPile[swapIndex]) = (_drawPile[swapIndex], _drawPile[i]);
+            }
         }
 
         public void ReshuffleDiscardIntoDraw()
         {
-            throw new NotImplementedException();
+            if (_discardPile.Count == 0)
+            {
+                return;
+            }
+
+            _drawPile.AddRange(_discardPile);
+            _discardPile.Clear();
+            ShuffleDrawPile();
         }
     }
 }

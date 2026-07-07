@@ -19,6 +19,7 @@ namespace KernelPanic.Meta
         public const int FiveStarSoftPityStart = 66;
         public const int FiveStarHardPity = 80;
         public const int EntropyPerPullToken = 100;
+        public const int TestRootCreditsBalance = 10000;
 
         private const double FourStarBaseChance = 0.12d;
         private const double FiveStarBaseChance = 0.008d;
@@ -26,10 +27,10 @@ namespace KernelPanic.Meta
         private const double DistroChanceOnFeaturedTier = 0.5d;
         private const double LimitedStandardFiveStarChance = 1d / 3d;
 
-        private readonly List<DistroDefinition> bannerPool = new();
-        private readonly Dictionary<GachaCurrencyType, int> currencyBalances = new();
-        private readonly Random random;
-        private GachaBannerState beginnerState = new(BeginnerBannerId);
+        private readonly List<DistroDefinition> _bannerPool = new();
+        private readonly Dictionary<GachaCurrencyType, int> _currencyBalances = new();
+        private readonly Random _random;
+        private GachaBannerState _beginnerState = new(BeginnerBannerId);
 
         public GachaService()
             : this(new Random())
@@ -38,17 +39,17 @@ namespace KernelPanic.Meta
 
         public GachaService(Random random)
         {
-            this.random = random ?? new Random();
-            currencyBalances[GachaCurrencyType.StandardPull] = 0;
-            currencyBalances[GachaCurrencyType.LimitedPull] = 0;
+            this._random = random ?? new Random();
+            _currencyBalances[GachaCurrencyType.StandardPull] = 0;
+            _currencyBalances[GachaCurrencyType.LimitedPull] = 0;
         }
 
         public int PullTokens => GetCurrencyBalance(GachaCurrencyType.StandardPull);
         public int LimitedPullTokens => GetCurrencyBalance(GachaCurrencyType.LimitedPull);
         public int RootCredits { get; private set; }
-        public IReadOnlyList<DistroDefinition> BannerPool => bannerPool;
-        public GachaBannerState BeginnerState => beginnerState;
-        public bool IsBeginnerBannerAvailable => !beginnerState.exhausted && beginnerState.totalPulls < BeginnerMaxPulls && bannerPool.Count > 0;
+        public IReadOnlyList<DistroDefinition> BannerPool => _bannerPool;
+        public GachaBannerState BeginnerState => _beginnerState;
+        public bool IsBeginnerBannerAvailable => !_beginnerState.exhausted && _beginnerState.totalPulls < BeginnerMaxPulls && _bannerPool.Count > 0;
 
         public event Action BannerPoolChanged;
         public event Action Changed;
@@ -61,18 +62,18 @@ namespace KernelPanic.Meta
             }
 
             data.EnsureLists();
-            RootCredits = Math.Max(0, data.rootCredits);
+            RootCredits = Math.Max(TestRootCreditsBalance, data.rootCredits);
             SetCurrencyBalanceSilently(GachaCurrencyType.StandardPull, data.standardPullCurrency);
             SetCurrencyBalanceSilently(GachaCurrencyType.LimitedPull, data.limitedPullCurrency);
-            beginnerState = data.beginnerBannerState ?? new GachaBannerState(BeginnerBannerId);
-            beginnerState.bannerId = BeginnerBannerId;
-            beginnerState.EnsureLists();
-            if (beginnerState.totalPulls >= BeginnerMaxPulls)
+            _beginnerState = data.beginnerBannerState ?? new GachaBannerState(BeginnerBannerId);
+            _beginnerState.bannerId = BeginnerBannerId;
+            _beginnerState.EnsureLists();
+            if (_beginnerState.totalPulls >= BeginnerMaxPulls)
             {
-                beginnerState.exhausted = true;
+                _beginnerState.exhausted = true;
             }
 
-            beginnerState.fiveStarPityCounter = Math.Max(0, beginnerState.fiveStarPityCounter);
+            _beginnerState.fiveStarPityCounter = Math.Max(0, _beginnerState.fiveStarPityCounter);
 
             Changed?.Invoke();
         }
@@ -88,12 +89,12 @@ namespace KernelPanic.Meta
             data.rootCredits = RootCredits;
             data.standardPullCurrency = GetCurrencyBalance(GachaCurrencyType.StandardPull);
             data.limitedPullCurrency = GetCurrencyBalance(GachaCurrencyType.LimitedPull);
-            data.beginnerBannerState = CloneState(beginnerState);
+            data.beginnerBannerState = CloneState(_beginnerState);
         }
 
         public int GetCurrencyBalance(GachaCurrencyType currencyType)
         {
-            return currencyBalances.TryGetValue(currencyType, out int balance) ? balance : 0;
+            return _currencyBalances.TryGetValue(currencyType, out int balance) ? balance : 0;
         }
 
         public void SetCurrencyBalance(GachaCurrencyType currencyType, int amount)
@@ -152,19 +153,19 @@ namespace KernelPanic.Meta
 
         public void AddToBannerPool(DistroDefinition distro)
         {
-            if (distro == null || bannerPool.Contains(distro))
+            if (distro == null || _bannerPool.Contains(distro))
             {
                 return;
             }
 
-            bannerPool.Add(distro);
+            _bannerPool.Add(distro);
             BannerPoolChanged?.Invoke();
             Changed?.Invoke();
         }
 
         public void SetBeginnerGuaranteedDistros(IReadOnlyList<DistroDefinition> distros)
         {
-            beginnerState.guaranteedDistroIds.Clear();
+            _beginnerState.guaranteedDistroIds.Clear();
             if (distros != null)
             {
                 for (int i = 0; i < distros.Count; i++)
@@ -172,7 +173,7 @@ namespace KernelPanic.Meta
                     DistroDefinition distro = distros[i];
                     if (distro != null && !string.IsNullOrWhiteSpace(distro.Id))
                     {
-                        beginnerState.guaranteedDistroIds.Add(distro.Id);
+                        _beginnerState.guaranteedDistroIds.Add(distro.Id);
                     }
                 }
             }
@@ -199,7 +200,7 @@ namespace KernelPanic.Meta
                 return false;
             }
 
-            int remainingPulls = BeginnerMaxPulls - beginnerState.totalPulls;
+            int remainingPulls = BeginnerMaxPulls - _beginnerState.totalPulls;
             if (pullCount > remainingPulls)
             {
                 failureReason = $"only {remainingPulls} beginner pull(s) remain";
@@ -255,13 +256,13 @@ namespace KernelPanic.Meta
             List<GachaReward> rewards = new();
             for (int i = 0; i < pullCount; i++)
             {
-                beginnerState.totalPulls++;
-                rewards.Add(RollBeginnerReward(beginnerState.totalPulls));
+                _beginnerState.totalPulls++;
+                rewards.Add(RollBeginnerReward(_beginnerState.totalPulls));
             }
 
-            if (beginnerState.totalPulls >= BeginnerMaxPulls)
+            if (_beginnerState.totalPulls >= BeginnerMaxPulls)
             {
-                beginnerState.exhausted = true;
+                _beginnerState.exhausted = true;
             }
 
             Changed?.Invoke();
@@ -272,8 +273,8 @@ namespace KernelPanic.Meta
         {
             return currencyType switch
             {
-                GachaCurrencyType.LimitedPull => "feature-pull-token",
-                _ => "stable-pull-token"
+                GachaCurrencyType.LimitedPull => "Compute Credits",
+                _ => "Commits"
             };
         }
 
@@ -308,39 +309,39 @@ namespace KernelPanic.Meta
         {
             if (pullNumber == 20)
             {
-                AdvanceFiveStarPityAfterNonFiveStar(beginnerState);
+                AdvanceFiveStarPityAfterNonFiveStar(_beginnerState);
                 return RewardGuaranteedBeginnerDistro(0, "20-pull starter guarantee");
             }
 
             if (pullNumber == 40)
             {
-                AdvanceFiveStarPityAfterNonFiveStar(beginnerState);
+                AdvanceFiveStarPityAfterNonFiveStar(_beginnerState);
                 return RewardGuaranteedBeginnerDistro(1, "40-pull starter guarantee");
             }
 
             if (pullNumber == 50)
             {
-                beginnerState.pityCounter = 0;
+                _beginnerState.pityCounter = 0;
                 return GachaReward.FutureStandardFiveStar("future standard 5-star distro", "50-pull beginner capstone");
             }
 
-            if (TryRollFiveStar(beginnerState, out bool fiveStarPityTriggered))
+            if (TryRollFiveStar(_beginnerState, out bool fiveStarPityTriggered))
             {
                 return RewardRandomFiveStar(fiveStarPityTriggered);
             }
 
-            bool pityTriggered = beginnerState.pityCounter >= FourStarHardPity - 1;
-            bool hitFourStarOrCharacter = pityTriggered || random.NextDouble() < FourStarBaseChance;
+            bool pityTriggered = _beginnerState.pityCounter >= FourStarHardPity - 1;
+            bool hitFourStarOrCharacter = pityTriggered || _random.NextDouble() < FourStarBaseChance;
             if (!hitFourStarOrCharacter)
             {
-                beginnerState.pityCounter++;
+                _beginnerState.pityCounter++;
                 return GachaReward.Equipment(3, "3-star equipment", false, false);
             }
 
-            beginnerState.pityCounter = 0;
-            if (bannerPool.Count > 0 && random.NextDouble() < DistroChanceOnFeaturedTier)
+            _beginnerState.pityCounter = 0;
+            if (_bannerPool.Count > 0 && _random.NextDouble() < DistroChanceOnFeaturedTier)
             {
-                DistroDefinition distro = bannerPool[random.Next(bannerPool.Count)];
+                DistroDefinition distro = _bannerPool[_random.Next(_bannerPool.Count)];
                 return GachaReward.DistroReward(distro, 4, pityTriggered, false);
             }
 
@@ -349,12 +350,12 @@ namespace KernelPanic.Meta
 
         private bool TryRollFiveStar(GachaBannerState state, out bool pityTriggered)
         {
-            state ??= beginnerState;
+            state ??= _beginnerState;
             int pityPullNumber = Math.Max(0, state.fiveStarPityCounter) + 1;
             pityTriggered = pityPullNumber >= FiveStarSoftPityStart;
 
             double chance = GetFiveStarChance(state);
-            bool hit = chance >= 1d || random.NextDouble() < chance;
+            bool hit = chance >= 1d || _random.NextDouble() < chance;
             if (!hit)
             {
                 state.fiveStarPityCounter++;
@@ -376,18 +377,18 @@ namespace KernelPanic.Meta
 
         private GachaReward RewardRandomFiveStar(bool pityTriggered)
         {
-            if (bannerPool.Count == 0 || random.NextDouble() >= DistroChanceOnFeaturedTier)
+            if (_bannerPool.Count == 0 || _random.NextDouble() >= DistroChanceOnFeaturedTier)
             {
                 return GachaReward.Equipment(5, "5-star equipment", pityTriggered, false);
             }
 
-            DistroDefinition distro = bannerPool.Count == 0 ? null : bannerPool[random.Next(bannerPool.Count)];
+            DistroDefinition distro = _bannerPool.Count == 0 ? null : _bannerPool[_random.Next(_bannerPool.Count)];
             return GachaReward.DistroReward(distro, 5, pityTriggered, false);
         }
 
         public bool ResolveFeaturedTierIsDistro()
         {
-            return random.NextDouble() < DistroChanceOnFeaturedTier;
+            return _random.NextDouble() < DistroChanceOnFeaturedTier;
         }
 
         public bool ResolveLimitedFiveStarUsesStandardPool(GachaBannerState limitedState)
@@ -403,21 +404,21 @@ namespace KernelPanic.Meta
                 return false;
             }
 
-            bool useStandardPool = random.NextDouble() < LimitedStandardFiveStarChance;
+            bool useStandardPool = _random.NextDouble() < LimitedStandardFiveStarChance;
             limitedState.featuredFiveStarGuaranteed = useStandardPool;
             return useStandardPool;
         }
 
         private GachaReward RewardGuaranteedBeginnerDistro(int guaranteeIndex, string reason)
         {
-            beginnerState.pityCounter = 0;
+            _beginnerState.pityCounter = 0;
             DistroDefinition distro = null;
-            if (guaranteeIndex >= 0 && guaranteeIndex < beginnerState.guaranteedDistroIds.Count)
+            if (guaranteeIndex >= 0 && guaranteeIndex < _beginnerState.guaranteedDistroIds.Count)
             {
-                distro = FindBannerPoolDistro(beginnerState.guaranteedDistroIds[guaranteeIndex]);
+                distro = FindBannerPoolDistro(_beginnerState.guaranteedDistroIds[guaranteeIndex]);
             }
 
-            distro ??= bannerPool.Count == 0 ? null : bannerPool[Math.Min(guaranteeIndex, bannerPool.Count - 1)];
+            distro ??= _bannerPool.Count == 0 ? null : _bannerPool[Math.Min(guaranteeIndex, _bannerPool.Count - 1)];
             return distro == null
                 ? GachaReward.Equipment(4, "4-star equipment", true, true)
                 : GachaReward.DistroReward(distro, 4, true, true, reason);
@@ -430,9 +431,9 @@ namespace KernelPanic.Meta
                 return null;
             }
 
-            for (int i = 0; i < bannerPool.Count; i++)
+            for (int i = 0; i < _bannerPool.Count; i++)
             {
-                DistroDefinition distro = bannerPool[i];
+                DistroDefinition distro = _bannerPool[i];
                 if (distro != null && string.Equals(distro.Id, id, StringComparison.OrdinalIgnoreCase))
                 {
                     return distro;
@@ -444,7 +445,7 @@ namespace KernelPanic.Meta
 
         private void SetCurrencyBalanceSilently(GachaCurrencyType currencyType, int amount)
         {
-            currencyBalances[currencyType] = Math.Max(0, amount);
+            _currencyBalances[currencyType] = Math.Max(0, amount);
         }
 
         private bool CanPullBeginnerWithEntropy(int pullCount, EntropyWallet wallet, int entropyTokenCount, out string failureReason)
@@ -461,7 +462,7 @@ namespace KernelPanic.Meta
                 return false;
             }
 
-            int remainingPulls = BeginnerMaxPulls - beginnerState.totalPulls;
+            int remainingPulls = BeginnerMaxPulls - _beginnerState.totalPulls;
             if (pullCount > remainingPulls)
             {
                 failureReason = $"only {remainingPulls} beginner pull(s) remain";

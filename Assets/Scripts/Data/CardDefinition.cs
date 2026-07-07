@@ -19,6 +19,7 @@ namespace KernelPanic.Data
         [SerializeField] private ResolutionTrack resolutionTrack;
         [SerializeField] private bool distroExclusive;
         [SerializeField] private bool isToken;
+        [SerializeField] private bool isRunOnly;
         [SerializeField, TextArea] private string designNotes;
         [SerializeField] private List<string> requiresSystem = new();
         [SerializeField] private CardDefinition upgradeTarget;
@@ -34,6 +35,7 @@ namespace KernelPanic.Data
         public ResolutionTrack ResolutionTrack => resolutionTrack;
         public bool DistroExclusive => distroExclusive;
         public bool IsToken => isToken;
+        public bool IsRunOnly => isRunOnly;
         public string DesignNotes => designNotes;
         public IReadOnlyList<string> RequiresSystem => requiresSystem;
         public CardDefinition UpgradeTarget => upgradeTarget;

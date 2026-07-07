@@ -14,31 +14,31 @@ namespace KernelPanic.UI
         private const int ExtraLines = 2;
         private const int TickMilliseconds = 450;
 
-        private readonly VisualElement layer;
-        private readonly IReadOnlyList<string> sourceLines;
-        private readonly List<Label> labels = new();
-        private IVisualElementScheduledItem tickSchedule;
-        private float lastRegionHeight;
-        private int cursor;
-        private bool reducedMotion;
-        private bool started;
+        private readonly VisualElement _layer;
+        private readonly IReadOnlyList<string> _sourceLines;
+        private readonly List<Label> _labels = new();
+        private IVisualElementScheduledItem _tickSchedule;
+        private float _lastRegionHeight;
+        private int _cursor;
+        private bool _reducedMotion;
+        private bool _started;
 
         public BackgroundLogRingBuffer(VisualElement layer, IReadOnlyList<string> sourceLines)
         {
-            this.layer = layer;
-            this.sourceLines = sourceLines ?? Array.Empty<string>();
-            this.layer.RegisterCallback<GeometryChangedEvent>(HandleGeometryChanged);
+            this._layer = layer;
+            this._sourceLines = sourceLines ?? Array.Empty<string>();
+            this._layer.RegisterCallback<GeometryChangedEvent>(HandleGeometryChanged);
         }
 
         public void Start(bool useReducedMotion)
         {
-            reducedMotion = useReducedMotion;
-            started = true;
-            cursor = 0;
+            _reducedMotion = useReducedMotion;
+            _started = true;
+            _cursor = 0;
 
-            if (lastRegionHeight > 0f)
+            if (_lastRegionHeight > 0f)
             {
-                RebuildLabelsForHeight(lastRegionHeight);
+                RebuildLabelsForHeight(_lastRegionHeight);
                 Render();
             }
 
@@ -47,9 +47,9 @@ namespace KernelPanic.UI
 
         public void Stop()
         {
-            started = false;
-            tickSchedule?.Pause();
-            tickSchedule = null;
+            _started = false;
+            _tickSchedule?.Pause();
+            _tickSchedule = null;
         }
 
         private void HandleGeometryChanged(GeometryChangedEvent evt)
@@ -59,8 +59,8 @@ namespace KernelPanic.UI
                 return;
             }
 
-            lastRegionHeight = evt.newRect.height;
-            if (!started)
+            _lastRegionHeight = evt.newRect.height;
+            if (!_started)
             {
                 return;
             }
@@ -72,52 +72,52 @@ namespace KernelPanic.UI
         private void RebuildLabelsForHeight(float regionHeight)
         {
             int targetCount = Mathf.Max(ExtraLines, Mathf.CeilToInt(regionHeight / LineHeight) + ExtraLines);
-            if (labels.Count == targetCount)
+            if (_labels.Count == targetCount)
             {
                 return;
             }
 
-            layer.Clear();
-            labels.Clear();
+            _layer.Clear();
+            _labels.Clear();
 
             for (int i = 0; i < targetCount; i++)
             {
                 Label label = new() { pickingMode = PickingMode.Ignore };
                 label.AddToClassList("background-log-line");
-                layer.Add(label);
-                labels.Add(label);
+                _layer.Add(label);
+                _labels.Add(label);
             }
         }
 
         private void RestartTick()
         {
-            tickSchedule?.Pause();
-            tickSchedule = null;
+            _tickSchedule?.Pause();
+            _tickSchedule = null;
 
-            if (reducedMotion || sourceLines.Count == 0)
+            if (_reducedMotion || _sourceLines.Count == 0)
             {
                 return;
             }
 
-            tickSchedule = layer.schedule.Execute(Advance).Every(TickMilliseconds);
+            _tickSchedule = _layer.schedule.Execute(Advance).Every(TickMilliseconds);
         }
 
         private void Advance()
         {
-            if (sourceLines.Count == 0)
+            if (_sourceLines.Count == 0)
             {
                 return;
             }
 
-            cursor = (cursor + 1) % sourceLines.Count;
+            _cursor = (_cursor + 1) % _sourceLines.Count;
             Render();
         }
 
         private void Render()
         {
-            if (sourceLines.Count == 0)
+            if (_sourceLines.Count == 0)
             {
-                foreach (Label label in labels)
+                foreach (Label label in _labels)
                 {
                     label.text = string.Empty;
                 }
@@ -125,9 +125,9 @@ namespace KernelPanic.UI
                 return;
             }
 
-            for (int i = 0; i < labels.Count; i++)
+            for (int i = 0; i < _labels.Count; i++)
             {
-                labels[i].text = sourceLines[(cursor + i) % sourceLines.Count];
+                _labels[i].text = _sourceLines[(_cursor + i) % _sourceLines.Count];
             }
         }
     }
