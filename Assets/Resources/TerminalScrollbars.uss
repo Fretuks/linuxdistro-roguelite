@@ -1,0 +1,94 @@
+:root {
+    --kp-scroll-track: var(--kp-panel);
+    --kp-scroll-thumb: var(--kp-border);
+    --kp-scroll-thumb-hover: var(--kp-primary);
+}
+
+ScrollView .unity-scroll-view__content-viewport {
+    padding-right: 2px;
+    padding-bottom: 2px;
+}
+
+ScrollView .unity-scroll-view__vertical-scroller {
+    width: 6px;
+    min-width: 6px;
+    background-color: transparent;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-radius: 0;
+}
+
+ScrollView .unity-scroll-view__horizontal-scroller {
+    height: 6px;
+    min-height: 6px;
+    background-color: transparent;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-radius: 0;
+}
+
+ScrollView .unity-scroller,
+ScrollView .unity-scroller--vertical,
+ScrollView .unity-scroller--horizontal,
+ScrollView .unity-scroller__slider,
+ScrollView .unity-base-slider {
+    background-color: transparent;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-radius: 0;
+}
+
+ScrollView .unity-scroller__low-button,
+ScrollView .unity-scroller__high-button {
+    display: none;
+    width: 0;
+    height: 0;
+    min-width: 0;
+    min-height: 0;
+    background-color: transparent;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+ScrollView .unity-base-slider__tracker {
+    background-color: var(--kp-scroll-track);
+    opacity: 0.28;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-radius: 0;
+}
+
+ScrollView .unity-base-slider__dragger,
+ScrollView .unity-base-slider__dragger-border,
+ScrollView #unity-dragger {
+    min-width: 6px;
+    min-height: 6px;
+    background-color: var(--kp-scroll-thumb);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-radius: 0;
+}
+
+ScrollView .unity-base-slider__dragger:hover,
+ScrollView .unity-base-slider__dragger-border:hover,
+ScrollView #unity-dragger:hover {
+    background-color: var(--kp-scroll-thumb-hover);
+}
+
+ScrollView .unity-base-slider__dragger:active,
+ScrollView .unity-base-slider__dragger-border:active,
+ScrollView #unity-dragger:active {
+    background-color: var(--kp-scroll-thumb-hover);
+}

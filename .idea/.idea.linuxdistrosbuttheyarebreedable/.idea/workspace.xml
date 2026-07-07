@@ -11,13 +11,29 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4222a6b8-add3-4f43-9c42-fd6bb5a76169" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Assets/Resources/TerminalScrollbars.uss" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/DistroVersionCatalog.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaTuning.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/PullResolver.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/VersionUpgrader.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatTuning.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatTuning.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/CombatScene.uss" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/CombatScene.uss" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CardEffects.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CardEffects.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatantState.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatantState.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/DamagePipeline.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/DamagePipeline.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/DeckController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/DeckController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/PlayerCollection.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/PlayerCollection.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/SaveService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/SaveService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RunConfig.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RunConfig.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RunContext.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RunContext.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/CollectionScreenController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/CollectionScreenController.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/GachaScreenController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/GachaScreenController.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/UI/CollectionScreen.uxml" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/UI/CollectionScreen.uxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/UI/MainMenu.uss" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/UI/MainMenu.uss" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/UI/MainMenu.uxml" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/UI/MainMenu.uxml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,9 +68,13 @@
     <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Fedora/CargoBuildRelease.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Languages/Python/PyPrint.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Ubuntu/AskUbuntu.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/DistroDatabase.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Fedora.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Mint.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Ubuntu.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Passives/AptUpdate.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Passives/BleedingEdge.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Passives/ItJustWorks.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Data/LanguageDeckDatabase.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI.meta" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/UI/MainMenuPanelSettings.asset" root0="FORCE_HIGHLIGHTING" />
@@ -70,23 +90,23 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.6593257874423712" />
-      <entry key="MS500" value="4.690994084349008" />
-      <entry key="S2" value="14.465357308970995" />
-      <entry key="S5" value="30.992381303472097" />
-      <entry key="S10" value="48.5846958827385" />
-      <entry key="S30" value="71.76833898022443" />
-      <entry key="S60" value="80.15161397083796" />
-      <entry key="M2" value="84.87531446244894" />
-      <entry key="M5" value="87.90107930582121" />
-      <entry key="M10" value="89.36799351143095" />
-      <entry key="M15" value="93.16275126446527" />
-      <entry key="M30" value="133.51634266577747" />
-      <entry key="H1" value="278.73000832894314" />
-      <entry key="H2" value="556.4819305444627" />
-      <entry key="H4" value="958.972222388022" />
-      <entry key="D1" value="2009.2210985288775" />
-      <entry key="W1" value="2381.8392808733556" />
+      <entry key="MS100" value="1.42846046364743" />
+      <entry key="MS500" value="3.1473272504526837" />
+      <entry key="S2" value="4.406032316795342" />
+      <entry key="S5" value="7.013900503844766" />
+      <entry key="S10" value="16.21402635518147" />
+      <entry key="S30" value="38.90401123450886" />
+      <entry key="S60" value="52.53282462788902" />
+      <entry key="M2" value="76.41615227872627" />
+      <entry key="M5" value="125.46422729844767" />
+      <entry key="M10" value="158.76574582237612" />
+      <entry key="M15" value="176.22359481016986" />
+      <entry key="M30" value="217.72508392110834" />
+      <entry key="H1" value="328.4135925429288" />
+      <entry key="H2" value="583.9663964386095" />
+      <entry key="H4" value="1000.6154353482859" />
+      <entry key="D1" value="2163.2750640427894" />
+      <entry key="W1" value="2591.3632929927458" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -94,37 +114,37 @@
       <entry key="S2" value="0.0" />
       <entry key="S5" value="0.0" />
       <entry key="S10" value="0.0" />
-      <entry key="S30" value="3.081765536046895E-110" />
-      <entry key="S60" value="1.7554958091795295E-55" />
-      <entry key="M2" value="4.189863731888548E-28" />
-      <entry key="M5" value="1.1191285094720122E-11" />
-      <entry key="M10" value="3.3453378147386345E-6" />
-      <entry key="M15" value="2.2367974199991652E-4" />
-      <entry key="M30" value="0.014955931470204738" />
-      <entry key="H1" value="0.12241465504527704" />
-      <entry key="H2" value="0.36869769063784513" />
-      <entry key="H4" value="0.8300520405421339" />
-      <entry key="D1" value="2.883634496098765" />
-      <entry key="W1" value="3.8121106294007556" />
+      <entry key="S30" value="4.679335776173224E-152" />
+      <entry key="S60" value="2.163177241044572E-76" />
+      <entry key="M2" value="1.4707743678227887E-38" />
+      <entry key="M5" value="7.362383250718034E-16" />
+      <entry key="M10" value="2.713371196633097E-8" />
+      <entry key="M15" value="9.029689298894987E-6" />
+      <entry key="M30" value="0.0030049451106002496" />
+      <entry key="H1" value="0.05487126235349662" />
+      <entry key="H2" value="0.24684605257568554" />
+      <entry key="H4" value="0.6791773688385119" />
+      <entry key="D1" value="2.788815988774459" />
+      <entry key="W1" value="3.7939461251078934" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.6056852423710548" />
-      <entry key="MS500" value="4.655592836166669" />
-      <entry key="S2" value="14.436328275205241" />
-      <entry key="S5" value="30.967614820111674" />
-      <entry key="S10" value="48.565252560398456" />
-      <entry key="S30" value="71.75871155917086" />
-      <entry key="S60" value="80.14622622688532" />
-      <entry key="M2" value="84.872458348968" />
-      <entry key="M5" value="87.89989521451953" />
-      <entry key="M10" value="89.36739411138522" />
-      <entry key="M15" value="93.16255011580246" />
-      <entry key="M30" value="133.530877068796" />
-      <entry key="H1" value="278.8516097409327" />
-      <entry key="H2" value="556.8495610944027" />
-      <entry key="H4" value="959.8012838755719" />
-      <entry key="D1" value="2012.1043621012425" />
-      <entry key="W1" value="2385.651327343784" />
+      <entry key="MS100" value="1.36580045961104" />
+      <entry key="MS500" value="3.120980742316745" />
+      <entry key="S2" value="4.3968676938883835" />
+      <entry key="S5" value="7.008354689811898" />
+      <entry key="S10" value="16.20802261033003" />
+      <entry key="S30" value="38.89936714660714" />
+      <entry key="S60" value="52.52966542050411" />
+      <entry key="M2" value="76.41373653537866" />
+      <entry key="M5" value="125.46254176247474" />
+      <entry key="M10" value="158.76465401645888" />
+      <entry key="M15" value="176.22278439428334" />
+      <entry key="M30" value="217.72754364072628" />
+      <entry key="H1" value="328.467843705019" />
+      <entry key="H2" value="584.2123911751798" />
+      <entry key="H4" value="1001.293731005342" />
+      <entry key="D1" value="2166.063508996286" />
+      <entry key="W1" value="2595.1571734947097" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -213,7 +233,7 @@
       <workItem from="1783330590375" duration="18451000" />
       <workItem from="1783371975450" duration="26000" />
       <workItem from="1783372397891" duration="989000" />
-      <workItem from="1783410502976" duration="5821000" />
+      <workItem from="1783410502976" duration="10247000" />
     </task>
     <task id="LOCAL-00001" summary="implement main screen">
       <option name="closed" value="true" />
@@ -335,7 +355,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783417593908</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="implement scaling rewards per wave completed in combat mode">
+      <option name="closed" value="true" />
+      <created>1783421764662</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1783421764662</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -365,7 +393,8 @@
     <MESSAGE value="finish implementing main" />
     <MESSAGE value="fix some stuff" />
     <MESSAGE value="Implement too many changes to list" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implement too many changes to list" />
+    <MESSAGE value="implement scaling rewards per wave completed in combat mode" />
+    <option name="LAST_COMMIT_MESSAGE" value="implement scaling rewards per wave completed in combat mode" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

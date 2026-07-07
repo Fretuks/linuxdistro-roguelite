@@ -32,6 +32,10 @@
     --kp-lang-go: #6de6ff;
     --kp-lang-ruby: #ff5f7d;
     --kp-lang-php: #9aa2ff;
+    --kp-primary: var(--kp-text);
+    --kp-scroll-track: var(--kp-panel);
+    --kp-scroll-thumb: var(--kp-text-dim);
+    --kp-scroll-thumb-hover: var(--kp-border-strong);
 }
 
 .combat-root {
@@ -186,6 +190,8 @@
 .meter-fill {
     height: 100%;
     background-color: var(--kp-text);
+    transition-property: width, background-color;
+    transition-duration: 220ms;
 }
 
 .meter-fill-warning {
@@ -950,4 +956,201 @@
 .repo-sold {
     opacity: 0.72;
     border-color: var(--kp-text-dim);
+}
+
+.feedback-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.damage-vignette {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    opacity: 0;
+    border-left-width: 10px;
+    border-right-width: 10px;
+    border-top-width: 10px;
+    border-bottom-width: 10px;
+    border-color: var(--kp-danger);
+    transition-property: opacity;
+    transition-duration: 120ms;
+}
+
+.damage-vignette-on {
+    opacity: 0.62;
+}
+
+.float-number {
+    position: absolute;
+    min-width: 60px;
+    height: 24px;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    font-size: 18px;
+    opacity: 1;
+    color: var(--kp-warning);
+    transition-property: top, opacity;
+    transition-duration: 420ms;
+}
+
+.float-damage {
+    color: var(--kp-warning);
+}
+
+.float-heal {
+    color: var(--kp-beneficial);
+}
+
+.float-status {
+    color: var(--kp-danger);
+}
+
+.float-muted {
+    color: var(--kp-text-dim);
+}
+
+.float-kill {
+    color: var(--kp-danger);
+}
+
+.float-large {
+    font-size: 23px;
+}
+
+.float-static {
+    transition-duration: 0ms;
+}
+
+.feedback-card-ghost {
+    opacity: 0.9;
+    transition-property: left, top, opacity;
+    transition-duration: 260ms;
+}
+
+.feedback-card-route {
+    border-color: var(--kp-accent);
+}
+
+.feedback-card-strike {
+    border-color: var(--kp-warning);
+}
+
+.feedback-card-discard {
+    border-color: var(--kp-text-dim);
+}
+
+.feedback-card-instant {
+    opacity: 0.72;
+    transition-duration: 0ms;
+}
+
+.feedback-hit {
+    background-color: var(--kp-action-hover);
+    border-color: var(--kp-warning);
+    scale: 1.025 0.98;
+    transition-property: scale, background-color, border-color;
+    transition-duration: 90ms;
+}
+
+.feedback-block {
+    border-color: var(--kp-beneficial);
+    transition-property: border-color;
+    transition-duration: 90ms;
+}
+
+.feedback-status {
+    border-color: var(--kp-danger);
+}
+
+.feedback-boost {
+    border-color: var(--kp-beneficial);
+}
+
+.feedback-killed {
+    opacity: 0.5;
+    scale: 0.95 0.95;
+    border-color: var(--kp-danger);
+    transition-property: opacity, scale, border-color;
+    transition-duration: 180ms;
+}
+
+.death-ghost {
+    background-color: var(--kp-panel-raised);
+    border-left-width: 2px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-color: var(--kp-danger);
+    opacity: 0.72;
+    transition-property: opacity, scale;
+    transition-duration: 300ms;
+}
+
+.enemy-acting {
+    border-color: var(--kp-accent);
+    scale: 1.035 1.035;
+    transition-property: scale, border-color;
+    transition-duration: 120ms;
+}
+
+.phase-pulse {
+    background-color: var(--kp-warning);
+    transition-property: background-color;
+    transition-duration: 120ms;
+}
+
+.cycles-spent-beat {
+    opacity: 0.62;
+    transition-property: opacity;
+    transition-duration: 120ms;
+}
+
+.feedback-denied {
+    border-color: var(--kp-danger);
+    translate: 4px 0;
+    transition-property: translate, border-color;
+    transition-duration: 70ms;
+}
+
+.hand-card-drawn {
+    border-color: var(--kp-beneficial);
+    translate: 0 -8px;
+    transition-property: translate, border-color;
+    transition-duration: 160ms;
+}
+
+.queue-chip-resolve {
+    border-color: var(--kp-warning);
+    scale: 1.06 1.06;
+    transition-property: scale, border-color;
+    transition-duration: 110ms;
+}
+
+.stack-chip-resolve {
+    border-color: var(--kp-lang-haskell);
+    scale: 1.08 1.08;
+    transition-property: scale, border-color;
+    transition-duration: 130ms;
+}
+
+.reduced-motion .float-number,
+.reduced-motion .feedback-card-ghost,
+.reduced-motion .damage-vignette,
+.reduced-motion .feedback-hit,
+.reduced-motion .feedback-killed,
+.reduced-motion .enemy-acting,
+.reduced-motion .phase-pulse,
+.reduced-motion .cycles-spent-beat,
+.reduced-motion .feedback-denied,
+.reduced-motion .hand-card-drawn,
+.reduced-motion .queue-chip-resolve,
+.reduced-motion .stack-chip-resolve,
+.reduced-motion .death-ghost {
+    transition-duration: 0ms;
 }

@@ -62,6 +62,8 @@ namespace KernelPanic.Meta
         public int rootCredits = GachaService.TestRootCreditsBalance;
         public int standardPullCurrency;
         public int limitedPullCurrency;
+        public int merges;
+        public List<OwnedUnitSaveEntry> ownedUnits = new();
         public List<string> ownedUnitIds = new();
         public List<string> bannerPoolIds = new();
         public GachaBannerState beginnerBannerState = new(GachaService.BeginnerBannerId);
@@ -74,6 +76,7 @@ namespace KernelPanic.Meta
 
         public void EnsureLists()
         {
+            ownedUnits ??= new List<OwnedUnitSaveEntry>();
             ownedUnitIds ??= new List<string>();
             bannerPoolIds ??= new List<string>();
             beginnerBannerState ??= new GachaBannerState(GachaService.BeginnerBannerId);
@@ -81,7 +84,114 @@ namespace KernelPanic.Meta
             beginnerBannerState.EnsureLists();
             lastRunLoadout ??= new LastRunLoadoutSaveEntry();
             lastRunLoadout.EnsureLists();
+            merges = Math.Max(0, merges);
+            MigrateLegacyOwnedUnitIds();
+            NormalizeOwnedUnits();
         }
+
+        public OwnedUnitSaveEntry FindOwnedUnit(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return null;
+            }
+
+            EnsureLists();
+            for (int i = 0; i < ownedUnits.Count; i++)
+            {
+                OwnedUnitSaveEntry entry = ownedUnits[i];
+                if (entry != null && string.Equals(entry.id, id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return entry;
+                }
+            }
+
+            return null;
+        }
+
+        public bool IsUnitOwned(string id)
+        {
+            return FindOwnedUnit(id) != null;
+        }
+
+        public OwnedUnitSaveEntry AddOwnedUnit(string id, int version)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return null;
+            }
+
+            EnsureLists();
+            OwnedUnitSaveEntry existing = FindOwnedUnit(id);
+            if (existing != null)
+            {
+                existing.version = Math.Max(1, Math.Min(GachaTuning.MaxVersion, existing.version));
+                return existing;
+            }
+
+            OwnedUnitSaveEntry entry = new()
+            {
+                id = id,
+                version = Math.Max(1, Math.Min(GachaTuning.MaxVersion, version))
+            };
+            ownedUnits.Add(entry);
+            return entry;
+        }
+
+        private void MigrateLegacyOwnedUnitIds()
+        {
+            for (int i = 0; i < ownedUnitIds.Count; i++)
+            {
+                string id = ownedUnitIds[i];
+                if (string.IsNullOrWhiteSpace(id) || HasOwnedUnitEntry(id))
+                {
+                    continue;
+                }
+
+                ownedUnits.Add(new OwnedUnitSaveEntry
+                {
+                    id = id,
+                    version = 1
+                });
+            }
+        }
+
+        private void NormalizeOwnedUnits()
+        {
+            HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+            for (int i = ownedUnits.Count - 1; i >= 0; i--)
+            {
+                OwnedUnitSaveEntry entry = ownedUnits[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.id) || !seen.Add(entry.id))
+                {
+                    ownedUnits.RemoveAt(i);
+                    continue;
+                }
+
+                entry.version = Math.Max(1, Math.Min(GachaTuning.MaxVersion, entry.version));
+            }
+        }
+
+        private bool HasOwnedUnitEntry(string id)
+        {
+            for (int i = 0; i < ownedUnits.Count; i++)
+            {
+                OwnedUnitSaveEntry entry = ownedUnits[i];
+                if (entry != null && string.Equals(entry.id, id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    [Serializable]
+    public sealed class OwnedUnitSaveEntry
+    {
+        public string id;
+        public int version = 1;
     }
 
     [Serializable]

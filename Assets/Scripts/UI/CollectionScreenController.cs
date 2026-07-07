@@ -18,11 +18,14 @@ namespace KernelPanic.UI
         private readonly List<VisualElement> _rows = new();
 
         private VisualElement _list;
+        private ScrollView _detailScroll;
         private VisualElement _detail;
         private FontAsset _monospaceFont;
         private LanguageDeckDatabase _languageDeckDatabase;
         private CardDatabase _cardDatabase;
         private PlayerCollection _playerCollection;
+        private Func<int> _getMergesBalance;
+        private Func<DistroDefinition, VersionUpgradeResult> _tryUpgradeUnit;
         private IReadOnlyList<DistroDefinition> _units = Array.Empty<DistroDefinition>();
         private IReadOnlyList<LanguageCatalogEntry> _languages = LanguageCatalog.All;
         private IReadOnlyList<CardEntry> _cards = Array.Empty<CardEntry>();
@@ -35,14 +38,17 @@ namespace KernelPanic.UI
 
         public event Action ViewChanged;
 
-        public void Bind(VisualElement root, FontAsset artFont, LanguageDeckDatabase deckDatabase, CardDatabase cardsDatabase, PlayerCollection collection)
+        public void Bind(VisualElement root, FontAsset artFont, LanguageDeckDatabase deckDatabase, CardDatabase cardsDatabase, PlayerCollection collection, Func<int> getMergesBalance = null, Func<DistroDefinition, VersionUpgradeResult> tryUpgradeUnit = null)
         {
             _monospaceFont = artFont;
             _languageDeckDatabase = deckDatabase;
             _cardDatabase = cardsDatabase;
             _playerCollection = collection;
+            _getMergesBalance = getMergesBalance;
+            _tryUpgradeUnit = tryUpgradeUnit;
             _list = root.Q<VisualElement>("CollectionList");
-            _detail = root.Q<VisualElement>("CollectionDetail");
+            _detailScroll = root.Q<ScrollView>("CollectionDetail");
+            _detail = _detailScroll?.contentContainer;
         }
 
         public bool IsCardSubview => _mode == CollectionMode.CardSubview;
@@ -282,7 +288,79 @@ namespace KernelPanic.UI
 
             readout.Add(details);
             _detail.Add(readout);
-            _detail.Add(BuildSubviewCommand($"> cat ~/units/{unit.Id}/cards", "exclusive packages", HasListableCards(unit), () => OpenUnitCards(unit), "no packages installed"));
+            AddVersionUpgradePanel(_detail, unit);
+            _detail.Add(BuildSubviewCommand($"cat ~/units/{unit.Id}/cards", "exclusive packages", HasListableCards(unit), () => OpenUnitCards(unit), "no packages installed"));
+        }
+
+        private void AddVersionUpgradePanel(VisualElement target, DistroDefinition unit)
+        {
+            int version = _playerCollection == null ? 1 : Mathf.Clamp(_playerCollection.GetVersion(unit.Id), 1, GachaTuning.MaxVersion);
+            string release = DistroVersionCatalog.GetReleaseLabel(unit.Id, version);
+            int merges = _getMergesBalance?.Invoke() ?? 0;
+
+            VisualElement panel = new();
+            panel.AddToClassList("version-upgrade-panel");
+
+            VisualElement summary = new();
+            summary.AddToClassList("version-upgrade-summary");
+
+            Label current = new($"{DistroPresentation.DisplayName(unit)} {release}  v{version}/{GachaTuning.MaxVersion}");
+            current.AddToClassList("version-upgrade-current");
+            summary.Add(current);
+
+            Label wallet = new(version < GachaTuning.MaxVersion ? $"merges {merges} / {GachaTuning.GetVersionUpgradeCost(version + 1)}" : $"merges {merges}");
+            wallet.AddToClassList("version-upgrade-wallet");
+            summary.Add(wallet);
+            panel.Add(summary);
+
+            if (version < GachaTuning.MaxVersion)
+            {
+                int targetVersion = version + 1;
+                int cost = GachaTuning.GetVersionUpgradeCost(targetVersion);
+                Label next = new($"next {DistroVersionCatalog.GetReleaseLabel(unit.Id, targetVersion)} - {DistroVersionCatalog.GetEffectSummary(unit.Id, targetVersion)}");
+                next.AddToClassList("version-upgrade-next");
+                panel.Add(next);
+
+                bool affordable = merges >= cost;
+                wallet.EnableInClassList(affordable ? "version-upgrade-wallet-affordable" : "version-upgrade-wallet-warning", true);
+                panel.Add(BuildCompactUpgradeCommand($"> apt full-upgrade  ({cost} merges)", affordable ? "ready" : "insufficient merges", affordable && _tryUpgradeUnit != null, () => UpgradeUnit(unit)));
+            }
+            else
+            {
+                Label next = new("latest release installed");
+                next.AddToClassList("version-upgrade-next");
+                panel.Add(next);
+                panel.Add(BuildCompactUpgradeCommand("> apt full-upgrade", "latest release", false, null));
+            }
+
+            VisualElement path = new();
+            path.AddToClassList("version-path");
+            for (int i = 1; i <= GachaTuning.MaxVersion; i++)
+            {
+                string className = i <= version ? "version-path-owned" : i == version + 1 ? "version-path-next" : "version-path-locked";
+                Label step = new($"v{i} {DistroVersionCatalog.GetReleaseLabel(unit.Id, i)}");
+                step.AddToClassList("version-path-step");
+                step.AddToClassList(className);
+                path.Add(step);
+            }
+
+            panel.Add(path);
+            target.Add(panel);
+        }
+
+        private void UpgradeUnit(DistroDefinition unit)
+        {
+            if (unit == null || _tryUpgradeUnit == null)
+            {
+                return;
+            }
+
+            VersionUpgradeResult result = _tryUpgradeUnit(unit);
+            RenderUnitDetail(unit);
+            if (!result.Success)
+            {
+                _detail.Add(BuildDetailLine("upgrade", FormatUpgradeFailure(result.FailureReason)));
+            }
         }
 
         private void RenderLanguageDetail(LanguageCatalogEntry language)
@@ -310,7 +388,7 @@ namespace KernelPanic.UI
                 return;
             }
 
-            _detail.Add(BuildSubviewCommand($"> cat ~/lang/{GetLanguageId(language.Language)}/deck", "starter deck", true, () => OpenLanguageDeck(language), null));
+            _detail.Add(BuildSubviewCommand($"cat ~/lang/{GetLanguageId(language.Language)}/deck", "starter deck", true, () => OpenLanguageDeck(language), null));
         }
 
         private void OpenUnitCards(DistroDefinition unit)
@@ -463,6 +541,28 @@ namespace KernelPanic.UI
             return row;
         }
 
+        private static VisualElement BuildCompactUpgradeCommand(string command, string state, bool enabled, Action action)
+        {
+            VisualElement row = new();
+            row.AddToClassList("version-upgrade-command");
+            row.EnableInClassList("disabled-row", !enabled);
+
+            Label commandLabel = new(command);
+            commandLabel.AddToClassList("version-upgrade-command-text");
+            Label stateLabel = new(state);
+            stateLabel.AddToClassList("version-upgrade-command-state");
+
+            row.Add(commandLabel);
+            row.Add(stateLabel);
+
+            if (enabled)
+            {
+                row.RegisterCallback<ClickEvent>(_ => action?.Invoke());
+            }
+
+            return row;
+        }
+
         private static void AddPassiveDetails(VisualElement target, DistroDefinition unit)
         {
             if (unit.Passive == null)
@@ -598,6 +698,17 @@ namespace KernelPanic.UI
         private static string FormatCardMeta(CardDefinition card)
         {
             return card == null ? "--" : $"{card.Language} / {card.CycleCost}c";
+        }
+
+        private static string FormatUpgradeFailure(VersionUpgradeFailureReason reason)
+        {
+            return reason switch
+            {
+                VersionUpgradeFailureReason.NotOwned => "not owned",
+                VersionUpgradeFailureReason.MaxVersion => "latest release",
+                VersionUpgradeFailureReason.InsufficientMerges => "insufficient merges",
+                _ => "upgrade failed"
+            };
         }
 
         private static string GetLanguageId(Language language)

@@ -1,6 +1,7 @@
 using KernelPanic.Core;
 using KernelPanic.Data;
 using KernelPanic.Run;
+using KernelPanic.Meta;
 using UnityEngine;
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,9 @@ namespace KernelPanic.Combat
         private bool awaitingWaveContinue;
         private bool runLost;
         private bool skipNextAllocateDraw;
+        private bool ubuntuEmptyHandRefillUsed;
+        private int fedoraCardsDiscountedThisTurn;
+        private int fedoraCrashChance = 10;
 
         public TurnPhase CurrentPhase => currentPhase;
         public RunConfig RunConfig => runConfig;
@@ -141,7 +145,13 @@ namespace KernelPanic.Combat
                 return false;
             }
 
+            bool fedoraBonus = CanApplyFedoraBonus();
             int cost = GetCardCost(card);
+            if (fedoraBonus)
+            {
+                cost = Mathf.Max(0, cost - 1);
+            }
+
             if (playerState.Cycles < cost)
             {
                 Log($"not enough cycles for {GetCardName(card)}");
@@ -167,6 +177,29 @@ namespace KernelPanic.Combat
             LogPlayIntent(card);
             card.SetTargetSnapshot(CaptureTargets(card));
 
+            if (fedoraBonus)
+            {
+                fedoraCardsDiscountedThisTurn++;
+                if (RandomRoll.RollRange(1, 100, new RollContext(playerState)) <= fedoraCrashChance)
+                {
+                    fedoraCrashChance = 10;
+                    if (IsDistro("fedora") && runConfig.DistroVersion >= 4)
+                    {
+                        playerState.Cycles += 1;
+                    }
+
+                    deckController.Discard(card);
+                    pendingTargetCard = null;
+                    selectedEnemyIndex = -1;
+                    Log($"{GetCardName(card)} crashed under bleeding edge");
+                    StateChanged?.Invoke();
+                    return true;
+                }
+
+                fedoraCrashChance = Mathf.Min(90, fedoraCrashChance + 10);
+                playerState.DamageMultiplierPercent = runConfig.DistroVersion >= 2 ? 175 : 150;
+            }
+
             switch (track)
             {
                 case ResolutionTrack.InterpreterQueue:
@@ -184,7 +217,10 @@ namespace KernelPanic.Combat
                     break;
             }
 
+            playerState.DamageMultiplierPercent = 100;
+
             pendingTargetCard = null;
+            TryApplyUbuntuEmptyHandRefill();
             StateChanged?.Invoke();
             return true;
         }
@@ -355,8 +391,12 @@ namespace KernelPanic.Combat
             runLost = false;
             awaitingWaveContinue = false;
             loggedEffectTodos.Clear();
+            ubuntuEmptyHandRefillUsed = false;
+            fedoraCrashChance = 10;
+            fedoraCardsDiscountedThisTurn = 0;
             RandomRoll.Seed(runConfig.RunSeed);
             playerState = new CombatantState(runManager.EffectiveMaxUptime(), runManager.EffectiveRam(), runManager.EffectiveMaxCycles());
+            ApplyVersionState(playerState);
             StartWave(preservePlayerUptime: false);
             Log($"booted {runConfig.Distro.DisplayName} with {runManager.RunDeck.Count} cards");
             StateChanged?.Invoke();
@@ -368,6 +408,7 @@ namespace KernelPanic.Combat
             if (!preservePlayerUptime || playerState == null)
             {
                 playerState = new CombatantState(runManager.EffectiveMaxUptime(), runManager.EffectiveRam(), runManager.EffectiveMaxCycles());
+                ApplyVersionState(playerState);
             }
             else
             {
@@ -379,6 +420,7 @@ namespace KernelPanic.Combat
                 playerState.Shield = 0;
                 playerState.IsDefeated = false;
                 playerState.MutableStatuses.Clear();
+                ApplyVersionState(playerState);
             }
 
             handController = new HandController(playerState.Ram);
@@ -413,11 +455,14 @@ namespace KernelPanic.Combat
             }
 
             playerState.Cycles = playerState.MaxCycles;
+            fedoraCardsDiscountedThisTurn = 0;
             statusEffects.Tick(playerState, StatusTickTiming.StartOfTurn, playerState, damagePipeline);
             if (CheckLoss())
             {
                 return;
             }
+
+            TryApplyUbuntuAptUpdate();
 
             if (skipNextAllocateDraw)
             {
@@ -555,6 +600,71 @@ namespace KernelPanic.Combat
             {
                 Log($"{label}: drew {added}");
             }
+        }
+
+        private void TryApplyUbuntuAptUpdate()
+        {
+            if (!IsDistro("ubuntu") || handController == null || playerState == null || handController.Cards.Count >= handController.RamCapacity)
+            {
+                return;
+            }
+
+            int lookCount = runConfig.DistroVersion >= 2 ? 3 : 2;
+            if (!deckController.TryDrawCheapestFromTop(lookCount, out CardInstance card))
+            {
+                return;
+            }
+
+            if (runConfig.DistroVersion >= 4)
+            {
+                card.TemporaryCostDelta -= 1;
+            }
+
+            if (handController.Add(card))
+            {
+                Log($"apt update: staged {GetCardName(card)} from top {lookCount}");
+            }
+        }
+
+        private void TryApplyUbuntuEmptyHandRefill()
+        {
+            if (!IsDistro("ubuntu") || runConfig.DistroVersion < 5 || ubuntuEmptyHandRefillUsed || handController == null || handController.Cards.Count > 0)
+            {
+                return;
+            }
+
+            ubuntuEmptyHandRefillUsed = true;
+            DrawCardsToHand(playerState.Ram, "ubuntu 24.04 refill");
+        }
+
+        private bool CanApplyFedoraBonus()
+        {
+            if (!IsDistro("fedora") || playerState == null)
+            {
+                return false;
+            }
+
+            int limit = runConfig.DistroVersion >= 5 ? 2 : 1;
+            return fedoraCardsDiscountedThisTurn < limit;
+        }
+
+        private void ApplyVersionState(CombatantState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            state.forceMaxRolls = IsDistro("mint");
+            state.IgnoreDamageMultipliers = IsDistro("mint");
+            state.AllowFlatDamageBuffs = IsDistro("mint") && runConfig.DistroVersion >= 4;
+            state.FlatEffectBonus = IsDistro("mint") && runConfig.DistroVersion >= 2 ? 2 : 0;
+            state.DamageMultiplierPercent = 100;
+        }
+
+        private bool IsDistro(string id)
+        {
+            return string.Equals(runConfig?.Distro?.Id, id, StringComparison.OrdinalIgnoreCase);
         }
 
         private CombatContext BuildContext(CardInstance card, IReadOnlyList<CombatantState> targets)

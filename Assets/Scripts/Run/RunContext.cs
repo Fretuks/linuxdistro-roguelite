@@ -18,7 +18,12 @@ namespace KernelPanic.Run
 
         public static void Set(DistroDefinition distro, IReadOnlyList<CardDefinition> equippedCards, Language primaryLanguage, Language secondaryLanguage)
         {
-            pendingRun = new PendingRun(distro, equippedCards, primaryLanguage, secondaryLanguage, Environment.TickCount);
+            Set(distro, equippedCards, primaryLanguage, secondaryLanguage, 1);
+        }
+
+        public static void Set(DistroDefinition distro, IReadOnlyList<CardDefinition> equippedCards, Language primaryLanguage, Language secondaryLanguage, int distroVersion)
+        {
+            pendingRun = new PendingRun(distro, equippedCards, primaryLanguage, secondaryLanguage, Environment.TickCount, distroVersion);
         }
 
         public static bool TryCreateRunConfig(LanguageDeckDatabase languageDeckDatabase, out RunConfig config)
@@ -41,13 +46,15 @@ namespace KernelPanic.Run
             private readonly Language primaryLanguage;
             private readonly Language secondaryLanguage;
             private readonly int runSeed;
+            private readonly int distroVersion;
 
-            public PendingRun(DistroDefinition distro, IReadOnlyList<CardDefinition> cards, Language primaryLanguage, Language secondaryLanguage, int runSeed)
+            public PendingRun(DistroDefinition distro, IReadOnlyList<CardDefinition> cards, Language primaryLanguage, Language secondaryLanguage, int runSeed, int distroVersion)
             {
                 this.distro = distro;
                 this.primaryLanguage = primaryLanguage;
                 this.secondaryLanguage = secondaryLanguage;
                 this.runSeed = runSeed;
+                this.distroVersion = distroVersion;
 
                 if (cards == null)
                 {
@@ -70,7 +77,7 @@ namespace KernelPanic.Run
                 List<CardDefinition> startingDeck = new(equippedCards);
                 AddLanguageDeck(languageDeckDatabase, primaryLanguage, startingDeck);
                 AddLanguageDeck(languageDeckDatabase, secondaryLanguage, startingDeck);
-                return new RunConfig(distro, primaryLanguage, secondaryLanguage, startingDeck, runSeed);
+                return new RunConfig(distro, primaryLanguage, secondaryLanguage, startingDeck, runSeed, distroVersion);
             }
 
             private static void AddLanguageDeck(LanguageDeckDatabase languageDeckDatabase, Language language, List<CardDefinition> target)

@@ -8,6 +8,9 @@
     --kp-border: #1d3b2a;
     --kp-hover: #102018;
     --kp-amber: #ffbf5c;
+    --kp-scroll-track: var(--kp-panel);
+    --kp-scroll-thumb: var(--kp-muted);
+    --kp-scroll-thumb-hover: var(--kp-primary-dim);
 }
 
 .terminal-root {
@@ -774,8 +777,8 @@ Button {
 .collection-detail {
     flex-grow: 1;
     min-width: 0;
-    overflow: hidden;
-    padding: 16px;
+    min-height: 0;
+    padding: 0;
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
@@ -787,14 +790,141 @@ Button {
     background-color: var(--kp-panel);
 }
 
+.collection-detail .unity-scroll-view__content-container {
+    min-width: 0;
+    padding: 16px;
+}
+
 .collection-detail-readout {
     flex-direction: row;
+    flex-shrink: 0;
     margin-top: 12px;
+    margin-bottom: 12px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-top-color: var(--kp-border);
+    border-bottom-color: var(--kp-border);
+    overflow: hidden;
+}
+
+.version-upgrade-panel {
+    flex-shrink: 0;
+    margin-top: 4px;
+    margin-bottom: 10px;
+    padding: 10px 10px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-border);
+    border-right-color: var(--kp-border);
+    border-top-color: var(--kp-border);
+    border-bottom-color: var(--kp-border);
+    background-color: var(--kp-bg-solid);
+}
+
+.version-upgrade-summary {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.version-upgrade-current {
+    flex-grow: 1;
+    min-width: 0;
+    color: var(--kp-primary);
+    -unity-font-style: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.version-upgrade-wallet {
+    color: var(--kp-muted);
+    min-width: 110px;
+    -unity-text-align: middle-right;
+}
+
+.version-upgrade-wallet-affordable {
+    color: var(--kp-primary);
+}
+
+.version-upgrade-wallet-warning {
+    color: var(--kp-amber);
+}
+
+.version-upgrade-next {
+    color: var(--kp-muted);
+    font-size: 13px;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
+}
+
+.version-upgrade-command {
+    min-height: 26px;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-left-width: 2px;
+    border-left-color: var(--kp-primary);
+    background-color: var(--kp-hover);
+}
+
+.version-upgrade-command:hover {
+    background-color: var(--kp-panel);
+}
+
+.version-upgrade-command-text {
+    flex-grow: 1;
+    min-width: 0;
+    color: var(--kp-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.version-upgrade-command-state {
+    color: var(--kp-muted);
+    min-width: 120px;
+    -unity-text-align: middle-right;
+}
+
+.version-path {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.version-path-step {
+    color: var(--kp-muted);
+    font-size: 12px;
+    margin-right: 14px;
+    margin-bottom: 5px;
+}
+
+.version-path-owned {
+    color: var(--kp-primary);
+}
+
+.version-path-next {
+    color: var(--kp-amber);
+    -unity-font-style: bold;
+}
+
+.version-path-locked {
+    color: var(--kp-muted);
+    opacity: 0.65;
 }
 
 .collection-detail-values {
     flex-grow: 1;
     min-width: 0;
+    padding-left: 12px;
 }
 
 .collection-detail .kv-value {
@@ -1037,27 +1167,6 @@ Button {
 
 .collection-equip-row {
     margin-top: 18px;
-}
-
-ScrollView .unity-scroll-view__vertical-scroller,
-ScrollView .unity-scroll-view__horizontal-scroller {
-    width: 6px;
-    background-color: var(--kp-panel);
-}
-
-ScrollView .unity-scroller__low-button,
-ScrollView .unity-scroller__high-button {
-    display: none;
-}
-
-ScrollView .unity-base-slider__tracker {
-    background-color: var(--kp-panel);
-    border-radius: 0;
-}
-
-ScrollView .unity-base-slider__dragger {
-    background-color: var(--kp-muted);
-    border-radius: 0;
 }
 
 .modal-overlay {

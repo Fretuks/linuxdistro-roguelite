@@ -74,18 +74,32 @@ namespace KernelPanic.Combat
 
         private static int ApplyMultipliers(int amount, DamageRequest request)
         {
-            // TODO: Apply buffs/debuffs and Mint's no-multiplier rule here.
-            return amount;
+            if (request.Source != null && request.Source.IgnoreDamageMultipliers)
+            {
+                // Mint V1+ ignores multiplicative damage modifiers. Mint V4 still allows flat
+                // bonuses before this step; no flat buff status exists yet, so the flag is a hook.
+                return amount;
+            }
+
+            int multiplier = request.Source == null ? 100 : Mathf.Max(0, request.Source.DamageMultiplierPercent);
+            return Mathf.RoundToInt(amount * (multiplier / 100f));
         }
 
         private static int ApplyCrit(int amount, DamageRequest request)
         {
+            if (request.Source != null && request.Source.forceMaxRolls)
+            {
+                return amount;
+            }
+
             // TODO: Add crit calculation and crit modifiers.
             return amount;
         }
 
         private static int ApplyResistancesAndWeaknesses(int amount, DamageRequest request)
         {
+            // TODO: Enemy resistances/reductions are not authored yet. Mint V5 should re-resolve
+            // a once-per-combat reduced effect here once those reduction sources exist.
             // TODO: Apply enemy language resistances and weaknesses here.
             return amount;
         }

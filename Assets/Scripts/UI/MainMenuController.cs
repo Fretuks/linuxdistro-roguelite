@@ -23,6 +23,7 @@ namespace KernelPanic.UI
         private const string HiddenClassName = "hidden";
         private const string SelectedClassName = "selected";
         private const string CursorOnClassName = "cursor-on";
+        private const string SharedScrollbarStyleResourcePath = "TerminalScrollbars";
         private const float BootIntroSeconds = 1.5f;
         private static bool _bootIntroPlayed;
 
@@ -133,13 +134,14 @@ namespace KernelPanic.UI
             _cardLoadout = new CardLoadout(_playerCollection.OwnedUnits);
             Initialize(new EntropyWallet()); // TODO: Replace with persistent wallet service composition.
             BindElements();
+            LoadSharedStyles();
             BindCommandEntries();
             RegisterCommandEntryCallbacks();
             featuredUnitPanel.Bind(_root, monospaceFont);
-            collectionScreen.Bind(_root, monospaceFont, languageDeckDatabase, cardDatabase, _playerCollection);
+            collectionScreen.Bind(_root, monospaceFont, languageDeckDatabase, cardDatabase, _playerCollection, GetMergesBalance, UpgradeCollectionUnit);
             BindScreenFrames();
             starterSelection.Bind(_root, distroDatabase, HandleStarterConfirmed);
-            gachaScreen.Bind(_root, distroDatabase, monospaceFont, _gachaService, _playerCollection, _wallet, HandleMetaStateChanged, OpenRootCreditExchange);
+            gachaScreen.Bind(_root, distroDatabase, monospaceFont, _gachaService, _playerCollection, _wallet, ResolvePulledDistros, HandleMetaStateChanged, OpenRootCreditExchange);
             LoadMetaState();
             _playerCollection.Changed += HandleMetaStateChanged;
             _gachaService.Changed += HandleMetaStateChanged;
@@ -219,6 +221,15 @@ namespace KernelPanic.UI
             _rootCreditExchangeCloseButton = _root.Q<Button>("RootCreditExchangeCloseButton");
             _collectionUnitsButton = _root.Q<Button>("CollectionUnitsButton");
             _collectionLanguagesButton = _root.Q<Button>("CollectionLanguagesButton");
+        }
+
+        private void LoadSharedStyles()
+        {
+            StyleSheet scrollbarStyleSheet = Resources.Load<StyleSheet>(SharedScrollbarStyleResourcePath);
+            if (scrollbarStyleSheet != null)
+            {
+                _root.styleSheets.Add(scrollbarStyleSheet);
+            }
         }
 
         private void BindScreenFrames()
@@ -554,12 +565,13 @@ namespace KernelPanic.UI
             _saveData.EnsureLists();
             _wallet.SetBalance(_saveData.entropyBalance);
 
-            for (int i = 0; i < _saveData.ownedUnitIds.Count; i++)
+            for (int i = 0; i < _saveData.ownedUnits.Count; i++)
             {
-                DistroDefinition unit = ResolveSavedDistro(_saveData.ownedUnitIds[i]);
+                OwnedUnitSaveEntry entry = _saveData.ownedUnits[i];
+                DistroDefinition unit = ResolveSavedDistro(entry?.id);
                 if (unit != null)
                 {
-                    _playerCollection.Add(unit);
+                    _playerCollection.Add(unit, entry.version);
                 }
             }
 
@@ -624,7 +636,7 @@ namespace KernelPanic.UI
 
         private void HandleStarterConfirmed(DistroDefinition picked, IReadOnlyList<DistroDefinition> remaining)
         {
-            _playerCollection.Add(picked);
+            _playerCollection.Add(picked, 1);
             AddAllFourStarDistrosToBeginnerBannerPool();
             _gachaService.SetBeginnerGuaranteedDistros(remaining);
             _saveData.starterChosen = true;
@@ -639,6 +651,7 @@ namespace KernelPanic.UI
             _saveData ??= SaveData.CreateDefault();
             _saveData.EnsureLists();
             _saveData.entropyBalance = _wallet == null ? 0 : _wallet.Balance;
+            _saveData.ownedUnits.Clear();
             _saveData.ownedUnitIds.Clear();
             _saveData.bannerPoolIds.Clear();
             _gachaService.WriteProgress(_saveData);
@@ -648,7 +661,11 @@ namespace KernelPanic.UI
                 DistroDefinition unit = _playerCollection.OwnedUnits[i];
                 if (unit != null && !string.IsNullOrWhiteSpace(unit.Id))
                 {
-                    _saveData.ownedUnitIds.Add(unit.Id);
+                    _saveData.ownedUnits.Add(new OwnedUnitSaveEntry
+                    {
+                        id = unit.Id,
+                        version = Mathf.Clamp(_playerCollection.GetVersion(unit.Id), 1, GachaTuning.MaxVersion)
+                    });
                 }
             }
 
@@ -662,6 +679,38 @@ namespace KernelPanic.UI
             }
 
             _saveService.Save(_saveData);
+        }
+
+        private PullResolutionResult ResolvePulledDistros(IReadOnlyList<DistroDefinition> pulledDistros)
+        {
+            PullResolutionContext context = new(_saveData, _playerCollection, distroDatabase, _playerCollection.FeaturedUnit?.Id);
+            return PullResolver.Resolve(pulledDistros, context);
+        }
+
+        private int GetMergesBalance()
+        {
+            _saveData ??= SaveData.CreateDefault();
+            _saveData.EnsureLists();
+            return _saveData.merges;
+        }
+
+        private VersionUpgradeResult UpgradeCollectionUnit(DistroDefinition unit)
+        {
+            if (unit == null)
+            {
+                return VersionUpgradeResult.Failed(null, VersionUpgradeFailureReason.NotOwned);
+            }
+
+            VersionUpgradeResult result = VersionUpgrader.TryUpgrade(unit.Id, _saveData, _playerCollection);
+            if (result.Success)
+            {
+                SaveCurrentState();
+                featuredUnitPanel.Refresh(_playerCollection.OwnedUnits, _playerCollection.FeaturedUnit);
+                collectionScreen.RefreshUnits(_playerCollection.OwnedUnits);
+                RefreshCurrencyReadouts();
+            }
+
+            return result;
         }
 
         private void SaveLastRunLoadout(DistroDefinition unit, IReadOnlyList<string> cardIds)
@@ -708,7 +757,7 @@ namespace KernelPanic.UI
             _rootCreditsToEntropyButton?.SetEnabled(true);
             bool showPullTokens = IsGachaVisible();
             _pullTokensLabel.text = showPullTokens
-                ? $"bandwidth={_gachaService.PullTokens} compute-credits={_gachaService.LimitedPullTokens}"
+                ? $"bandwidth={_gachaService.PullTokens} compute-credits={_gachaService.LimitedPullTokens} merges={_saveData.merges}"
                 : string.Empty;
             _pullTokensLabel.EnableInClassList(HiddenClassName, !showPullTokens);
         }
@@ -1452,7 +1501,7 @@ namespace KernelPanic.UI
             }
 
             SaveLastRunLoadout(unit, equippedCardIds);
-            RunContext.Set(unit, BuildEquippedCardDefinitions(unit, equippedCardIds), _selectedRunLanguages[0], _selectedRunLanguages[1]);
+            RunContext.Set(unit, BuildEquippedCardDefinitions(unit, equippedCardIds), _selectedRunLanguages[0], _selectedRunLanguages[1], _playerCollection.GetVersion(unit.Id));
             SceneLoader.LoadGame();
         }
 

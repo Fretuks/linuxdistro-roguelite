@@ -11,7 +11,7 @@
                 </ui:VisualElement>
                 <ui:VisualElement name="CollectionContent" class="collection-shell">
                     <ui:ScrollView name="CollectionList" class="collection-list" />
-                    <ui:VisualElement name="CollectionDetail" class="collection-detail" />
+                    <ui:ScrollView name="CollectionDetail" class="collection-detail" />
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement class="screen-frame-footer">

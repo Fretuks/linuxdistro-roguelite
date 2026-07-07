@@ -31,6 +31,7 @@ namespace KernelPanic.UI
         private GachaService _gachaService;
         private PlayerCollection _playerCollection;
         private EntropyWallet _wallet;
+        private Func<IReadOnlyList<DistroDefinition>, PullResolutionResult> _resolvePulledDistros;
         private Action _onChanged;
         private Action _requestRootCreditExchange;
         private int _selectedBannerIndex;
@@ -40,13 +41,14 @@ namespace KernelPanic.UI
         private string _resultBannerId;
         private string _resultText;
 
-        public void Bind(VisualElement root, DistroDatabase database, FontAsset artFont, GachaService service, PlayerCollection collection, EntropyWallet entropyWallet, Action changedCallback, Action rootCreditExchangeCallback)
+        public void Bind(VisualElement root, DistroDatabase database, FontAsset artFont, GachaService service, PlayerCollection collection, EntropyWallet entropyWallet, Func<IReadOnlyList<DistroDefinition>, PullResolutionResult> pullResolver, Action changedCallback, Action rootCreditExchangeCallback)
         {
             _distroDatabase = database;
             _monospaceFont = artFont;
             _gachaService = service;
             _playerCollection = collection;
             _wallet = entropyWallet;
+            _resolvePulledDistros = pullResolver;
             _onChanged = changedCallback;
             _requestRootCreditExchange = rootCreditExchangeCallback;
             _bannerList = root.Q<VisualElement>("GachaBannerList");
@@ -252,24 +254,53 @@ namespace KernelPanic.UI
                 lines.Add($"entropy fallback: spent {result.EntropySpent} entropy");
             }
 
+            List<DistroDefinition> distroRewards = new();
+            for (int i = 0; i < result.Rewards.Count; i++)
+            {
+                if (result.Rewards[i].Distro != null)
+                {
+                    distroRewards.Add(result.Rewards[i].Distro);
+                }
+            }
+
+            PullResolutionResult resolution = _resolvePulledDistros?.Invoke(distroRewards);
+            int distroOutcomeIndex = 0;
             for (int i = 0; i < result.Rewards.Count; i++)
             {
                 GachaReward reward = result.Rewards[i];
-                bool duplicate = reward.Distro != null && _playerCollection.GetOwnedCount(reward.Distro.Id) > 0;
-                if (reward.Distro != null)
+                PullResolutionOutcome? outcome = null;
+                if (reward.Distro != null && resolution != null && distroOutcomeIndex < resolution.Outcomes.Count)
                 {
-                    _playerCollection.Add(reward.Distro);
+                    outcome = resolution.Outcomes[distroOutcomeIndex];
+                    distroOutcomeIndex++;
                 }
 
                 string suffix = reward.Guaranteed ? " guaranteed" : reward.PityTriggered ? " pity" : string.Empty;
-                string duplicateText = duplicate ? " duplicate" : string.Empty;
-                lines.Add($"{i + 1:00}: {reward.StarRating}-star {reward.DisplayName}{suffix}{duplicateText}");
+                string outcomeText = FormatPullOutcome(outcome);
+                lines.Add($"{i + 1:00}: {reward.StarRating}-star {reward.DisplayName}{suffix}{outcomeText}");
             }
 
             _resultBannerId = bannerId;
             _resultText = string.Join("\n", lines);
             _onChanged?.Invoke();
             Refresh();
+        }
+
+        private static string FormatPullOutcome(PullResolutionOutcome? outcome)
+        {
+            if (!outcome.HasValue)
+            {
+                return string.Empty;
+            }
+
+            PullResolutionOutcome value = outcome.Value;
+            return value.Kind switch
+            {
+                PullOutcomeKind.Granted => " granted",
+                PullOutcomeKind.Dupe => $" duplicate +{value.MergesAwarded} merges",
+                PullOutcomeKind.DupeOverflow => $" max-version duplicate +{value.MergesAwarded} merges",
+                _ => string.Empty
+            };
         }
 
         private void RequestPullSelectedBanner(int pullCount)

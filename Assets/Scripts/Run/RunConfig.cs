@@ -10,17 +10,23 @@ namespace KernelPanic.Run
     public sealed class RunConfig
     {
         public RunConfig(DistroDefinition distro, Language primaryLanguage, Language secondaryLanguage, IReadOnlyList<CardDefinition> startingDeck)
-            : this(distro, primaryLanguage, secondaryLanguage, startingDeck, 0)
+            : this(distro, primaryLanguage, secondaryLanguage, startingDeck, 0, 1)
         {
         }
 
         public RunConfig(DistroDefinition distro, Language primaryLanguage, Language secondaryLanguage, IReadOnlyList<CardDefinition> startingDeck, int runSeed)
+            : this(distro, primaryLanguage, secondaryLanguage, startingDeck, runSeed, 1)
+        {
+        }
+
+        public RunConfig(DistroDefinition distro, Language primaryLanguage, Language secondaryLanguage, IReadOnlyList<CardDefinition> startingDeck, int runSeed, int distroVersion)
         {
             Distro = distro;
             PrimaryLanguage = primaryLanguage;
             SecondaryLanguage = secondaryLanguage;
             StartingDeck = startingDeck;
             RunSeed = runSeed;
+            DistroVersion = UnityEngine.Mathf.Clamp(distroVersion, 1, KernelPanic.Meta.GachaTuning.MaxVersion);
         }
 
         public DistroDefinition Distro { get; }
@@ -28,5 +34,6 @@ namespace KernelPanic.Run
         public Language SecondaryLanguage { get; }
         public IReadOnlyList<CardDefinition> StartingDeck { get; }
         public int RunSeed { get; }
+        public int DistroVersion { get; }
     }
 }

@@ -20,6 +20,7 @@ namespace KernelPanic.UI
     public sealed class CombatSceneController : MonoBehaviour
     {
         private const string StyleResourcePath = "CombatScene";
+        private const string SharedScrollbarStyleResourcePath = "TerminalScrollbars";
         private const string FilledCycle = "●";
         private const string EmptyCycle = "○";
 
@@ -48,8 +49,18 @@ namespace KernelPanic.UI
         private VisualElement handRow;
         private VisualElement turnResourceGrid;
         private Label logLabel;
+        private VisualElement feedbackLayer;
+        private VisualElement damageVignette;
         private VisualElement overlay;
         private Color distroAccent;
+        private readonly Dictionary<CombatantState, VisualElement> combatantElements = new();
+        private readonly Dictionary<CardInstance, VisualElement> handCardElements = new();
+        private readonly Dictionary<CardInstance, VisualElement> queueChipElements = new();
+        private readonly Dictionary<CardInstance, VisualElement> stackChipElements = new();
+        private readonly Dictionary<CombatantState, int> previousUptime = new();
+        private readonly Dictionary<CombatantState, int> previousShield = new();
+        private readonly HashSet<CardInstance> knownHandCards = new();
+        private int queueCascadeIndex;
 
         private void Awake()
         {
@@ -64,9 +75,18 @@ namespace KernelPanic.UI
 
         private void OnEnable()
         {
+            root?.EnableInClassList("reduced-motion", UIPreferences.ReducedMotion);
             combatManager.StateChanged += Refresh;
             combatManager.CombatLog += HandleCombatLog;
             runManager.RepositoryChanged += Refresh;
+            GameEvents.CardPlayed += HandleCardPlayed;
+            GameEvents.CardResolved += HandleCardResolved;
+            GameEvents.PhaseChanged += HandlePhaseChanged;
+            GameEvents.DamageDealt += HandleDamageDealt;
+            GameEvents.CombatantDefeated += HandleCombatantDefeated;
+            GameEvents.EnemyWouldAct += HandleEnemyWouldAct;
+            GameEvents.PlayerDamaged += HandlePlayerDamaged;
+            GameEvents.StatusApplied += HandleStatusApplied;
         }
 
         private void Start()
@@ -101,6 +121,14 @@ namespace KernelPanic.UI
             combatManager.StateChanged -= Refresh;
             combatManager.CombatLog -= HandleCombatLog;
             runManager.RepositoryChanged -= Refresh;
+            GameEvents.CardPlayed -= HandleCardPlayed;
+            GameEvents.CardResolved -= HandleCardResolved;
+            GameEvents.PhaseChanged -= HandlePhaseChanged;
+            GameEvents.DamageDealt -= HandleDamageDealt;
+            GameEvents.CombatantDefeated -= HandleCombatantDefeated;
+            GameEvents.EnemyWouldAct -= HandleEnemyWouldAct;
+            GameEvents.PlayerDamaged -= HandlePlayerDamaged;
+            GameEvents.StatusApplied -= HandleStatusApplied;
         }
 
         private bool TryBuildRunConfig(out RunConfig config)
@@ -140,7 +168,7 @@ namespace KernelPanic.UI
 
             AddLanguageDeck(Language.Python, startingDeck);
             AddLanguageDeck(Language.JavaScript, startingDeck);
-            config = new RunConfig(distro, Language.Python, Language.JavaScript, startingDeck, Environment.TickCount);
+            config = new RunConfig(distro, Language.Python, Language.JavaScript, startingDeck, Environment.TickCount, 1);
             return true;
         }
 
@@ -181,6 +209,12 @@ namespace KernelPanic.UI
             if (styleSheet != null)
             {
                 root.styleSheets.Add(styleSheet);
+            }
+
+            StyleSheet scrollbarStyleSheet = Resources.Load<StyleSheet>(SharedScrollbarStyleResourcePath);
+            if (scrollbarStyleSheet != null)
+            {
+                root.styleSheets.Add(scrollbarStyleSheet);
             }
         }
 
@@ -238,6 +272,16 @@ namespace KernelPanic.UI
             logLabel = new();
             logLabel.AddToClassList("log-line");
             commandPanel.Add(logLabel);
+
+            feedbackLayer = new();
+            feedbackLayer.AddToClassList("feedback-layer");
+            feedbackLayer.pickingMode = PickingMode.Ignore;
+            root.Add(feedbackLayer);
+
+            damageVignette = new();
+            damageVignette.AddToClassList("damage-vignette");
+            damageVignette.pickingMode = PickingMode.Ignore;
+            root.Add(damageVignette);
 
             overlay = new();
             overlay.AddToClassList("overlay");
@@ -336,10 +380,13 @@ namespace KernelPanic.UI
         private void RefreshPlayer()
         {
             playerPanel.Clear();
+            combatantElements.Remove(combatManager.PlayerState);
+            combatantElements[combatManager.PlayerState] = playerPanel;
             playerPanel.Add(PanelHeader(DisplayName(runManager.CurrentConfig.Distro), "htop"));
             ApplyAccent(playerPanel);
 
             CombatantState state = combatManager.PlayerState;
+            DetectBeneficialResourceFeedback(state, playerPanel);
             playerPanel.Add(MeterBlock("uptime", state.CurrentUptime, state.MaxUptime, MeterTone.Uptime));
             playerPanel.Add(MeterBlock("shield", state.Shield, Mathf.Max(1, state.Shield), state.Shield > 0 ? MeterTone.Beneficial : MeterTone.Muted));
             playerPanel.Add(CycleBlock(state.Cycles, state.MaxCycles));
@@ -352,6 +399,8 @@ namespace KernelPanic.UI
 
         private void RefreshTracks()
         {
+            queueChipElements.Clear();
+            stackChipElements.Clear();
             FillCardStrip(interpreterStrip, combatManager.InterpreterQueue.Cards, "queue empty");
             FillCardStrip(lazyStackPile, combatManager.LazyStack.Cards, "stack empty");
             tokenArea.Clear();
@@ -361,6 +410,12 @@ namespace KernelPanic.UI
         private void RefreshEnemies()
         {
             enemyRow.Clear();
+            combatantElements.Clear();
+            if (combatManager.PlayerState != null)
+            {
+                combatantElements[combatManager.PlayerState] = playerPanel;
+            }
+
             for (int i = 0; i < combatManager.Enemies.Count; i++)
             {
                 int index = i;
@@ -377,6 +432,8 @@ namespace KernelPanic.UI
                 Label name = new(enemy.Name);
                 name.AddToClassList("enemy-name");
                 card.Add(name);
+                combatantElements[enemy.State] = card;
+                DetectBeneficialResourceFeedback(enemy.State, card);
                 card.Add(MeterBlock("uptime", enemy.CurrentUptime, enemy.MaxUptime, MeterTone.Uptime));
                 if (enemy.State.Shield > 0)
                 {
@@ -394,11 +451,27 @@ namespace KernelPanic.UI
         private void RefreshHand()
         {
             handRow.Clear();
+            handCardElements.Clear();
+            HashSet<CardInstance> currentHandCards = new();
             IReadOnlyList<CardInstance> hand = combatManager.HandController.Cards;
             for (int i = 0; i < hand.Count; i++)
             {
                 CardInstance card = hand[i];
-                handRow.Add(CardFace(card));
+                currentHandCards.Add(card);
+                VisualElement face = CardFace(card);
+                handCardElements[card] = face;
+                if (!knownHandCards.Contains(card))
+                {
+                    PlayElementBeat(face, "hand-card-drawn", 260);
+                }
+
+                handRow.Add(face);
+            }
+
+            knownHandCards.Clear();
+            foreach (CardInstance card in currentHandCards)
+            {
+                knownHandCards.Add(card);
             }
         }
 
@@ -694,7 +767,7 @@ namespace KernelPanic.UI
 
         private VisualElement CardFace(CardInstance card)
         {
-            Button button = new(() => combatManager.PlayCard(card));
+            Button button = new(() => PlayCardWithFeedback(card));
             button.text = string.Empty;
             button.AddToClassList("hand-card");
             if (combatManager.PendingTargetCard == card)
@@ -885,8 +958,348 @@ namespace KernelPanic.UI
 
             for (int i = 0; i < cards.Count; i++)
             {
-                target.Add(CardChip(cards[i]));
+                VisualElement chip = CardChip(cards[i]);
+                if (target == interpreterStrip)
+                {
+                    queueChipElements[cards[i]] = chip;
+                }
+                else if (target == lazyStackPile)
+                {
+                    stackChipElements[cards[i]] = chip;
+                }
+
+                target.Add(chip);
             }
+        }
+
+        private bool PlayCardWithFeedback(CardInstance card)
+        {
+            int cyclesBefore = combatManager.PlayerState == null ? 0 : combatManager.PlayerState.Cycles;
+            bool played = combatManager.PlayCard(card);
+            if (played)
+            {
+                int spent = Mathf.Max(0, cyclesBefore - (combatManager.PlayerState == null ? cyclesBefore : combatManager.PlayerState.Cycles));
+                if (spent > 0)
+                {
+                    PlayElementBeat(turnResourceGrid, "cycles-spent-beat", 220);
+                }
+
+                return true;
+            }
+
+            if (combatManager.PendingTargetCard != card && handCardElements.TryGetValue(card, out VisualElement face))
+            {
+                PlayElementBeat(face, "feedback-denied", 220);
+            }
+
+            return false;
+        }
+
+        private void HandleCardPlayed(CardPlayedEvent payload)
+        {
+            if (payload.Card == null)
+            {
+                return;
+            }
+
+            VisualElement source = handCardElements.TryGetValue(payload.Card, out VisualElement cardElement) ? cardElement : null;
+            VisualElement destination = payload.Track switch
+            {
+                ResolutionTrack.InterpreterQueue => interpreterStrip,
+                ResolutionTrack.LazyStack => lazyStackPile,
+                _ => FirstTargetElement(payload.Card)
+            };
+
+            FlyCardGhost(payload.Card, source, destination, payload.Track == ResolutionTrack.Native ? "feedback-card-strike" : "feedback-card-route");
+        }
+
+        private void HandleCardResolved(CardResolvedEvent payload)
+        {
+            if (payload.Card == null)
+            {
+                return;
+            }
+
+            if (payload.Track == ResolutionTrack.InterpreterQueue)
+            {
+                int delay = UIPreferences.ReducedMotion ? 0 : Mathf.Min(queueCascadeIndex * 120, 600);
+                queueCascadeIndex++;
+                ScheduleFeedback(() =>
+                {
+                    VisualElement chip = queueChipElements.TryGetValue(payload.Card, out VisualElement queuedChip) ? queuedChip : interpreterStrip;
+                    PlayElementBeat(chip, "queue-chip-resolve", 260);
+                    FlyCardGhost(payload.Card, chip, turnResourceGrid, "feedback-card-discard");
+                }, delay);
+                return;
+            }
+
+            if (payload.Track == ResolutionTrack.LazyStack)
+            {
+                VisualElement chip = stackChipElements.TryGetValue(payload.Card, out VisualElement stackChip) ? stackChip : lazyStackPile;
+                PlayElementBeat(chip, "stack-chip-resolve", 320);
+                FlyCardGhost(payload.Card, chip, turnResourceGrid, "feedback-card-discard");
+            }
+        }
+
+        private void HandlePhaseChanged(PhaseChangedEvent payload)
+        {
+            if (payload.NextPhase == TurnPhase.Interpret)
+            {
+                queueCascadeIndex = 0;
+            }
+
+            ScheduleFeedback(() => PlayElementBeat(phaseLabel, "phase-pulse", 260), 0);
+        }
+
+        private void HandleDamageDealt(DamageDealtEvent payload)
+        {
+            ScheduleFeedback(() =>
+            {
+                bool isPlayer = payload.Target == combatManager.PlayerState;
+                VisualElement target = CombatantElement(payload.Target);
+                string text = payload.Amount <= 0 ? "blocked" : $"-{Mathf.RoundToInt(payload.Amount)}";
+                string tone = payload.Amount <= 0 ? "float-muted" : "float-damage";
+                if (payload.Amount >= 8)
+                {
+                    tone += " float-large";
+                }
+
+                SpawnFloatingText(target, text, tone);
+                PlayElementBeat(target, payload.Amount <= 0 ? "feedback-block" : "feedback-hit", 240);
+                if (isPlayer && payload.Amount > 0)
+                {
+                    FlashDamageVignette();
+                }
+            }, 0);
+        }
+
+        private void HandleCombatantDefeated(CombatantDefeatedEvent payload)
+        {
+            ScheduleFeedback(() =>
+            {
+                VisualElement target = CombatantElement(payload.Combatant);
+                SpawnFloatingText(target, "killed", "float-kill float-large");
+                SpawnDeathGhost(target);
+                PlayElementBeat(target, "feedback-killed", 260);
+            }, 0);
+        }
+
+        private void HandleEnemyWouldAct(EnemyWouldActEvent payload)
+        {
+            ScheduleFeedback(() => PlayElementBeat(CombatantElement(payload.Enemy?.State), "enemy-acting", 260), 0);
+        }
+
+        private void HandlePlayerDamaged(PlayerDamagedEvent payload)
+        {
+            if (payload.Amount > 0)
+            {
+                ScheduleFeedback(FlashDamageVignette, 0);
+            }
+        }
+
+        private void HandleStatusApplied(StatusAppliedEvent payload)
+        {
+            ScheduleFeedback(() =>
+            {
+                StatusDescriptor descriptor = StatusEffectController.GetDescriptor(payload.StatusType);
+                SpawnFloatingText(CombatantElement(payload.Target), $"{descriptor.IconKey} x{payload.Stacks}", descriptor.IsBeneficial ? "float-heal" : "float-status");
+                PlayElementBeat(CombatantElement(payload.Target), descriptor.IsBeneficial ? "feedback-boost" : "feedback-status", 220);
+            }, 0);
+        }
+
+        private void DetectBeneficialResourceFeedback(CombatantState state, VisualElement element)
+        {
+            if (state == null || element == null)
+            {
+                return;
+            }
+
+            if (previousUptime.TryGetValue(state, out int oldUptime) && state.CurrentUptime > oldUptime)
+            {
+                SpawnFloatingText(element, $"+{state.CurrentUptime - oldUptime}", "float-heal");
+                PlayElementBeat(element, "feedback-boost", 220);
+            }
+
+            if (previousShield.TryGetValue(state, out int oldShield) && state.Shield > oldShield)
+            {
+                SpawnFloatingText(element, $"+{state.Shield - oldShield} shield", "float-heal");
+                PlayElementBeat(element, "feedback-block", 220);
+            }
+
+            previousUptime[state] = state.CurrentUptime;
+            previousShield[state] = state.Shield;
+        }
+
+        private VisualElement CombatantElement(CombatantState state)
+        {
+            if (state != null && combatantElements.TryGetValue(state, out VisualElement element))
+            {
+                return element;
+            }
+
+            return state == combatManager.PlayerState ? playerPanel : enemyRow;
+        }
+
+        private VisualElement FirstTargetElement(CardInstance card)
+        {
+            if (card?.TargetSnapshot == null)
+            {
+                return enemyRow;
+            }
+
+            for (int i = 0; i < card.TargetSnapshot.Count; i++)
+            {
+                VisualElement element = CombatantElement(card.TargetSnapshot[i]);
+                if (element != null)
+                {
+                    return element;
+                }
+            }
+
+            return enemyRow;
+        }
+
+        private void PlayElementBeat(VisualElement element, string className, int durationMs)
+        {
+            if (element == null || string.IsNullOrWhiteSpace(className))
+            {
+                return;
+            }
+
+            element.RemoveFromClassList(className);
+            element.AddToClassList(className);
+            ScheduleFeedback(() => element.RemoveFromClassList(className), UIPreferences.ReducedMotion ? 80 : durationMs);
+        }
+
+        private void SpawnFloatingText(VisualElement anchor, string text, string className)
+        {
+            if (feedbackLayer == null || anchor == null)
+            {
+                return;
+            }
+
+            Rect anchorRect = anchor.worldBound;
+            Rect rootRect = root.worldBound;
+            Label label = new(text);
+            label.AddToClassList("float-number");
+            if (!string.IsNullOrWhiteSpace(className))
+            {
+                string[] classes = className.Split(' ');
+                for (int i = 0; i < classes.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(classes[i]))
+                    {
+                        label.AddToClassList(classes[i]);
+                    }
+                }
+            }
+
+            label.style.left = anchorRect.center.x - rootRect.x - 30f;
+            label.style.top = anchorRect.center.y - rootRect.y - 16f;
+            feedbackLayer.Add(label);
+
+            if (UIPreferences.ReducedMotion)
+            {
+                label.AddToClassList("float-static");
+                ScheduleFeedback(() => label.RemoveFromHierarchy(), 420);
+                return;
+            }
+
+            ScheduleFeedback(() =>
+            {
+                label.style.top = anchorRect.center.y - rootRect.y - 42f;
+                label.style.opacity = 0f;
+            }, 20);
+            ScheduleFeedback(() => label.RemoveFromHierarchy(), 520);
+        }
+
+        private void FlyCardGhost(CardInstance card, VisualElement source, VisualElement destination, string className)
+        {
+            if (feedbackLayer == null || card == null)
+            {
+                return;
+            }
+
+            Rect rootRect = root.worldBound;
+            Rect sourceRect = source == null ? new Rect(rootRect.center.x - 70f, rootRect.center.y - 50f, 140f, 110f) : source.worldBound;
+            Rect destinationRect = destination == null ? sourceRect : destination.worldBound;
+
+            VisualElement ghost = CardFaceView(card);
+            ghost.AddToClassList("feedback-card-ghost");
+            ghost.AddToClassList(className);
+            ghost.style.position = Position.Absolute;
+            ghost.style.left = sourceRect.x - rootRect.x;
+            ghost.style.top = sourceRect.y - rootRect.y;
+            ghost.style.width = Mathf.Max(110f, sourceRect.width);
+            ghost.style.height = Mathf.Max(94f, sourceRect.height);
+            feedbackLayer.Add(ghost);
+
+            if (UIPreferences.ReducedMotion)
+            {
+                ghost.AddToClassList("feedback-card-instant");
+                ScheduleFeedback(() => ghost.RemoveFromHierarchy(), 140);
+                return;
+            }
+
+            ScheduleFeedback(() =>
+            {
+                ghost.style.left = destinationRect.center.x - rootRect.x - (sourceRect.width * 0.5f);
+                ghost.style.top = destinationRect.center.y - rootRect.y - (sourceRect.height * 0.5f);
+                ghost.style.opacity = 0f;
+            }, 20);
+            ScheduleFeedback(() => ghost.RemoveFromHierarchy(), 360);
+        }
+
+        private void SpawnDeathGhost(VisualElement source)
+        {
+            if (feedbackLayer == null || source == null)
+            {
+                return;
+            }
+
+            Rect rootRect = root.worldBound;
+            Rect sourceRect = source.worldBound;
+            VisualElement ghost = new();
+            ghost.AddToClassList("death-ghost");
+            ghost.style.position = Position.Absolute;
+            ghost.style.left = sourceRect.x - rootRect.x;
+            ghost.style.top = sourceRect.y - rootRect.y;
+            ghost.style.width = sourceRect.width;
+            ghost.style.height = sourceRect.height;
+            feedbackLayer.Add(ghost);
+
+            if (UIPreferences.ReducedMotion)
+            {
+                ScheduleFeedback(() => ghost.RemoveFromHierarchy(), 180);
+                return;
+            }
+
+            ScheduleFeedback(() =>
+            {
+                ghost.style.opacity = 0f;
+                ghost.style.scale = new Scale(new Vector3(0.92f, 0.92f, 1f));
+            }, 20);
+            ScheduleFeedback(() => ghost.RemoveFromHierarchy(), 360);
+        }
+
+        private void FlashDamageVignette()
+        {
+            if (damageVignette == null)
+            {
+                return;
+            }
+
+            PlayElementBeat(damageVignette, "damage-vignette-on", UIPreferences.ReducedMotion ? 120 : 240);
+        }
+
+        private void ScheduleFeedback(Action action, int delayMs)
+        {
+            if (action == null || root == null)
+            {
+                return;
+            }
+
+            root.schedule.Execute(action).StartingIn(Mathf.Max(0, delayMs));
         }
 
         private void HandleCombatLog(string message)

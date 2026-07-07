@@ -55,6 +55,43 @@ namespace KernelPanic.Combat
             return drawn;
         }
 
+        public bool TryDrawCheapestFromTop(int lookCount, out CardInstance card)
+        {
+            card = null;
+            if (lookCount <= 0)
+            {
+                return false;
+            }
+
+            if (_drawPile.Count == 0)
+            {
+                ReshuffleDiscardIntoDraw();
+            }
+
+            if (_drawPile.Count == 0)
+            {
+                return false;
+            }
+
+            int inspectCount = System.Math.Min(lookCount, _drawPile.Count);
+            int selectedIndex = _drawPile.Count - 1;
+            int selectedCost = CombatManager.GetCardCost(_drawPile[selectedIndex]);
+            for (int offset = 1; offset < inspectCount; offset++)
+            {
+                int index = _drawPile.Count - 1 - offset;
+                int cost = CombatManager.GetCardCost(_drawPile[index]);
+                if (cost < selectedCost)
+                {
+                    selectedCost = cost;
+                    selectedIndex = index;
+                }
+            }
+
+            card = _drawPile[selectedIndex];
+            _drawPile.RemoveAt(selectedIndex);
+            return card != null;
+        }
+
         public void Discard(CardInstance card)
         {
             if (card != null)

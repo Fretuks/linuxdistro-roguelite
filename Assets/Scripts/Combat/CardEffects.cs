@@ -43,8 +43,8 @@ namespace KernelPanic.Combat
                     continue;
                 }
 
-                int minAmount = UpgradeMath.ScaleAmount(_minAmount, context.Card);
-                int maxAmount = UpgradeMath.ScaleAmount(_maxAmount, context.Card);
+                int minAmount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_minAmount, context), context.Card);
+                int maxAmount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_maxAmount, context), context.Card);
                 int amount = minAmount == maxAmount
                     ? minAmount
                     : RandomRoll.RollRange(minAmount, maxAmount, new RollContext(context.Source));
@@ -77,7 +77,7 @@ namespace KernelPanic.Combat
 
         public void Execute(CombatContext context)
         {
-            int amount = UpgradeMath.ScaleShield(_amount, context.Card);
+            int amount = UpgradeMath.ScaleShield(UpgradeMath.ApplySourceFlatBonus(_amount, context), context.Card);
             context.Source.Shield += amount;
             context.CombatManager.ReportEffectResult($"gained {amount} shield");
         }
@@ -107,7 +107,7 @@ namespace KernelPanic.Combat
                 }
 
                 int roll = RandomRoll.RollRange(1, 100, new RollContext(context.Source));
-                int damageAmount = UpgradeMath.ScaleAmount(_damageAmount, context.Card);
+                int damageAmount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_damageAmount, context), context.Card);
                 int amount = roll <= _successPercent ? damageAmount : 0;
                 context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, false, false));
                 context.CombatManager.ReportEffectResult(amount == 0 ? "typeof -> NaN (0)" : $"typeof -> {amount}");
@@ -136,13 +136,13 @@ namespace KernelPanic.Combat
         {
             if (_targetSelf)
             {
-                context.StatusEffects.Apply(context.Source, _statusType, UpgradeMath.ScaleAmount(_stacks, context.Card), _duration, context.Source, _skipNextTick);
+                context.StatusEffects.Apply(context.Source, _statusType, UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_stacks, context), context.Card), _duration, context.Source, _skipNextTick);
                 return;
             }
 
             for (int i = 0; i < context.Targets.Count; i++)
             {
-                context.StatusEffects.Apply(context.Targets[i], _statusType, UpgradeMath.ScaleAmount(_stacks, context.Card), _duration, context.Source, _skipNextTick);
+                context.StatusEffects.Apply(context.Targets[i], _statusType, UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_stacks, context), context.Card), _duration, context.Source, _skipNextTick);
             }
         }
     }
@@ -184,7 +184,15 @@ namespace KernelPanic.Combat
             }
 
             // RAM is a hard hand cap. Draw effects only pull cards that can fit; blocked cards stay in the draw pile.
-            int requested = UpgradeMath.ScaleAmount(_count, context.Card);
+            int baseCount = _count;
+            if (context.Card?.Definition?.Id == "ubuntu_ask_ubuntu"
+                && string.Equals(context.CombatManager.RunConfig?.Distro?.Id, "ubuntu", System.StringComparison.OrdinalIgnoreCase)
+                && context.CombatManager.RunConfig.DistroVersion >= 3)
+            {
+                baseCount = 3;
+            }
+
+            int requested = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(baseCount, context), context.Card);
             int drawCount = UnityEngine.Mathf.Min(requested, room);
             IReadOnlyList<CardInstance> drawn = context.DeckController.Draw(drawCount);
             int added = 0;
@@ -214,8 +222,8 @@ namespace KernelPanic.Combat
 
         public void Execute(CombatContext context)
         {
-            int minCount = UpgradeMath.ScaleAmount(_minCount, context.Card);
-            int maxCount = UpgradeMath.ScaleAmount(_maxCount, context.Card);
+            int minCount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_minCount, context), context.Card);
+            int maxCount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_maxCount, context), context.Card);
             int targetCount = minCount == maxCount
                 ? minCount
                 : RandomRoll.RollRange(minCount, maxCount, new RollContext(context.Source));
@@ -347,11 +355,11 @@ namespace KernelPanic.Combat
                 "mint_update_manager" => Todo("TODO: update manager needs delayed repeat system."),
                 "mint_cinnamon" => Todo("TODO: cinnamon needs shield effect support."),
                 "mint_nemo" => Todo("TODO: nemo needs conditional repeat based on shield."),
-                "mint_timeshift" => Todo("TODO: timeshift snapshot needs delayed restore system."),
+                "mint_timeshift" => Todo("TODO: timeshift snapshot V3 needs delayed restore system before threshold/restore can be upgraded."),
                 "fedora_borrow_checker" => Todo("TODO: borrow checker needs shield and first-card tracking."),
                 "fedora_cargo_build" => Todo("TODO: cargo build --release needs overkill-to-shield handling."),
                 "fedora_dnf_update" => Todo("TODO: dnf update needs Java played count and cost mutation."),
-                "fedora_rawhide" => Todo("TODO: rawhide needs next-card cost mutation and crash-risk hook."),
+                "fedora_rawhide" => Todo("TODO: rawhide V3 needs permanent damage-growth doubling after growth effects exist."),
                 "fedora_selinux" => Todo("TODO: SELinux enforcing needs enemy attack mitigation statuses."),
                 _ => Todo("TODO: card effect is not implemented yet.")
             };
@@ -429,6 +437,7 @@ namespace KernelPanic.Combat
                 _ => string.IsNullOrWhiteSpace(card.Definition.Description) ? "TODO: effect not implemented." : $"{card.Definition.Description}{marker}"
             };
         }
+
     }
 
     public static class UpgradeMath
@@ -443,5 +452,9 @@ namespace KernelPanic.Combat
             return baseAmount + UnityEngine.Mathf.Max(0, card?.MagnitudeBonus ?? 0);
         }
 
+        public static int ApplySourceFlatBonus(int amount, CombatContext context)
+        {
+            return amount + UnityEngine.Mathf.Max(0, context?.Source?.FlatEffectBonus ?? 0);
+        }
     }
 }

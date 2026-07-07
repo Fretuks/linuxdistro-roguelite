@@ -27,6 +27,10 @@ namespace KernelPanic.Combat
         public int MaxCycles { get; set; }
         public bool IsDefeated { get; set; }
         public bool forceMaxRolls { get; set; }
+        public bool IgnoreDamageMultipliers { get; set; }
+        public bool AllowFlatDamageBuffs { get; set; }
+        public int FlatEffectBonus { get; set; }
+        public int DamageMultiplierPercent { get; set; } = 100;
         public IReadOnlyList<StatusInstance> Statuses => _statuses;
         public IReadOnlyDictionary<StatusType, int> ActiveStatuses => BuildStatusSnapshot();
 
