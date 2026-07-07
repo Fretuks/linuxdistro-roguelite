@@ -32,6 +32,10 @@ namespace KernelPanic.Combat
         public const int NewCardOfferCost = 2;
         public const int UpgradeOfferCost = 2;
         public const int StatUpgradeCost = 3;
+        public const int BandwidthBase = 10;
+        public const int BandwidthPerWaveStep = 5;
+        public const int EntropyStartWave = 5;
+        public const int EntropyPerWave = 3;
         public const int StatUpgradeMaxCycles = 1;
         public const int StatUpgradeMaxUptime = 4;
         public const int StatUpgradeHeal = 5;

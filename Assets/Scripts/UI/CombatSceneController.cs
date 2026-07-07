@@ -37,7 +37,7 @@ namespace KernelPanic.UI
         private Label phaseLabel;
         private Label entropyLabel;
         private Label bitsLabel;
-        private Label commitsLabel;
+        private Label bandwidthLabel;
         private Label computeCreditsLabel;
         private Label seedLabel;
         private VisualElement playerPanel;
@@ -97,6 +97,7 @@ namespace KernelPanic.UI
 
         private void OnDisable()
         {
+            SettleRunRewardsIfNeeded();
             combatManager.StateChanged -= Refresh;
             combatManager.CombatLog -= HandleCombatLog;
             runManager.RepositoryChanged -= Refresh;
@@ -253,7 +254,7 @@ namespace KernelPanic.UI
             phaseLabel = AddStatusReadout(bar, "phase", "--", true);
             bitsLabel = AddStatusReadout(bar, "bits", "0", false);
             entropyLabel = AddStatusReadout(bar, "entropy", "0", false);
-            commitsLabel = AddStatusReadout(bar, "commits", "0", false);
+            bandwidthLabel = AddStatusReadout(bar, "bandwidth", "0", false);
             computeCreditsLabel = AddStatusReadout(bar, "compute credits", "TODO", false);
 
             VisualElement spacer = new();
@@ -326,8 +327,8 @@ namespace KernelPanic.UI
             waveLabel.text = runManager.CurrentWaveNumber.ToString();
             phaseLabel.text = PhaseText(combatManager.CurrentPhase);
             bitsLabel.text = runManager.Bits.ToString();
-            entropyLabel.text = data.entropyBalance.ToString();
-            commitsLabel.text = data.standardPullCurrency.ToString();
+            entropyLabel.text = FormatWalletWithAccrual(data.entropyBalance, runManager.AccruedEntropy);
+            bandwidthLabel.text = FormatWalletWithAccrual(data.standardPullCurrency, runManager.AccruedBandwidth);
             computeCreditsLabel.text = "TODO";
             seedLabel.text = $"seed {config?.RunSeed ?? 0}";
         }
@@ -423,11 +424,14 @@ namespace KernelPanic.UI
             overlay.Clear();
             if (combatManager.RunLost)
             {
+                SettleRunRewardsIfNeeded();
                 overlay.style.display = DisplayStyle.Flex;
                 overlay.Add(OverlayTitle("kernel panic"));
                 overlay.Add(OverlayLine("fatal: player uptime reached 0"));
-                overlay.Add(OverlayLine($"wave {runManager.CurrentWaveNumber}  seed {runManager.CurrentConfig?.RunSeed ?? 0}"));
-                overlay.Add(OverlayLine("TODO: entropy/commits payout on death."));
+                overlay.Add(OverlayLine($"wave {runManager.CurrentWaveNumber} reached  seed {runManager.CurrentConfig?.RunSeed ?? 0}"));
+                overlay.Add(OverlayLine($"waves cleared: {runManager.WavesCleared}"));
+                overlay.Add(OverlayLine($"+{runManager.AccruedBandwidth} bandwidth"));
+                overlay.Add(OverlayLine($"+{runManager.AccruedEntropy} entropy"));
                 Button returnButton = new(SceneLoader.LoadMainMenu) { text = "> return to menu" };
                 returnButton.AddToClassList("primary-action");
                 overlay.Add(returnButton);
@@ -448,6 +452,24 @@ namespace KernelPanic.UI
             }
 
             overlay.style.display = DisplayStyle.None;
+        }
+
+        private void SettleRunRewardsIfNeeded()
+        {
+            if (runManager == null || saveService == null)
+            {
+                return;
+            }
+
+            if (!runManager.TrySettleRunRewards(out int bandwidth, out int entropy))
+            {
+                return;
+            }
+
+            SaveData data = saveService.Load();
+            data.standardPullCurrency = Math.Max(0, data.standardPullCurrency) + bandwidth;
+            data.entropyBalance = Math.Max(0, data.entropyBalance) + entropy;
+            saveService.Save(data);
         }
 
         private VisualElement BuildRepositoryView()
@@ -1007,6 +1029,11 @@ namespace KernelPanic.UI
                 TurnPhase.GarbageCollection => "cleanup",
                 _ => phase.ToString()
             };
+        }
+
+        private static string FormatWalletWithAccrual(int walletAmount, int accruedAmount)
+        {
+            return accruedAmount > 0 ? $"{walletAmount} (+{accruedAmount})" : walletAmount.ToString();
         }
 
         private static string TrackText(ResolutionTrack track)

@@ -11,9 +11,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4222a6b8-add3-4f43-9c42-fd6bb5a76169" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Languages/JavaScriptDeck.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Languages/LanguageDeckDatabase.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Languages/PythonDeck.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatTuning.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatTuning.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/GachaScreenController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/GachaScreenController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,7 +25,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="33" />
+    <option name="cachedIndexableFilesCount" value="41" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -45,12 +49,15 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Fedora/CargoBuildRelease.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Languages/Python/PyPrint.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Cards/Ubuntu/AskUbuntu.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Fedora.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Mint.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Distros/Ubuntu.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Data/LanguageDeckDatabase.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UI.meta" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/UI/MainMenuPanelSettings.asset" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="KubernetesApiPersistence">{}</component>
   <component name="KubernetesApiProvider">{
@@ -63,61 +70,61 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.784784067864928E-26" />
-      <entry key="MS500" value="3.179349927770215E-5" />
-      <entry key="S2" value="0.43593725248136195" />
-      <entry key="S5" value="3.124386400783043" />
-      <entry key="S10" value="6.569899662232147" />
-      <entry key="S30" value="11.963623430727672" />
-      <entry key="S60" value="15.501468038302548" />
-      <entry key="M2" value="29.60252956274459" />
-      <entry key="M5" value="98.8756653359035" />
-      <entry key="M10" value="201.15994289875957" />
-      <entry key="M15" value="275.3309920207401" />
-      <entry key="M30" value="403.9815566407741" />
-      <entry key="H1" value="517.0208145699735" />
-      <entry key="H2" value="663.1575441578198" />
-      <entry key="H4" value="922.5738450699231" />
-      <entry key="D1" value="1631.0806053070532" />
-      <entry key="W1" value="1869.6129372560254" />
+      <entry key="MS100" value="1.6593257874423712" />
+      <entry key="MS500" value="4.690994084349008" />
+      <entry key="S2" value="14.465357308970995" />
+      <entry key="S5" value="30.992381303472097" />
+      <entry key="S10" value="48.5846958827385" />
+      <entry key="S30" value="71.76833898022443" />
+      <entry key="S60" value="80.15161397083796" />
+      <entry key="M2" value="84.87531446244894" />
+      <entry key="M5" value="87.90107930582121" />
+      <entry key="M10" value="89.36799351143095" />
+      <entry key="M15" value="93.16275126446527" />
+      <entry key="M30" value="133.51634266577747" />
+      <entry key="H1" value="278.73000832894314" />
+      <entry key="H2" value="556.4819305444627" />
+      <entry key="H4" value="958.972222388022" />
+      <entry key="D1" value="2009.2210985288775" />
+      <entry key="W1" value="2381.8392808733556" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.0" />
-      <entry key="S5" value="1.0" />
-      <entry key="S10" value="1.0" />
-      <entry key="S30" value="1.0" />
-      <entry key="S60" value="1.0" />
-      <entry key="M2" value="1.0" />
-      <entry key="M5" value="1.0" />
-      <entry key="M10" value="1.0" />
-      <entry key="M15" value="1.0000000000000346" />
-      <entry key="M30" value="1.000000322205145" />
-      <entry key="H1" value="1.000983110716185" />
-      <entry key="H2" value="1.054306989668889" />
-      <entry key="H4" value="1.403633276713779" />
-      <entry key="D1" value="3.1474941717089755" />
-      <entry key="W1" value="3.8600914950029614" />
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="3.081765536046895E-110" />
+      <entry key="S60" value="1.7554958091795295E-55" />
+      <entry key="M2" value="4.189863731888548E-28" />
+      <entry key="M5" value="1.1191285094720122E-11" />
+      <entry key="M10" value="3.3453378147386345E-6" />
+      <entry key="M15" value="2.2367974199991652E-4" />
+      <entry key="M30" value="0.014955931470204738" />
+      <entry key="H1" value="0.12241465504527704" />
+      <entry key="H2" value="0.36869769063784513" />
+      <entry key="H4" value="0.8300520405421339" />
+      <entry key="D1" value="2.883634496098765" />
+      <entry key="W1" value="3.8121106294007556" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="6.749216540579623E-23" />
-      <entry key="MS500" value="6.833290904012429E-5" />
-      <entry key="S2" value="0.5126847819760673" />
-      <entry key="S5" value="3.4812993492551785" />
-      <entry key="S10" value="7.166748957937481" />
-      <entry key="S30" value="12.805275153135156" />
-      <entry key="S60" value="16.4187386974579" />
-      <entry key="M2" value="30.559497092661907" />
-      <entry key="M5" value="99.85455357262376" />
-      <entry key="M10" value="202.1455652503959" />
-      <entry key="M15" value="276.3195647949743" />
-      <entry key="M30" value="404.9743868417376" />
-      <entry key="H1" value="518.0176759781034" />
-      <entry key="H2" value="664.2095490638119" />
-      <entry key="H4" value="923.9761056260575" />
-      <entry key="D1" value="1634.2277376809302" />
-      <entry key="W1" value="1873.4729697848259" />
+      <entry key="MS100" value="1.6056852423710548" />
+      <entry key="MS500" value="4.655592836166669" />
+      <entry key="S2" value="14.436328275205241" />
+      <entry key="S5" value="30.967614820111674" />
+      <entry key="S10" value="48.565252560398456" />
+      <entry key="S30" value="71.75871155917086" />
+      <entry key="S60" value="80.14622622688532" />
+      <entry key="M2" value="84.872458348968" />
+      <entry key="M5" value="87.89989521451953" />
+      <entry key="M10" value="89.36739411138522" />
+      <entry key="M15" value="93.16255011580246" />
+      <entry key="M30" value="133.530877068796" />
+      <entry key="H1" value="278.8516097409327" />
+      <entry key="H2" value="556.8495610944027" />
+      <entry key="H4" value="959.8012838755719" />
+      <entry key="D1" value="2012.1043621012425" />
+      <entry key="W1" value="2385.651327343784" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -206,6 +213,7 @@
       <workItem from="1783330590375" duration="18451000" />
       <workItem from="1783371975450" duration="26000" />
       <workItem from="1783372397891" duration="989000" />
+      <workItem from="1783410502976" duration="5821000" />
     </task>
     <task id="LOCAL-00001" summary="implement main screen">
       <option name="closed" value="true" />
@@ -319,7 +327,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783373303668</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Implement too many changes to list">
+      <option name="closed" value="true" />
+      <created>1783417593908</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1783417593908</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -348,7 +364,8 @@
     <MESSAGE value="finish implementing main menu" />
     <MESSAGE value="finish implementing main" />
     <MESSAGE value="fix some stuff" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix some stuff" />
+    <MESSAGE value="Implement too many changes to list" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implement too many changes to list" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

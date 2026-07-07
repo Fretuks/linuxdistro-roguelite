@@ -157,7 +157,7 @@ namespace KernelPanic.UI
             _bannerDetail.Add(BuildInfoLine("entropy", _wallet == null ? "--" : _wallet.Balance.ToString()));
             _bannerDetail.Add(BuildInfoLine("pulls", $"{state.totalPulls}/{GachaService.BeginnerMaxPulls}"));
             _bannerDetail.Add(BuildInfoLine("4-star pity", $"{state.pityCounter}/{GachaService.FourStarHardPity}"));
-            _bannerDetail.Add(BuildInfoLine("ten pull", $"{GachaService.BeginnerTenPullCost} Commits for 10 pulls"));
+            _bannerDetail.Add(BuildInfoLine("ten pull", $"{GachaService.BeginnerTenPullCost} Bandwidth for 10 pulls"));
             _bannerDetail.Add(BuildInfoLine("guarantees", FormatBeginnerGuarantees()));
 
             Label rules = new("Base result is a 3-star equipment cache. A 4-star equipment cache or starter distro can appear early, with one 4-star+ result guaranteed every 10 pulls.");
@@ -317,7 +317,7 @@ namespace KernelPanic.UI
             prompt.AddToClassList("gacha-entropy-prompt");
 
             int entropyCost = _pendingMissingTokens * GachaService.EntropyPerPullToken;
-            Label copy = new($"missing {_pendingMissingTokens} Commits. spend {entropyCost} entropy to complete git pull?");
+            Label copy = new($"missing {_pendingMissingTokens} Bandwidth. spend {entropyCost} entropy to complete git pull?");
             copy.AddToClassList("gacha-result");
             prompt.Add(copy);
 

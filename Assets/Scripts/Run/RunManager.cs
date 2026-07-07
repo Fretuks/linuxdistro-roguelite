@@ -26,7 +26,11 @@ namespace KernelPanic.Run
         private int maxUptimeBonus;
         private int maxCyclesBonus;
         private int ramBonus;
+        private int wavesCleared;
+        private int accruedBandwidth;
+        private int accruedEntropy;
         private bool repositoryVisitActive;
+        private bool rewardsSettled;
 
         public int CurrentWaveNumber => currentWaveNumber;
         public bool IsRunActive => isRunActive;
@@ -40,6 +44,10 @@ namespace KernelPanic.Run
         public int MaxUptimeBonus => maxUptimeBonus;
         public int MaxCyclesBonus => maxCyclesBonus;
         public int RamBonus => ramBonus;
+        public int WavesCleared => wavesCleared;
+        public int AccruedBandwidth => accruedBandwidth;
+        public int AccruedEntropy => accruedEntropy;
+        public bool RewardsSettled => rewardsSettled;
 
         public event Action RepositoryChanged;
 
@@ -66,6 +74,10 @@ namespace KernelPanic.Run
             maxUptimeBonus = 0;
             maxCyclesBonus = 0;
             ramBonus = 0;
+            wavesCleared = 0;
+            accruedBandwidth = 0;
+            accruedEntropy = 0;
+            rewardsSettled = false;
             InitializeRunDeck(config);
             StartCombat();
         }
@@ -172,8 +184,25 @@ namespace KernelPanic.Run
             return Mathf.Max(1, (CurrentConfig?.Distro?.BaseCyclesPerTurn ?? 1) + maxCyclesBonus);
         }
 
+        public bool TrySettleRunRewards(out int bandwidth, out int entropy)
+        {
+            bandwidth = accruedBandwidth;
+            entropy = accruedEntropy;
+            if (rewardsSettled)
+            {
+                return false;
+            }
+
+            rewardsSettled = true;
+            return bandwidth > 0 || entropy > 0;
+        }
+
         private void HandleWaveCleared(WaveClearedEvent payload)
         {
+            int clearedWave = Mathf.Max(1, payload.WaveNumber);
+            wavesCleared = Mathf.Max(wavesCleared, clearedWave);
+            accruedBandwidth += CalculateBandwidthReward(clearedWave);
+            accruedEntropy += CalculateEntropyReward(clearedWave);
             currentWaveNumber = Mathf.Max(currentWaveNumber + 1, payload.WaveNumber + 1);
             repositoryOffers.Clear();
             rerollsThisVisit = 0;
@@ -194,6 +223,17 @@ namespace KernelPanic.Run
             maxCyclesBonus = 0;
             ramBonus = 0;
             RepositoryChanged?.Invoke();
+        }
+
+        private static int CalculateBandwidthReward(int waveNumber)
+        {
+            int safeWave = Mathf.Max(1, waveNumber);
+            return Mathf.Max(0, CombatTuning.BandwidthBase + ((safeWave - 1) * CombatTuning.BandwidthPerWaveStep));
+        }
+
+        private static int CalculateEntropyReward(int waveNumber)
+        {
+            return waveNumber >= CombatTuning.EntropyStartWave ? Mathf.Max(0, CombatTuning.EntropyPerWave) : 0;
         }
 
         private void InitializeRunDeck(RunConfig config)
