@@ -62,6 +62,8 @@ namespace KernelPanic.Meta
         public int rootCredits = GachaService.TestRootCreditsBalance;
         public int standardPullCurrency;
         public int limitedPullCurrency;
+        // Legacy global balance kept only so older saves deserialize cleanly.
+        // New duplicate-pull merges live on OwnedUnitSaveEntry.merges.
         public int merges;
         public List<OwnedUnitSaveEntry> ownedUnits = new();
         public List<string> ownedUnitIds = new();
@@ -87,6 +89,7 @@ namespace KernelPanic.Meta
             merges = Math.Max(0, merges);
             MigrateLegacyOwnedUnitIds();
             NormalizeOwnedUnits();
+            MigrateLegacyGlobalMerges();
         }
 
         public OwnedUnitSaveEntry FindOwnedUnit(string id)
@@ -169,6 +172,31 @@ namespace KernelPanic.Meta
                 }
 
                 entry.version = Math.Max(1, Math.Min(GachaTuning.MaxVersion, entry.version));
+                entry.merges = Math.Max(0, entry.merges);
+            }
+        }
+
+        private void MigrateLegacyGlobalMerges()
+        {
+            if (merges <= 0 || ownedUnits.Count == 0)
+            {
+                return;
+            }
+
+            bool hasSpecificMerges = false;
+            for (int i = 0; i < ownedUnits.Count; i++)
+            {
+                if (ownedUnits[i] != null && ownedUnits[i].merges > 0)
+                {
+                    hasSpecificMerges = true;
+                    break;
+                }
+            }
+
+            if (!hasSpecificMerges)
+            {
+                ownedUnits[0].merges = Math.Max(0, ownedUnits[0].merges) + merges;
+                merges = 0;
             }
         }
 
@@ -192,6 +220,7 @@ namespace KernelPanic.Meta
     {
         public string id;
         public int version = 1;
+        public int merges;
     }
 
     [Serializable]

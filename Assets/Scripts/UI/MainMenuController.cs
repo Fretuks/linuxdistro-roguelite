@@ -650,6 +650,16 @@ namespace KernelPanic.UI
         {
             _saveData ??= SaveData.CreateDefault();
             _saveData.EnsureLists();
+            Dictionary<string, int> mergeBalances = new(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < _saveData.ownedUnits.Count; i++)
+            {
+                OwnedUnitSaveEntry entry = _saveData.ownedUnits[i];
+                if (entry != null && !string.IsNullOrWhiteSpace(entry.id))
+                {
+                    mergeBalances[entry.id] = Mathf.Max(0, entry.merges);
+                }
+            }
+
             _saveData.entropyBalance = _wallet == null ? 0 : _wallet.Balance;
             _saveData.ownedUnits.Clear();
             _saveData.ownedUnitIds.Clear();
@@ -664,7 +674,8 @@ namespace KernelPanic.UI
                     _saveData.ownedUnits.Add(new OwnedUnitSaveEntry
                     {
                         id = unit.Id,
-                        version = Mathf.Clamp(_playerCollection.GetVersion(unit.Id), 1, GachaTuning.MaxVersion)
+                        version = Mathf.Clamp(_playerCollection.GetVersion(unit.Id), 1, GachaTuning.MaxVersion),
+                        merges = mergeBalances.TryGetValue(unit.Id, out int merges) ? merges : 0
                     });
                 }
             }
@@ -687,11 +698,12 @@ namespace KernelPanic.UI
             return PullResolver.Resolve(pulledDistros, context);
         }
 
-        private int GetMergesBalance()
+        private int GetMergesBalance(DistroDefinition unit)
         {
             _saveData ??= SaveData.CreateDefault();
             _saveData.EnsureLists();
-            return _saveData.merges;
+            OwnedUnitSaveEntry entry = unit == null ? null : _saveData.FindOwnedUnit(unit.Id);
+            return Math.Max(0, entry?.merges ?? 0);
         }
 
         private VersionUpgradeResult UpgradeCollectionUnit(DistroDefinition unit)
@@ -757,9 +769,22 @@ namespace KernelPanic.UI
             _rootCreditsToEntropyButton?.SetEnabled(true);
             bool showPullTokens = IsGachaVisible();
             _pullTokensLabel.text = showPullTokens
-                ? $"bandwidth={_gachaService.PullTokens} compute-credits={_gachaService.LimitedPullTokens} merges={_saveData.merges}"
+                ? $"bandwidth={_gachaService.PullTokens} compute-credits={_gachaService.LimitedPullTokens} distro-merges={GetTotalDistroMerges()}"
                 : string.Empty;
             _pullTokensLabel.EnableInClassList(HiddenClassName, !showPullTokens);
+        }
+
+        private int GetTotalDistroMerges()
+        {
+            _saveData ??= SaveData.CreateDefault();
+            _saveData.EnsureLists();
+            int total = 0;
+            for (int i = 0; i < _saveData.ownedUnits.Count; i++)
+            {
+                total += Mathf.Max(0, _saveData.ownedUnits[i]?.merges ?? 0);
+            }
+
+            return total;
         }
 
         private void RefreshEventBanner()

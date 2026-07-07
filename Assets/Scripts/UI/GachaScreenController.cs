@@ -297,8 +297,8 @@ namespace KernelPanic.UI
             return value.Kind switch
             {
                 PullOutcomeKind.Granted => " granted",
-                PullOutcomeKind.Dupe => $" duplicate +{value.MergesAwarded} merges",
-                PullOutcomeKind.DupeOverflow => $" max-version duplicate +{value.MergesAwarded} merges",
+                PullOutcomeKind.Dupe => $" duplicate +{value.MergesAwarded} {value.UnitId} merges",
+                PullOutcomeKind.DupeOverflow => $" max-version duplicate +{value.MergesAwarded} {value.UnitId} merges",
                 _ => string.Empty
             };
         }

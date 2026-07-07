@@ -90,7 +90,7 @@ namespace KernelPanic.Meta
             owned.version = version;
             bool overflow = version >= GachaTuning.MaxVersion;
             int merges = CalculateDupeMerges(overflow, unit.Id, context.FocusUnitId);
-            context.SaveData.merges = Math.Max(0, context.SaveData.merges) + merges;
+            owned.merges = Math.Max(0, owned.merges) + merges;
             if (GachaTuning.DupeConsolationBandwidth > 0)
             {
                 context.SaveData.standardPullCurrency += GachaTuning.DupeConsolationBandwidth;

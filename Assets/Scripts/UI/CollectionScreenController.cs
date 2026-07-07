@@ -24,7 +24,7 @@ namespace KernelPanic.UI
         private LanguageDeckDatabase _languageDeckDatabase;
         private CardDatabase _cardDatabase;
         private PlayerCollection _playerCollection;
-        private Func<int> _getMergesBalance;
+        private Func<DistroDefinition, int> _getMergesBalance;
         private Func<DistroDefinition, VersionUpgradeResult> _tryUpgradeUnit;
         private IReadOnlyList<DistroDefinition> _units = Array.Empty<DistroDefinition>();
         private IReadOnlyList<LanguageCatalogEntry> _languages = LanguageCatalog.All;
@@ -38,7 +38,7 @@ namespace KernelPanic.UI
 
         public event Action ViewChanged;
 
-        public void Bind(VisualElement root, FontAsset artFont, LanguageDeckDatabase deckDatabase, CardDatabase cardsDatabase, PlayerCollection collection, Func<int> getMergesBalance = null, Func<DistroDefinition, VersionUpgradeResult> tryUpgradeUnit = null)
+        public void Bind(VisualElement root, FontAsset artFont, LanguageDeckDatabase deckDatabase, CardDatabase cardsDatabase, PlayerCollection collection, Func<DistroDefinition, int> getMergesBalance = null, Func<DistroDefinition, VersionUpgradeResult> tryUpgradeUnit = null)
         {
             _monospaceFont = artFont;
             _languageDeckDatabase = deckDatabase;
@@ -296,7 +296,7 @@ namespace KernelPanic.UI
         {
             int version = _playerCollection == null ? 1 : Mathf.Clamp(_playerCollection.GetVersion(unit.Id), 1, GachaTuning.MaxVersion);
             string release = DistroVersionCatalog.GetReleaseLabel(unit.Id, version);
-            int merges = _getMergesBalance?.Invoke() ?? 0;
+            int merges = _getMergesBalance?.Invoke(unit) ?? 0;
 
             VisualElement panel = new();
             panel.AddToClassList("version-upgrade-panel");
@@ -308,7 +308,7 @@ namespace KernelPanic.UI
             current.AddToClassList("version-upgrade-current");
             summary.Add(current);
 
-            Label wallet = new(version < GachaTuning.MaxVersion ? $"merges {merges} / {GachaTuning.GetVersionUpgradeCost(version + 1)}" : $"merges {merges}");
+            Label wallet = new(version < GachaTuning.MaxVersion ? $"{unit.DisplayName} merges {merges} / {GachaTuning.GetVersionUpgradeCost(version + 1)}" : $"{unit.DisplayName} merges {merges}");
             wallet.AddToClassList("version-upgrade-wallet");
             summary.Add(wallet);
             panel.Add(summary);

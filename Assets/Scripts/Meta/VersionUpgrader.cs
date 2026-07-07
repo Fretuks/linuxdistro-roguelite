@@ -48,16 +48,17 @@ namespace KernelPanic.Meta
 
             int targetVersion = currentVersion + 1;
             int cost = GachaTuning.GetVersionUpgradeCost(targetVersion);
-            if (state.merges < cost)
+            int merges = Math.Max(0, entry.merges);
+            if (merges < cost)
             {
                 return VersionUpgradeResult.Failed(unitId, VersionUpgradeFailureReason.InsufficientMerges, currentVersion, targetVersion, cost);
             }
 
-            state.merges -= cost;
+            entry.merges = merges - cost;
             entry.version = targetVersion;
             collection?.SetVersionSilently(unitId, targetVersion);
 
-            VersionUpgradeResult result = VersionUpgradeResult.Upgraded(unitId, currentVersion, targetVersion, cost, state.merges);
+            VersionUpgradeResult result = VersionUpgradeResult.Upgraded(unitId, currentVersion, targetVersion, cost, entry.merges);
             UnitUpgraded?.Invoke(result);
             return result;
         }
