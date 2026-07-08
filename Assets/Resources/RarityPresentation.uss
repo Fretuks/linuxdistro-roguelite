@@ -1,0 +1,24 @@
+:root {
+    --kp-rarity-3: #7f9b8a;
+    --kp-rarity-3-bg: #07100c;
+    --kp-rarity-4: #5cfff2;
+    --kp-rarity-4-bg: #08201e;
+    --kp-rarity-5: #ffbf3f;
+    --kp-rarity-5-bg: #211705;
+}
+
+.rarity-3 {
+    color: var(--kp-rarity-3);
+    border-color: var(--kp-rarity-3);
+}
+
+.rarity-4 {
+    color: var(--kp-rarity-4);
+    border-color: var(--kp-rarity-4);
+}
+
+.rarity-5 {
+    color: var(--kp-rarity-5);
+    border-color: var(--kp-rarity-5);
+    -unity-font-style: bold;
+}

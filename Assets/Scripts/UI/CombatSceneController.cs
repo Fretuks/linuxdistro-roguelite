@@ -21,6 +21,7 @@ namespace KernelPanic.UI
     {
         private const string StyleResourcePath = "CombatScene";
         private const string SharedScrollbarStyleResourcePath = "TerminalScrollbars";
+        private const string SharedRarityStyleResourcePath = "RarityPresentation";
         private const string FilledCycle = "●";
         private const string EmptyCycle = "○";
 
@@ -218,6 +219,12 @@ namespace KernelPanic.UI
 
         private void LoadStyles()
         {
+            StyleSheet rarityStyleSheet = Resources.Load<StyleSheet>(SharedRarityStyleResourcePath);
+            if (rarityStyleSheet != null)
+            {
+                root.styleSheets.Add(rarityStyleSheet);
+            }
+
             StyleSheet styleSheet = Resources.Load<StyleSheet>(StyleResourcePath);
             if (styleSheet != null)
             {

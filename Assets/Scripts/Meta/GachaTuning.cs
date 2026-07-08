@@ -6,8 +6,8 @@ namespace KernelPanic.Meta
     public static class GachaTuning
     {
         public const int MaxVersion = 5;
-        public const int MergesPerDupe = 20;
-        public const int MergesOnCharacterBonus = 10;
+        public const int MergesPerDupe = 50;
+        public const int MergesOnCharacterBonus = 25;
         public const float MergesMaxVersionOverflowMultiplier = 1.5f;
         public static int DupeConsolationBandwidth => 0;
         public static readonly int[] VersionCosts = { 50, 120, 250, 500 };

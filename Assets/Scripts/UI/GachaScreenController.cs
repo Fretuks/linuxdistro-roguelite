@@ -34,6 +34,7 @@ namespace KernelPanic.UI
         private Func<IReadOnlyList<DistroDefinition>, PullResolutionResult> _resolvePulledDistros;
         private Action _onChanged;
         private Action _requestRootCreditExchange;
+        private Action<string, int, int> _requestPullCutscene;
         private int _selectedBannerIndex;
         private int _pendingPullCount;
         private int _pendingMissingTokens;
@@ -44,7 +45,7 @@ namespace KernelPanic.UI
         private readonly List<int> _resultRewardStars = new();
         private bool _resultRevealed;
 
-        public void Bind(VisualElement root, DistroDatabase database, FontAsset artFont, GachaService service, PlayerCollection collection, EntropyWallet entropyWallet, Func<IReadOnlyList<DistroDefinition>, PullResolutionResult> pullResolver, Action changedCallback, Action rootCreditExchangeCallback)
+        public void Bind(VisualElement root, DistroDatabase database, FontAsset artFont, GachaService service, PlayerCollection collection, EntropyWallet entropyWallet, Func<IReadOnlyList<DistroDefinition>, PullResolutionResult> pullResolver, Action changedCallback, Action rootCreditExchangeCallback, Action<string, int, int> pullCutsceneCallback)
         {
             _distroDatabase = database;
             _monospaceFont = artFont;
@@ -54,6 +55,7 @@ namespace KernelPanic.UI
             _resolvePulledDistros = pullResolver;
             _onChanged = changedCallback;
             _requestRootCreditExchange = rootCreditExchangeCallback;
+            _requestPullCutscene = pullCutsceneCallback;
             _bannerList = root.Q<VisualElement>("GachaBannerList");
             _bannerDetail = root.Q<VisualElement>("GachaBannerDetail");
         }
@@ -232,6 +234,12 @@ namespace KernelPanic.UI
         private void PullSelectedBanner(int pullCount, int entropyTokenCount)
         {
             string bannerId = _bannerIds[_selectedBannerIndex];
+            if (_requestPullCutscene != null)
+            {
+                _requestPullCutscene.Invoke(bannerId, pullCount, entropyTokenCount);
+                return;
+            }
+
             if (bannerId != GachaService.BeginnerBannerId)
             {
                 _resultBannerId = bannerId;
@@ -285,7 +293,7 @@ namespace KernelPanic.UI
 
                 string suffix = reward.Guaranteed ? " guaranteed" : reward.PityTriggered ? " pity" : string.Empty;
                 string outcomeText = FormatPullOutcome(outcome);
-                _resultRewardLines.Add($"{i + 1:00}: {reward.StarRating}-star {reward.DisplayName}{suffix}{outcomeText}");
+                _resultRewardLines.Add($"{i + 1:00}: {reward.StarRating}★ {FormatRewardDisplayName(reward)}{suffix}{outcomeText}");
                 _resultRewardStars.Add(reward.StarRating);
             }
 
@@ -294,6 +302,30 @@ namespace KernelPanic.UI
             _resultRevealed = false;
             _onChanged?.Invoke();
             Refresh();
+        }
+
+        public void SetCompletedPullResult(CompletedGachaPull result)
+        {
+            if (result == null)
+            {
+                return;
+            }
+
+            _resultBannerId = result.BannerId;
+            _resultText = result.HeaderText;
+            _resultRewardLines.Clear();
+            _resultRewardStars.Clear();
+            for (int i = 0; i < result.RewardLines.Count; i++)
+            {
+                _resultRewardLines.Add(result.RewardLines[i]);
+            }
+
+            for (int i = 0; i < result.RewardStars.Count; i++)
+            {
+                _resultRewardStars.Add(result.RewardStars[i]);
+            }
+
+            _resultRevealed = true;
         }
 
         private VisualElement BuildPullResultReveal()
@@ -383,6 +415,21 @@ namespace KernelPanic.UI
                 PullOutcomeKind.DupeOverflow => $" max-version duplicate +{value.MergesAwarded} {value.UnitId} merges",
                 _ => string.Empty
             };
+        }
+
+        private static string FormatRewardDisplayName(GachaReward reward)
+        {
+            if (reward.RewardType != GachaRewardType.Equipment || string.IsNullOrWhiteSpace(reward.DisplayName))
+            {
+                return reward.DisplayName;
+            }
+
+            string trimmed = reward.DisplayName.Trim();
+            return trimmed.StartsWith("3-star ", StringComparison.OrdinalIgnoreCase) ||
+                   trimmed.StartsWith("4-star ", StringComparison.OrdinalIgnoreCase) ||
+                   trimmed.StartsWith("5-star ", StringComparison.OrdinalIgnoreCase)
+                ? trimmed.Substring(7)
+                : trimmed;
         }
 
         private void RequestPullSelectedBanner(int pullCount)

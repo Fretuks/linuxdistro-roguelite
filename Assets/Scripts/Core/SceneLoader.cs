@@ -11,6 +11,7 @@ namespace KernelPanic.Core
     {
         public const string MainMenuSceneName = "MainMenuScene";
         public const string GameSceneName = "GameScene";
+        public const string GamblingSceneName = "GamblingScene";
 
         private const string CurtainClassName = "scene-fade-curtain";
         private const string CurtainVisibleClassName = "scene-fade-visible";
@@ -24,6 +25,11 @@ namespace KernelPanic.Core
         public static void LoadGame(VisualElement fadeRoot)
         {
             FadeThenLoad(fadeRoot, GameSceneName);
+        }
+
+        public static void LoadGambling(VisualElement fadeRoot)
+        {
+            FadeThenLoad(fadeRoot, GamblingSceneName);
         }
 
         private static void FadeThenLoad(VisualElement fadeRoot, string sceneName)

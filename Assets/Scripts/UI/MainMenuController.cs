@@ -72,6 +72,7 @@ namespace KernelPanic.UI
         private const string ModalOpenClassName = "modal-open";
         private const int ModalTransitionMs = 160;
         private const string SharedScrollbarStyleResourcePath = "TerminalScrollbars";
+        private const string SharedRarityStyleResourcePath = "RarityPresentation";
         private const float BootIntroSeconds = 1.5f;
         private static bool _bootIntroPlayed;
 
@@ -98,6 +99,7 @@ namespace KernelPanic.UI
         private readonly List<VisualElement> _packageRows = new();
         private readonly List<VisualElement> _loadoutRows = new();
         private readonly List<Language> _selectedRunLanguages = new();
+        private readonly List<MenuScreen> _screenHistory = new();
         private UIDocument _document;
         private VisualElement _root;
         private VisualElement _shellRoot;
@@ -168,6 +170,7 @@ namespace KernelPanic.UI
         private Action _rootCreditExchangePlusHundredClicked;
         private IVisualElementScheduledItem _blinkSchedule;
         private IVisualElementScheduledItem _bootIntroSchedule;
+        private MenuScreen _activeScreen = MenuScreen.Main;
 
         public void Initialize(EntropyWallet initializedWallet)
         {
@@ -178,11 +181,7 @@ namespace KernelPanic.UI
         private void Awake()
         {
             _document = GetComponent<UIDocument>();
-            _saveService = new SaveService();
-            _gachaService = new GachaService();
-            _playerCollection = new PlayerCollection(); // TODO: Replace with persistent player-collection service composition.
-            _cardLoadout = new CardLoadout(_playerCollection.OwnedUnits);
-            Initialize(new EntropyWallet()); // TODO: Replace with persistent wallet service composition.
+            ComposeMetaServices();
             BindElements();
             LoadSharedStyles();
             BindCommandEntries();
@@ -192,11 +191,20 @@ namespace KernelPanic.UI
             FontAsset resolvedFont = ResolveMonospaceFont();
             featuredUnitPanel.Bind(_root, resolvedFont);
             collectionScreen.Bind(_root, resolvedFont, languageDeckDatabase, cardDatabase, _playerCollection, GetMergesBalance, UpgradeCollectionUnit);
-            gachaScreen.Bind(_root, distroDatabase, resolvedFont, _gachaService, _playerCollection, _wallet, ResolvePulledDistros, HandleMetaStateChanged, OpenRootCreditExchange);
+            gachaScreen.Bind(_root, distroDatabase, resolvedFont, _gachaService, _playerCollection, _wallet, ResolvePulledDistros, HandleMetaStateChanged, OpenRootCreditExchange, StartGachaPullCutscene);
             LoadMetaState();
             _playerCollection.Changed += HandleMetaStateChanged;
             _gachaService.Changed += HandleMetaStateChanged;
             ApplyOptionalFont(resolvedFont);
+        }
+
+        private void ComposeMetaServices()
+        {
+            _saveService = new SaveService();
+            _wallet = new EntropyWallet();
+            _gachaService = new GachaService();
+            _playerCollection = new PlayerCollection();
+            _cardLoadout = new CardLoadout(_playerCollection.OwnedUnits);
         }
 
         private void OnEnable()
@@ -212,7 +220,16 @@ namespace KernelPanic.UI
             collectionScreen.RefreshUnits(_playerCollection.OwnedUnits);
             gachaScreen.Refresh();
             SelectCommand(0);
-            ShowMainMenu();
+            if (GachaPullContext.TryConsumeCompleted(out CompletedGachaPull completedPull))
+            {
+                gachaScreen.SetCompletedPullResult(completedPull);
+                ShowGacha();
+            }
+            else
+            {
+                ShowMainMenu();
+            }
+
             StartAmbientSchedules();
             PlayBootIntroIfNeeded();
         }
@@ -277,6 +294,12 @@ namespace KernelPanic.UI
 
         private void LoadSharedStyles()
         {
+            StyleSheet rarityStyleSheet = Resources.Load<StyleSheet>(SharedRarityStyleResourcePath);
+            if (rarityStyleSheet != null)
+            {
+                _root.styleSheets.Add(rarityStyleSheet);
+            }
+
             StyleSheet scrollbarStyleSheet = Resources.Load<StyleSheet>(SharedScrollbarStyleResourcePath);
             if (scrollbarStyleSheet != null)
             {
@@ -765,6 +788,13 @@ namespace KernelPanic.UI
             return PullResolver.Resolve(pulledDistros, context);
         }
 
+        private void StartGachaPullCutscene(string bannerId, int pullCount, int entropyTokenCount)
+        {
+            SaveCurrentState();
+            GachaPullContext.SetPending(bannerId, pullCount, entropyTokenCount, distroDatabase, _playerCollection.FeaturedUnit?.Id);
+            SceneLoader.LoadGambling(_root);
+        }
+
         private int GetMergesBalance(DistroDefinition unit)
         {
             _saveData ??= SaveData.CreateDefault();
@@ -992,7 +1022,7 @@ namespace KernelPanic.UI
 
             if (evt.keyCode == KeyCode.Escape && IsSubScreenVisible())
             {
-                ShowMainMenu();
+                NavigateBack();
                 evt.StopPropagation();
                 return;
             }
@@ -1669,7 +1699,7 @@ namespace KernelPanic.UI
         private void HandleStartRunClicked()
         {
             RefreshRunSetup();
-            ShowPanel(_runSetupPanel);
+            ShowScreen(MenuScreen.RunSetup);
         }
 
         private void HandleQuitClicked()
@@ -1686,14 +1716,14 @@ namespace KernelPanic.UI
             _cardLoadout.ClearAll();
             _selectedRunLanguages.Clear();
             _runSetupNotice = null;
-            ShowPanel(_mainMenuPanel);
+            ShowScreen(MenuScreen.Main, false);
             _root.Focus();
         }
 
         private void ShowCollection()
         {
             ShowCollectionUnits();
-            ShowPanel(_collectionPanel);
+            ShowScreen(MenuScreen.Collection);
         }
 
         private void HandleCollectionBack()
@@ -1745,16 +1775,56 @@ namespace KernelPanic.UI
         private void ShowGacha()
         {
             gachaScreen.Open();
-            ShowPanel(_gachaPanel);
+            ShowScreen(MenuScreen.Gacha);
         }
 
         private void ShowSettings()
         {
-            ShowPanel(_settingsPanel);
+            ShowScreen(MenuScreen.Settings);
         }
 
-        // TODO: Replace this direct toggle with a screen-stack/router when menu flows need history or transitions.
-        private void ShowPanel(VisualElement activePanel)
+        private void NavigateBack()
+        {
+            if (_screenHistory.Count == 0)
+            {
+                ShowMainMenu();
+                return;
+            }
+
+            MenuScreen previous = _screenHistory[_screenHistory.Count - 1];
+            _screenHistory.RemoveAt(_screenHistory.Count - 1);
+            ShowScreen(previous, false);
+        }
+
+        private void ShowScreen(MenuScreen screen, bool addToHistory = true)
+        {
+            if (screen == MenuScreen.Main)
+            {
+                _screenHistory.Clear();
+            }
+            else if (addToHistory && _activeScreen != screen)
+            {
+                _screenHistory.Add(_activeScreen);
+            }
+
+            _activeScreen = screen;
+            VisualElement activePanel = PanelForScreen(screen);
+            ApplyScreenVisibility(activePanel);
+        }
+
+        private VisualElement PanelForScreen(MenuScreen screen)
+        {
+            return screen switch
+            {
+                MenuScreen.Collection => _collectionPanel,
+                MenuScreen.RunSetup => _runSetupPanel,
+                MenuScreen.Gacha => _gachaPanel,
+                MenuScreen.Settings => _settingsPanel,
+                _ => _mainMenuPanel
+            };
+        }
+
+        private void ApplyScreenVisibility(VisualElement activePanel)
         {
             _mainMenuPanel.EnableInClassList(HiddenClassName, _mainMenuPanel != activePanel);
             _collectionPanel.EnableInClassList(HiddenClassName, _collectionPanel != activePanel);
@@ -1775,6 +1845,15 @@ namespace KernelPanic.UI
             }
 
             RefreshCurrencyReadouts();
+        }
+
+        private enum MenuScreen
+        {
+            Main,
+            Collection,
+            RunSetup,
+            Gacha,
+            Settings
         }
 
         private sealed class CommandMenuEntry

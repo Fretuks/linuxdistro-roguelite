@@ -11,9 +11,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4222a6b8-add3-4f43-9c42-fd6bb5a76169" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/CombatScene.uss" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/CombatScene.uss" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Resources/GamblingScene.uss" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Resources/RarityPresentation.uss" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaPullContext.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/UI/GamblingSceneController.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/Scripts/UI/RarityPresentation.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/GamblingScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/GamblingScene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/SceneLoader.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/SceneLoader.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaTuning.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaTuning.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/GachaScreenController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/GachaScreenController.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,7 +31,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="44" />
+    <option name="cachedIndexableFilesCount" value="46" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -70,23 +80,23 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.026460791011334" />
-      <entry key="MS500" value="1.4860095350060054" />
-      <entry key="S2" value="2.6444467846038227" />
-      <entry key="S5" value="4.842254075216646" />
-      <entry key="S10" value="6.468439791164836" />
-      <entry key="S30" value="8.038810318782259" />
-      <entry key="S60" value="9.594633537295994" />
-      <entry key="M2" value="20.243382686476437" />
-      <entry key="M5" value="63.58627499290541" />
-      <entry key="M10" value="123.19334985734534" />
-      <entry key="M15" value="169.67982802867456" />
-      <entry key="M30" value="263.8069798782453" />
-      <entry key="H1" value="405.314020833015" />
-      <entry key="H2" value="674.2556828746846" />
-      <entry key="H4" value="1106.1957697237865" />
-      <entry key="D1" value="2326.0084884842904" />
-      <entry key="W1" value="2780.8343863258788" />
+      <entry key="MS100" value="1.0623037946223934" />
+      <entry key="MS500" value="3.3946231944932093" />
+      <entry key="S2" value="13.152660945937393" />
+      <entry key="S5" value="24.1598334590001" />
+      <entry key="S10" value="33.8798077205763" />
+      <entry key="S30" value="58.19510567053269" />
+      <entry key="S60" value="77.3856499085495" />
+      <entry key="M2" value="102.00601157029814" />
+      <entry key="M5" value="137.65784976271723" />
+      <entry key="M10" value="165.66654267587106" />
+      <entry key="M15" value="186.93733876684658" />
+      <entry key="M30" value="255.34135629387984" />
+      <entry key="H1" value="366.1678729821731" />
+      <entry key="H2" value="476.8702050334635" />
+      <entry key="H4" value="590.3523177793572" />
+      <entry key="D1" value="1946.7042196302243" />
+      <entry key="W1" value="3215.7039196395745" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -94,37 +104,37 @@
       <entry key="S2" value="0.0" />
       <entry key="S5" value="0.0" />
       <entry key="S10" value="0.0" />
-      <entry key="S30" value="2.6792133394898083E-170" />
-      <entry key="S60" value="1.636830272047101E-85" />
-      <entry key="M2" value="4.045775910807539E-43" />
-      <entry key="M5" value="1.1035721441393251E-17" />
-      <entry key="M10" value="3.322005635364477E-9" />
-      <entry key="M15" value="2.2263848764463433E-6" />
-      <entry key="M30" value="0.0014921080092110655" />
-      <entry key="H1" value="0.03866578312125709" />
-      <entry key="H2" value="0.20721305616718577" />
-      <entry key="H4" value="0.6222697235055645" />
-      <entry key="D1" value="2.7484368986677024" />
-      <entry key="W1" value="3.786049516239156" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="5.2702880915532256E-223" />
+      <entry key="M5" value="1.2266869422157816E-89" />
+      <entry key="M10" value="3.502409088350206E-45" />
+      <entry key="M15" value="2.3062758293224876E-30" />
+      <entry key="M30" value="1.5186432482681809E-15" />
+      <entry key="H1" value="3.900807883852808E-8" />
+      <entry key="H2" value="2.0812823039862135E-4" />
+      <entry key="H4" value="0.01972130313642213" />
+      <entry key="D1" value="1.5461273409431215" />
+      <entry key="W1" value="3.487343990420277" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.0049797369168623" />
-      <entry key="MS500" value="1.478503669631289" />
-      <entry key="S2" value="2.6407224963924176" />
-      <entry key="S5" value="4.839408734689747" />
-      <entry key="S10" value="6.466516334385955" />
-      <entry key="S30" value="8.038007761765067" />
-      <entry key="S60" value="9.594143833655684" />
-      <entry key="M2" value="20.2428233697882" />
-      <entry key="M5" value="63.585521817921595" />
-      <entry key="M10" value="123.19258340133266" />
-      <entry key="M15" value="169.67910745780532" />
-      <entry key="M30" value="263.80787472691503" />
-      <entry key="H1" value="405.352065646138" />
-      <entry key="H2" value="674.4620834608667" />
-      <entry key="H4" value="1106.8171811444822" />
-      <entry key="D1" value="2328.7565510850786" />
-      <entry key="W1" value="2784.6203691164433" />
+      <entry key="MS100" value="1.0197451953704615" />
+      <entry key="MS500" value="3.3707583435859494" />
+      <entry key="S2" value="13.129985145747765" />
+      <entry key="S5" value="24.143018672679645" />
+      <entry key="S10" value="33.867989076642985" />
+      <entry key="S30" value="58.188374682435416" />
+      <entry key="S60" value="77.38119558741009" />
+      <entry key="M2" value="102.00309255211835" />
+      <entry key="M5" value="137.6562714734684" />
+      <entry key="M10" value="165.6655746148282" />
+      <entry key="M15" value="186.93658735123063" />
+      <entry key="M30" value="255.34078224152634" />
+      <entry key="H1" value="366.16741523840614" />
+      <entry key="H2" value="476.8700971872463" />
+      <entry key="H4" value="590.3718230883779" />
+      <entry key="D1" value="1948.2500994732964" />
+      <entry key="W1" value="3219.19119674037" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -213,7 +223,7 @@
       <workItem from="1783330590375" duration="18451000" />
       <workItem from="1783371975450" duration="26000" />
       <workItem from="1783372397891" duration="989000" />
-      <workItem from="1783410502976" duration="13134000" />
+      <workItem from="1783410502976" duration="19169000" />
     </task>
     <task id="LOCAL-00001" summary="implement main screen">
       <option name="closed" value="true" />
@@ -359,7 +369,23 @@
       <option name="project" value="LOCAL" />
       <updated>1783427430046</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="Fix balls">
+      <option name="closed" value="true" />
+      <created>1783492556269</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1783492556270</updated>
+    </task>
+    <task id="LOCAL-00020" summary="update some strings">
+      <option name="closed" value="true" />
+      <created>1783493370994</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1783493370994</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -392,7 +418,9 @@
     <MESSAGE value="implement scaling rewards per wave completed in combat mode" />
     <MESSAGE value="Implement animations, pipeline for duplicates and merging." />
     <MESSAGE value="make some small changes to merging" />
-    <option name="LAST_COMMIT_MESSAGE" value="make some small changes to merging" />
+    <MESSAGE value="Fix balls" />
+    <MESSAGE value="update some strings" />
+    <option name="LAST_COMMIT_MESSAGE" value="update some strings" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
