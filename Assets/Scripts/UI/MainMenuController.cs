@@ -69,6 +69,8 @@ namespace KernelPanic.UI
         private const string HiddenClassName = "hidden";
         private const string SelectedClassName = "selected";
         private const string CursorOnClassName = "cursor-on";
+        private const string ModalOpenClassName = "modal-open";
+        private const int ModalTransitionMs = 160;
         private const string SharedScrollbarStyleResourcePath = "TerminalScrollbars";
         private const float BootIntroSeconds = 1.5f;
         private static bool _bootIntroPlayed;
@@ -157,6 +159,8 @@ namespace KernelPanic.UI
         private bool _suppressNextClick;
         private bool _warnedUnresolvedSaveId;
         private bool _rootCreditExchangeOpen;
+        private IVisualElementScheduledItem _rootCreditExchangeOpenSchedule;
+        private IVisualElementScheduledItem _rootCreditExchangeHideSchedule;
         private string _bootIntroCopy;
         private Action _rootCreditExchangeMinusHundredClicked;
         private Action _rootCreditExchangeMinusOneClicked;
@@ -199,6 +203,7 @@ namespace KernelPanic.UI
         {
             RegisterCallbacks();
             _root.Focus();
+            _root.EnableInClassList("reduced-motion", UIPreferences.ReducedMotion);
             _shellRoot.EnableInClassList("reduced-motion", UIPreferences.ReducedMotion);
             RefreshStaticText();
             RefreshCurrencyReadouts();
@@ -473,7 +478,11 @@ namespace KernelPanic.UI
             }
 
             _rootCreditExchangeOpen = true;
+            _rootCreditExchangeHideSchedule?.Pause();
             _rootCreditExchangeModal.RemoveFromClassList(HiddenClassName);
+            _rootCreditExchangeOpenSchedule?.Pause();
+            _rootCreditExchangeOpenSchedule = _rootCreditExchangeModal.schedule
+                .Execute(() => _rootCreditExchangeModal.AddToClassList(ModalOpenClassName)).StartingIn(0);
             _rootCreditExchangeMessageLabel?.AddToClassList(HiddenClassName);
             SetRootCreditExchangeAmount(Math.Min(100, _gachaService.RootCredits));
             RefreshRootCreditExchange();
@@ -483,7 +492,12 @@ namespace KernelPanic.UI
         private void CloseRootCreditExchange()
         {
             _rootCreditExchangeOpen = false;
-            _rootCreditExchangeModal?.AddToClassList(HiddenClassName);
+            _rootCreditExchangeOpenSchedule?.Pause();
+            _rootCreditExchangeModal?.RemoveFromClassList(ModalOpenClassName);
+            int delay = UIPreferences.ReducedMotion ? 0 : ModalTransitionMs;
+            _rootCreditExchangeHideSchedule?.Pause();
+            _rootCreditExchangeHideSchedule = _rootCreditExchangeModal?.schedule
+                .Execute(() => _rootCreditExchangeModal.AddToClassList(HiddenClassName)).StartingIn(delay);
             _root.Focus();
         }
 
@@ -878,6 +892,10 @@ namespace KernelPanic.UI
 
         private void PlayBootIntroIfNeeded()
         {
+            // Always start the shell hidden so returning to the menu (starter chosen, boot intro
+            // already played this session) still gets a fade-in instead of popping in instantly.
+            _shellRoot.AddToClassList("boot-hidden");
+
             if (_bootIntroPlayed || UIPreferences.ReducedMotion)
             {
                 CompleteBootIntro();
@@ -889,7 +907,6 @@ namespace KernelPanic.UI
             _bootIntroCharacterCount = 0;
             _bootIntroLogLabel.text = string.Empty;
             _bootIntroPanel.RemoveFromClassList(HiddenClassName);
-            _shellRoot.AddToClassList("boot-hidden");
 
             _bootIntroSchedule = _root.schedule.Execute(UpdateBootIntro).Every(16);
         }
@@ -1580,7 +1597,7 @@ namespace KernelPanic.UI
 
             SaveLastRunLoadout(unit, equippedCardIds);
             RunContext.Set(unit, BuildEquippedCardDefinitions(unit, equippedCardIds), _selectedRunLanguages[0], _selectedRunLanguages[1], _playerCollection.GetVersion(unit.Id));
-            SceneLoader.LoadGame();
+            SceneLoader.LoadGame(_root);
         }
 
         private IReadOnlyList<CardDefinition> BuildEquippedCardDefinitions(DistroDefinition unit, IReadOnlyList<string> equippedCardIds)

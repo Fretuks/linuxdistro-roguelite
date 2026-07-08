@@ -46,6 +46,37 @@
     background-color: var(--kp-bg);
     color: var(--kp-text);
     font-size: 13px;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 220ms;
+}
+
+.combat-root.scene-fade-hidden {
+    opacity: 0;
+}
+
+.combat-root.reduced-motion {
+    transition-duration: 0ms;
+}
+
+.scene-fade-curtain {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgb(0, 0, 0);
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 200ms;
+}
+
+.scene-fade-curtain.scene-fade-visible {
+    opacity: 1;
+}
+
+.reduced-motion .scene-fade-curtain {
+    transition-duration: 0ms;
 }
 
 .combat-status-bar {

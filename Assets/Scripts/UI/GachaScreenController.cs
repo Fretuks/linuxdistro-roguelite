@@ -40,6 +40,9 @@ namespace KernelPanic.UI
         private bool _hasOpened;
         private string _resultBannerId;
         private string _resultText;
+        private readonly List<string> _resultRewardLines = new();
+        private readonly List<int> _resultRewardStars = new();
+        private bool _resultRevealed;
 
         public void Bind(VisualElement root, DistroDatabase database, FontAsset artFont, GachaService service, PlayerCollection collection, EntropyWallet entropyWallet, Func<IReadOnlyList<DistroDefinition>, PullResolutionResult> pullResolver, Action changedCallback, Action rootCreditExchangeCallback)
         {
@@ -194,11 +197,10 @@ namespace KernelPanic.UI
                 _bannerDetail.Add(BuildEntropyPrompt());
             }
 
-            if (_resultBannerId == GachaService.BeginnerBannerId && !string.IsNullOrWhiteSpace(_resultText))
+            if (_resultBannerId == GachaService.BeginnerBannerId &&
+                (_resultRewardLines.Count > 0 || !string.IsNullOrWhiteSpace(_resultText)))
             {
-                Label result = new(_resultText);
-                result.AddToClassList("gacha-result");
-                _bannerDetail.Add(result);
+                _bannerDetail.Add(BuildPullResultReveal());
             }
         }
 
@@ -234,6 +236,8 @@ namespace KernelPanic.UI
             {
                 _resultBannerId = bannerId;
                 _resultText = $"git pull origin {bannerId}: remote not implemented yet";
+                _resultRewardLines.Clear();
+                _resultRewardStars.Clear();
                 RenderSelectedBanner();
                 return;
             }
@@ -243,15 +247,17 @@ namespace KernelPanic.UI
             {
                 _resultBannerId = bannerId;
                 _resultText = $"git pull failed: {result.FailureReason}";
+                _resultRewardLines.Clear();
+                _resultRewardStars.Clear();
                 RenderSelectedBanner();
                 return;
             }
 
-            List<string> lines = new();
-            lines.Add($"git pull complete: spent {result.CurrencySpent} {GachaService.FormatCurrencyName(result.CurrencyType)}");
+            List<string> header = new();
+            header.Add($"git pull complete: spent {result.CurrencySpent} {GachaService.FormatCurrencyName(result.CurrencyType)}");
             if (result.EntropySpent > 0)
             {
-                lines.Add($"entropy fallback: spent {result.EntropySpent} entropy");
+                header.Add($"entropy fallback: spent {result.EntropySpent} entropy");
             }
 
             List<DistroDefinition> distroRewards = new();
@@ -265,6 +271,8 @@ namespace KernelPanic.UI
 
             PullResolutionResult resolution = _resolvePulledDistros?.Invoke(distroRewards);
             int distroOutcomeIndex = 0;
+            _resultRewardLines.Clear();
+            _resultRewardStars.Clear();
             for (int i = 0; i < result.Rewards.Count; i++)
             {
                 GachaReward reward = result.Rewards[i];
@@ -277,13 +285,87 @@ namespace KernelPanic.UI
 
                 string suffix = reward.Guaranteed ? " guaranteed" : reward.PityTriggered ? " pity" : string.Empty;
                 string outcomeText = FormatPullOutcome(outcome);
-                lines.Add($"{i + 1:00}: {reward.StarRating}-star {reward.DisplayName}{suffix}{outcomeText}");
+                _resultRewardLines.Add($"{i + 1:00}: {reward.StarRating}-star {reward.DisplayName}{suffix}{outcomeText}");
+                _resultRewardStars.Add(reward.StarRating);
             }
 
             _resultBannerId = bannerId;
-            _resultText = string.Join("\n", lines);
+            _resultText = string.Join("\n", header);
+            _resultRevealed = false;
             _onChanged?.Invoke();
             Refresh();
+        }
+
+        private VisualElement BuildPullResultReveal()
+        {
+            VisualElement container = new();
+            container.AddToClassList("gacha-result-block");
+
+            if (!string.IsNullOrWhiteSpace(_resultText))
+            {
+                Label header = new(_resultText);
+                header.AddToClassList("gacha-result");
+                container.Add(header);
+            }
+
+            if (_resultRewardLines.Count == 0)
+            {
+                return container;
+            }
+
+            VisualElement list = new();
+            list.AddToClassList("gacha-result-list");
+            container.Add(list);
+
+            bool animate = !_resultRevealed && !UIPreferences.ReducedMotion;
+            for (int i = 0; i < _resultRewardLines.Count; i++)
+            {
+                int stars = _resultRewardStars[i];
+                VisualElement card = new();
+                card.AddToClassList("gacha-result-card");
+                card.AddToClassList(RarityClassForStars(stars));
+                card.Add(new Label(_resultRewardLines[i]));
+
+                if (!animate)
+                {
+                    card.AddToClassList("gacha-result-card-shown");
+                    if (stars >= 5)
+                    {
+                        card.AddToClassList("gacha-result-card-flash");
+                    }
+
+                    list.Add(card);
+                    continue;
+                }
+
+                card.AddToClassList("gacha-result-card-hidden");
+                list.Add(card);
+                // Scheduled off _bannerDetail (already attached to the panel) rather than the
+                // freshly created card, which has no panel to tick a scheduler on until this
+                // whole tree is attached by the caller.
+                _bannerDetail.schedule.Execute(() =>
+                {
+                    card.RemoveFromClassList("gacha-result-card-hidden");
+                    card.AddToClassList("gacha-result-card-shown");
+                    if (stars >= 5)
+                    {
+                        card.AddToClassList("gacha-result-card-flash");
+                    }
+                }).StartingIn(90 * i + 60);
+            }
+
+            _resultRevealed = true;
+            return container;
+        }
+
+        private static string RarityClassForStars(int stars)
+        {
+            return stars switch
+            {
+                >= 5 => "gacha-result-card-legendary",
+                4 => "gacha-result-card-rare",
+                _ => "gacha-result-card-common"
+            };
         }
 
         private static string FormatPullOutcome(PullResolutionOutcome? outcome)
