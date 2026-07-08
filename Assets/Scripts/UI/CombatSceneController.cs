@@ -60,7 +60,11 @@ namespace KernelPanic.UI
         private readonly Dictionary<CardInstance, VisualElement> stackChipElements = new();
         private readonly Dictionary<CombatantState, int> previousUptime = new();
         private readonly Dictionary<CombatantState, int> previousShield = new();
+        private readonly Dictionary<VisualElement, int> feedbackBeatVersions = new();
         private readonly HashSet<CardInstance> knownHandCards = new();
+        private int queueCascadeIndex;
+        private int feedbackCascadeIndex;
+        private int feedbackBeatVersion;
 
         private void Awake()
         {
@@ -100,6 +104,8 @@ namespace KernelPanic.UI
             GameEvents.EnemyWouldAct += HandleEnemyWouldAct;
             GameEvents.PlayerDamaged += HandlePlayerDamaged;
             GameEvents.StatusApplied += HandleStatusApplied;
+            GameEvents.StatusExpired += HandleStatusEnded;
+            GameEvents.StatusCleansed += HandleStatusEnded;
         }
 
         private void Start()
@@ -148,6 +154,8 @@ namespace KernelPanic.UI
             GameEvents.EnemyWouldAct -= HandleEnemyWouldAct;
             GameEvents.PlayerDamaged -= HandlePlayerDamaged;
             GameEvents.StatusApplied -= HandleStatusApplied;
+            GameEvents.StatusExpired -= HandleStatusEnded;
+            GameEvents.StatusCleansed -= HandleStatusEnded;
         }
 
         private bool TryBuildRunConfig(out RunConfig config)
@@ -412,6 +420,7 @@ namespace KernelPanic.UI
 
             CombatantState state = combatManager.PlayerState;
             DetectBeneficialResourceFeedback(state, playerPanel);
+            ApplyStatusStateClasses(playerPanel, state);
             playerPanel.Add(MeterBlock("uptime", state.CurrentUptime, state.MaxUptime, MeterTone.Uptime));
             playerPanel.Add(MeterBlock("shield", state.Shield, Mathf.Max(1, state.Shield), state.Shield > 0 ? MeterTone.Beneficial : MeterTone.Muted));
             playerPanel.Add(CycleBlock(state.Cycles, state.MaxCycles));
@@ -459,6 +468,7 @@ namespace KernelPanic.UI
                 card.Add(name);
                 combatantElements[enemy.State] = card;
                 DetectBeneficialResourceFeedback(enemy.State, card);
+                ApplyStatusStateClasses(card, enemy.State);
                 card.Add(MeterBlock("uptime", enemy.CurrentUptime, enemy.MaxUptime, MeterTone.Uptime));
                 if (enemy.State.Shield > 0)
                 {
@@ -1047,9 +1057,14 @@ namespace KernelPanic.UI
 
             if (payload.Track == ResolutionTrack.InterpreterQueue)
             {
-                VisualElement chip = queueChipElements.TryGetValue(payload.Card, out VisualElement queuedChip) ? queuedChip : interpreterStrip;
-                PlayElementBeat(chip, "queue-chip-resolve", 260);
-                FlyCardGhost(payload.Card, chip, turnResourceGrid, "feedback-card-discard");
+                int delay = UIPreferences.ReducedMotion ? 0 : Mathf.Min(queueCascadeIndex * 120, 600);
+                queueCascadeIndex++;
+                ScheduleFeedback(() =>
+                {
+                    VisualElement chip = queueChipElements.TryGetValue(payload.Card, out VisualElement queuedChip) ? queuedChip : interpreterStrip;
+                    PlayElementBeat(chip, "queue-chip-resolve", 260);
+                    FlyCardGhost(payload.Card, chip, turnResourceGrid, "feedback-card-discard");
+                }, delay);
                 return;
             }
 
@@ -1063,63 +1078,86 @@ namespace KernelPanic.UI
 
         private void HandlePhaseChanged(PhaseChangedEvent payload)
         {
+            if (payload.NextPhase == TurnPhase.Interpret)
+            {
+                queueCascadeIndex = 0;
+            }
+
+            feedbackCascadeIndex = 0;
             ScheduleFeedback(() => PlayElementBeat(phaseLabel, "phase-pulse", 260), 0);
         }
 
         private void HandleDamageDealt(DamageDealtEvent payload)
         {
-            ScheduleFeedback(() =>
+            bool isPlayer = payload.Target == combatManager.PlayerState;
+            VisualElement target = CombatantElement(payload.Target);
+            ScheduleCombatBeat(beatIndex =>
             {
-                bool isPlayer = payload.Target == combatManager.PlayerState;
-                VisualElement target = CombatantElement(payload.Target);
-                string text = payload.Amount <= 0 ? "blocked" : $"-{Mathf.RoundToInt(payload.Amount)}";
-                string tone = payload.Amount <= 0 ? "float-muted" : "float-damage";
-                if (payload.Amount >= 8)
+                string text = payload.WasFullyBlocked ? "clang" : payload.UptimeDamage <= 0 ? "blocked" : $"-{Mathf.RoundToInt(payload.UptimeDamage)}";
+                string tone = payload.WasFullyBlocked || payload.WasMitigated ? "float-muted" : "float-damage";
+                string beatClass = payload.WasFullyBlocked || payload.WasMitigated ? "feedback-clang" : payload.WasCritical ? "feedback-crit" : "feedback-hit";
+                int beatDuration = payload.WasCritical ? 360 : payload.WasMitigated ? 260 : 240;
+
+                if (payload.WasCritical || payload.UptimeDamage >= 8)
                 {
                     tone += " float-large";
                 }
 
-                SpawnFloatingText(target, text, tone);
-                PlayElementBeat(target, payload.Amount <= 0 ? "feedback-block" : "feedback-hit", 240);
-                if (isPlayer && payload.Amount > 0)
+                SpawnFloatingText(target, text, tone, beatIndex);
+                SpawnImpactMarker(target, payload.WasCritical, payload.WasMitigated, beatIndex);
+                PlayElementBeat(target, beatClass, beatDuration);
+                if (isPlayer && payload.UptimeDamage > 0)
                 {
-                    FlashDamageVignette();
+                    FlashDamageVignette(payload.WasCritical);
                 }
-            }, 0);
+            });
         }
 
         private void HandleCombatantDefeated(CombatantDefeatedEvent payload)
         {
-            ScheduleFeedback(() =>
+            VisualElement target = CombatantElement(payload.Combatant);
+            Rect targetBounds = target?.worldBound ?? Rect.zero;
+            ScheduleCombatBeat(() =>
             {
-                VisualElement target = CombatantElement(payload.Combatant);
-                SpawnFloatingText(target, "killed", "float-kill float-large");
-                SpawnDeathGhost(target);
-                PlayElementBeat(target, "feedback-killed", 260);
-            }, 0);
+                SpawnFloatingText(target, "killed", "float-kill float-large", 0);
+                SpawnDeathGhost(targetBounds);
+                if (target != enemyRow)
+                {
+                    PlayElementBeat(target, "feedback-killed", 420);
+                }
+            });
         }
 
         private void HandleEnemyWouldAct(EnemyWouldActEvent payload)
         {
-            ScheduleFeedback(() => PlayElementBeat(CombatantElement(payload.Enemy?.State), "enemy-acting", 260), 0);
+            ScheduleCombatBeat(() => PlayElementBeat(CombatantElement(payload.Enemy?.State), "enemy-anticipating", 340));
         }
 
         private void HandlePlayerDamaged(PlayerDamagedEvent payload)
         {
-            if (payload.Amount > 0)
-            {
-                ScheduleFeedback(FlashDamageVignette, 0);
-            }
+            // DamageDealt carries richer mitigation data and owns the visual hit beat.
         }
 
         private void HandleStatusApplied(StatusAppliedEvent payload)
         {
-            ScheduleFeedback(() =>
+            ScheduleCombatBeat(() =>
             {
                 StatusDescriptor descriptor = StatusEffectController.GetDescriptor(payload.StatusType);
-                SpawnFloatingText(CombatantElement(payload.Target), $"{descriptor.IconKey} x{payload.Stacks}", descriptor.IsBeneficial ? "float-heal" : "float-status");
-                PlayElementBeat(CombatantElement(payload.Target), descriptor.IsBeneficial ? "feedback-boost" : "feedback-status", 220);
-            }, 0);
+                VisualElement target = CombatantElement(payload.Target);
+                ApplyStatusStateClass(target, payload.StatusType, true);
+                SpawnFloatingText(target, $"{descriptor.IconKey} x{payload.Stacks}", descriptor.IsBeneficial ? "float-heal" : "float-status");
+                PlayElementBeat(target, descriptor.IsBeneficial ? "feedback-boost" : "feedback-status", 220);
+            });
+        }
+
+        private void HandleStatusEnded(StatusExpiredEvent payload)
+        {
+            ApplyStatusStateClass(CombatantElement(payload.Target), payload.StatusType, false);
+        }
+
+        private void HandleStatusEnded(StatusCleansedEvent payload)
+        {
+            ApplyStatusStateClass(CombatantElement(payload.Target), payload.StatusType, false);
         }
 
         private void DetectBeneficialResourceFeedback(CombatantState state, VisualElement element)
@@ -1181,12 +1219,31 @@ namespace KernelPanic.UI
                 return;
             }
 
-            element.RemoveFromClassList(className);
-            element.AddToClassList(className);
-            ScheduleFeedback(() => element.RemoveFromClassList(className), UIPreferences.ReducedMotion ? 80 : durationMs);
+            int version = ++feedbackBeatVersion;
+            feedbackBeatVersions[element] = version;
+            RemoveFeedbackBeatClasses(element);
+            ScheduleFeedback(() =>
+            {
+                if (!feedbackBeatVersions.TryGetValue(element, out int currentVersion) || currentVersion != version)
+                {
+                    return;
+                }
+
+                element.AddToClassList(className);
+                ScheduleFeedback(() =>
+                {
+                    if (!feedbackBeatVersions.TryGetValue(element, out int removeVersion) || removeVersion != version)
+                    {
+                        return;
+                    }
+
+                    element.RemoveFromClassList(className);
+                    feedbackBeatVersions.Remove(element);
+                }, UIPreferences.ReducedMotion ? 80 : durationMs);
+            }, 0);
         }
 
-        private void SpawnFloatingText(VisualElement anchor, string text, string className)
+        private void SpawnFloatingText(VisualElement anchor, string text, string className, int cascadeOffset = 0)
         {
             if (feedbackLayer == null || anchor == null)
             {
@@ -1209,8 +1266,10 @@ namespace KernelPanic.UI
                 }
             }
 
-            label.style.left = anchorRect.center.x - rootRect.x - 30f;
-            label.style.top = anchorRect.center.y - rootRect.y - 16f;
+            float offsetX = (((cascadeOffset % 5) - 2) * 14f);
+            float offsetY = ((cascadeOffset % 3) * 5f);
+            label.style.left = anchorRect.center.x - rootRect.x - 30f + offsetX;
+            label.style.top = anchorRect.center.y - rootRect.y - 16f + offsetY;
             feedbackLayer.Add(label);
 
             if (UIPreferences.ReducedMotion)
@@ -1222,10 +1281,42 @@ namespace KernelPanic.UI
 
             ScheduleFeedback(() =>
             {
-                label.style.top = anchorRect.center.y - rootRect.y - 42f;
+                label.style.top = anchorRect.center.y - rootRect.y - 42f + offsetY;
                 label.style.opacity = 0f;
             }, 20);
             ScheduleFeedback(() => label.RemoveFromHierarchy(), 520);
+        }
+
+        private void SpawnImpactMarker(VisualElement anchor, bool critical, bool mitigated, int cascadeOffset)
+        {
+            if (feedbackLayer == null || anchor == null)
+            {
+                return;
+            }
+
+            Rect anchorRect = anchor.worldBound;
+            Rect rootRect = root.worldBound;
+            Label marker = new(critical ? "crit" : mitigated ? "clang" : "hit");
+            marker.AddToClassList("impact-marker");
+            marker.AddToClassList(critical ? "impact-marker-crit" : mitigated ? "impact-marker-clang" : "impact-marker-hit");
+
+            float lane = (cascadeOffset % 4) * 18f;
+            marker.style.left = anchorRect.xMax - rootRect.x - 54f;
+            marker.style.top = anchorRect.y - rootRect.y + 8f + lane;
+            feedbackLayer.Add(marker);
+
+            if (UIPreferences.ReducedMotion)
+            {
+                ScheduleFeedback(() => marker.RemoveFromHierarchy(), 260);
+                return;
+            }
+
+            ScheduleFeedback(() =>
+            {
+                marker.style.left = anchorRect.xMax - rootRect.x - 34f;
+                marker.style.opacity = 0f;
+            }, 20);
+            ScheduleFeedback(() => marker.RemoveFromHierarchy(), 420);
         }
 
         private void FlyCardGhost(CardInstance card, VisualElement source, VisualElement destination, string className)
@@ -1265,22 +1356,23 @@ namespace KernelPanic.UI
             ScheduleFeedback(() => ghost.RemoveFromHierarchy(), 360);
         }
 
-        private void SpawnDeathGhost(VisualElement source)
+        private void SpawnDeathGhost(Rect sourceRect)
         {
-            if (feedbackLayer == null || source == null)
+            if (feedbackLayer == null || sourceRect.width <= 0f || sourceRect.height <= 0f)
             {
                 return;
             }
 
             Rect rootRect = root.worldBound;
-            Rect sourceRect = source.worldBound;
+            float ghostWidth = Mathf.Min(sourceRect.width, 156f);
+            float ghostHeight = Mathf.Min(sourceRect.height, 132f);
             VisualElement ghost = new();
             ghost.AddToClassList("death-ghost");
             ghost.style.position = Position.Absolute;
-            ghost.style.left = sourceRect.x - rootRect.x;
-            ghost.style.top = sourceRect.y - rootRect.y;
-            ghost.style.width = sourceRect.width;
-            ghost.style.height = sourceRect.height;
+            ghost.style.left = sourceRect.center.x - rootRect.x - (ghostWidth * 0.5f);
+            ghost.style.top = sourceRect.center.y - rootRect.y - (ghostHeight * 0.5f);
+            ghost.style.width = ghostWidth;
+            ghost.style.height = ghostHeight;
             feedbackLayer.Add(ghost);
 
             if (UIPreferences.ReducedMotion)
@@ -1297,14 +1389,52 @@ namespace KernelPanic.UI
             ScheduleFeedback(() => ghost.RemoveFromHierarchy(), 360);
         }
 
-        private void FlashDamageVignette()
+        private void FlashDamageVignette(bool critical)
         {
             if (damageVignette == null)
             {
                 return;
             }
 
-            PlayElementBeat(damageVignette, "damage-vignette-on", UIPreferences.ReducedMotion ? 120 : 240);
+            PlayElementBeat(damageVignette, critical ? "damage-vignette-crit" : "damage-vignette-on", UIPreferences.ReducedMotion ? 120 : critical ? 320 : 240);
+        }
+
+        private static void RemoveFeedbackBeatClasses(VisualElement element)
+        {
+            element.RemoveFromClassList("feedback-hit");
+            element.RemoveFromClassList("feedback-crit");
+            element.RemoveFromClassList("feedback-clang");
+            element.RemoveFromClassList("feedback-block");
+            element.RemoveFromClassList("feedback-status");
+            element.RemoveFromClassList("feedback-boost");
+            element.RemoveFromClassList("feedback-killed");
+            element.RemoveFromClassList("enemy-anticipating");
+            element.RemoveFromClassList("enemy-acting");
+            element.RemoveFromClassList("phase-pulse");
+            element.RemoveFromClassList("cycles-spent-beat");
+            element.RemoveFromClassList("feedback-denied");
+            element.RemoveFromClassList("queue-chip-resolve");
+            element.RemoveFromClassList("stack-chip-resolve");
+            element.RemoveFromClassList("hand-card-drawn");
+            element.RemoveFromClassList("damage-vignette-on");
+            element.RemoveFromClassList("damage-vignette-crit");
+        }
+
+        private void ScheduleCombatBeat(Action action, int holdMs = 0)
+        {
+            ScheduleCombatBeat(_ => action?.Invoke(), holdMs);
+        }
+
+        private void ScheduleCombatBeat(Action<int> action, int holdMs = 0)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            int beatIndex = feedbackCascadeIndex++;
+            int delay = UIPreferences.ReducedMotion ? 0 : Mathf.Min(beatIndex * 120, 840);
+            ScheduleFeedback(() => action(beatIndex), delay + (UIPreferences.ReducedMotion ? 0 : holdMs));
         }
 
         private void ScheduleFeedback(Action action, int delayMs)
@@ -1315,6 +1445,47 @@ namespace KernelPanic.UI
             }
 
             root.schedule.Execute(action).StartingIn(Mathf.Max(0, delayMs));
+        }
+
+        private static void ApplyStatusStateClasses(VisualElement element, CombatantState state)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            RemoveStatusStateClasses(element);
+            if (state == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < state.Statuses.Count; i++)
+            {
+                ApplyStatusStateClass(element, state.Statuses[i].Type, true);
+            }
+        }
+
+        private static void ApplyStatusStateClass(VisualElement element, StatusType statusType, bool enabled)
+        {
+            string className = StatusStateClass(statusType);
+            if (element == null || string.IsNullOrEmpty(className))
+            {
+                return;
+            }
+
+            element.EnableInClassList(className, enabled);
+        }
+
+        private static void RemoveStatusStateClasses(VisualElement element)
+        {
+            ApplyStatusStateClass(element, StatusType.MemoryLeak, false);
+            ApplyStatusStateClass(element, StatusType.Segfault, false);
+            ApplyStatusStateClass(element, StatusType.RaceCondition, false);
+            ApplyStatusStateClass(element, StatusType.Deprecated, false);
+            ApplyStatusStateClass(element, StatusType.DependencyError, false);
+            ApplyStatusStateClass(element, StatusType.Deadlock, false);
+            ApplyStatusStateClass(element, StatusType.UnattendedUpgrades, false);
         }
 
         private void HandleCombatLog(string message)
@@ -1514,6 +1685,21 @@ namespace KernelPanic.UI
                 EnemyIntentKind.StatusAttack => "intent-attack",
                 EnemyIntentKind.Defend => "intent-defend",
                 _ => "intent-special"
+            };
+        }
+
+        private static string StatusStateClass(StatusType statusType)
+        {
+            return statusType switch
+            {
+                StatusType.MemoryLeak => "status-state-leaking",
+                StatusType.Segfault => "status-state-segfault",
+                StatusType.RaceCondition => "status-state-race",
+                StatusType.Deprecated => "status-state-deprecated",
+                StatusType.DependencyError => "status-state-dependency-error",
+                StatusType.Deadlock => "status-state-deadlock",
+                StatusType.UnattendedUpgrades => "status-state-upgrading",
+                _ => string.Empty
             };
         }
 

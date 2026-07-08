@@ -31,14 +31,24 @@ namespace KernelPanic.Combat
 
     public readonly struct DamageResult
     {
-        public DamageResult(int finalAmount, bool targetDefeated)
+        public DamageResult(int finalAmount, bool targetDefeated, bool wasCritical = false, int absorbedAmount = 0, int shieldDamage = 0, int uptimeDamage = 0, int incomingAmount = 0)
         {
             FinalAmount = finalAmount;
             TargetDefeated = targetDefeated;
+            WasCritical = wasCritical;
+            AbsorbedAmount = absorbedAmount;
+            ShieldDamage = shieldDamage;
+            UptimeDamage = uptimeDamage;
+            IncomingAmount = incomingAmount;
         }
 
         public int FinalAmount { get; }
         public bool TargetDefeated { get; }
+        public bool WasCritical { get; }
+        public int AbsorbedAmount { get; }
+        public int ShieldDamage { get; }
+        public int UptimeDamage { get; }
+        public int IncomingAmount { get; }
     }
 
     /// <summary>
@@ -55,11 +65,11 @@ namespace KernelPanic.Combat
 
             int amount = Mathf.Max(0, request.Amount);
             amount = ApplyMultipliers(amount, request);
-            amount = ApplyCrit(amount, request);
+            amount = ApplyCrit(amount, request, out bool wasCritical);
             amount = ApplyResistancesAndWeaknesses(amount, request);
 
-            int finalAmount = ApplyShieldAndUptime(amount, request);
-            GameEvents.RaiseDamageDealt(new DamageDealtEvent(request.Source, request.Target, finalAmount, request.Language));
+            int finalAmount = ApplyShieldAndUptime(amount, request, out int absorbedAmount, out int shieldDamage, out int uptimeDamage);
+            GameEvents.RaiseDamageDealt(new DamageDealtEvent(request.Source, request.Target, finalAmount, request.Language, amount, absorbedAmount, wasCritical, shieldDamage, uptimeDamage));
 
             bool defeated = false;
             if (request.Target.CurrentUptime <= 0 && !request.Target.IsDefeated)
@@ -69,7 +79,7 @@ namespace KernelPanic.Combat
                 GameEvents.RaiseCombatantDefeated(new CombatantDefeatedEvent(request.Target));
             }
 
-            return new DamageResult(finalAmount, defeated);
+            return new DamageResult(finalAmount, defeated, wasCritical, absorbedAmount, shieldDamage, uptimeDamage, amount);
         }
 
         private static int ApplyMultipliers(int amount, DamageRequest request)
@@ -85,15 +95,16 @@ namespace KernelPanic.Combat
             return Mathf.RoundToInt(amount * (multiplier / 100f));
         }
 
-        private static int ApplyCrit(int amount, DamageRequest request)
+        private static int ApplyCrit(int amount, DamageRequest request, out bool wasCritical)
         {
-            if (request.Source != null && request.Source.forceMaxRolls)
+            wasCritical = false;
+            if (!request.CanCrit || amount <= 0 || request.Source != null && request.Source.forceMaxRolls)
             {
                 return amount;
             }
 
-            // TODO: Add crit calculation and crit modifiers.
-            return amount;
+            wasCritical = RandomRoll.RollRange(1, 100, new RollContext(request.Source)) <= 25;
+            return wasCritical ? Mathf.CeilToInt(amount * 1.5f) : amount;
         }
 
         private static int ApplyResistancesAndWeaknesses(int amount, DamageRequest request)
@@ -104,11 +115,11 @@ namespace KernelPanic.Combat
             return amount;
         }
 
-        private static int ApplyShieldAndUptime(int amount, DamageRequest request)
+        private static int ApplyShieldAndUptime(int amount, DamageRequest request, out int absorbedAmount, out int shieldDamage, out int uptimeDamage)
         {
             CombatantState target = request.Target;
             int remaining = amount;
-            int shieldDamage = 0;
+            shieldDamage = 0;
 
             if (!request.TrueDamage && target.Shield > 0)
             {
@@ -117,8 +128,9 @@ namespace KernelPanic.Combat
                 remaining -= shieldDamage;
             }
 
-            int uptimeDamage = Mathf.Min(target.CurrentUptime, remaining);
+            uptimeDamage = Mathf.Min(target.CurrentUptime, remaining);
             target.CurrentUptime = Mathf.Max(0, target.CurrentUptime - uptimeDamage);
+            absorbedAmount = Mathf.Max(0, amount - shieldDamage - uptimeDamage);
             return shieldDamage + uptimeDamage;
         }
     }

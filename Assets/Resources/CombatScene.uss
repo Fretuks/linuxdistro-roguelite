@@ -1034,13 +1034,19 @@
     border-right-width: 10px;
     border-top-width: 10px;
     border-bottom-width: 10px;
-    border-color: var(--kp-danger);
+    border-color: transparent;
     transition-property: opacity;
     transition-duration: 120ms;
 }
 
 .damage-vignette-on {
     opacity: 0.62;
+    border-color: var(--kp-danger);
+}
+
+.damage-vignette-crit {
+    opacity: 0.82;
+    border-color: var(--kp-kill);
 }
 
 .float-number {
@@ -1084,6 +1090,40 @@
     transition-duration: 0ms;
 }
 
+.impact-marker {
+    position: absolute;
+    min-width: 48px;
+    height: 18px;
+    padding-left: 4px;
+    padding-right: 4px;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    font-size: 10px;
+    opacity: 1;
+    background-color: var(--kp-bg-deep);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    transition-property: left, opacity;
+    transition-duration: 320ms;
+}
+
+.impact-marker-hit {
+    color: var(--kp-damage);
+    border-color: var(--kp-damage);
+}
+
+.impact-marker-crit {
+    color: var(--kp-kill);
+    border-color: var(--kp-kill);
+}
+
+.impact-marker-clang {
+    color: var(--kp-beneficial);
+    border-color: var(--kp-beneficial);
+}
+
 .feedback-card-ghost {
     opacity: 0.9;
     transition-property: left, top, opacity;
@@ -1110,15 +1150,28 @@
 .feedback-hit {
     background-color: var(--kp-action-hover);
     border-color: var(--kp-damage);
+    translate: 3px 0;
     scale: 1.025 0.98;
-    transition-property: scale, background-color, border-color;
+    transition-property: scale, translate, background-color, border-color;
     transition-duration: 90ms;
 }
 
+.feedback-crit {
+    background-color: #2d0707;
+    border-color: var(--kp-kill);
+    translate: 8px 0;
+    scale: 1.08 0.9;
+    transition-property: scale, translate, background-color, border-color;
+    transition-duration: 170ms;
+}
+
+.feedback-clang,
 .feedback-block {
+    background-color: var(--kp-bg-deep);
     border-color: var(--kp-beneficial);
-    transition-property: border-color;
-    transition-duration: 90ms;
+    scale: 1.02 1.02;
+    transition-property: scale, background-color, border-color;
+    transition-duration: 80ms;
 }
 
 .feedback-status {
@@ -1130,23 +1183,33 @@
 }
 
 .feedback-killed {
-    opacity: 0.5;
-    scale: 0.95 0.95;
+    opacity: 0.28;
+    scale: 0.76 0.28;
+    background-color: #240606;
     border-color: var(--kp-kill);
-    transition-property: opacity, scale, border-color;
-    transition-duration: 180ms;
+    transition-property: opacity, scale, background-color, border-color;
+    transition-duration: 220ms;
 }
 
 .death-ghost {
-    background-color: var(--kp-panel-raised);
+    background-color: #240606;
     border-left-width: 2px;
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
     border-color: var(--kp-kill);
-    opacity: 0.72;
+    opacity: 0.74;
     transition-property: opacity, scale;
-    transition-duration: 300ms;
+    transition-duration: 220ms;
+}
+
+.enemy-anticipating {
+    border-color: var(--kp-accent);
+    translate: -8px 0;
+    scale: 0.94 1.06;
+    background-color: var(--kp-action-hover);
+    transition-property: translate, scale, border-color, background-color;
+    transition-duration: 170ms;
 }
 
 .enemy-acting {
@@ -1154,6 +1217,33 @@
     scale: 1.035 1.035;
     transition-property: scale, border-color;
     transition-duration: 120ms;
+}
+
+.status-state-segfault,
+.status-state-deadlock {
+    opacity: 0.68;
+    border-color: var(--kp-lang-haskell);
+    transition-property: opacity, border-color;
+    transition-duration: 300ms;
+}
+
+.status-state-race {
+    border-color: var(--kp-warning);
+    translate: 1px 0;
+    transition-property: translate, border-color;
+    transition-duration: 120ms;
+}
+
+.status-state-deprecated,
+.status-state-dependency-error {
+    border-color: var(--kp-text-dim);
+    opacity: 0.76;
+}
+
+.status-state-upgrading {
+    border-color: var(--kp-beneficial);
+    border-right-color: var(--kp-beneficial);
+    border-right-width: 3px;
 }
 
 .phase-pulse {
@@ -1197,10 +1287,14 @@
 }
 
 .reduced-motion .float-number,
+.reduced-motion .impact-marker,
 .reduced-motion .feedback-card-ghost,
 .reduced-motion .damage-vignette,
 .reduced-motion .feedback-hit,
+.reduced-motion .feedback-crit,
+.reduced-motion .feedback-clang,
 .reduced-motion .feedback-killed,
+.reduced-motion .enemy-anticipating,
 .reduced-motion .enemy-acting,
 .reduced-motion .phase-pulse,
 .reduced-motion .cycles-spent-beat,

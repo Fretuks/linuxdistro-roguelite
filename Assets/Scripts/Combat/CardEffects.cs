@@ -14,7 +14,7 @@ namespace KernelPanic.Combat
         private readonly bool _canCrit;
         private readonly bool _allEnemies;
 
-        public DealDamageEffect(int minAmount, int maxAmount, Language language, bool trueDamage = false, bool canCrit = false, bool allEnemies = false)
+        public DealDamageEffect(int minAmount, int maxAmount, Language language, bool trueDamage = false, bool canCrit = true, bool allEnemies = false)
         {
             _minAmount = minAmount;
             _maxAmount = maxAmount;
@@ -78,6 +78,12 @@ namespace KernelPanic.Combat
         public void Execute(CombatContext context)
         {
             int amount = UpgradeMath.ScaleShield(UpgradeMath.ApplySourceFlatBonus(_amount, context), context.Card);
+            if (!context.CombatManager.CanPlayerReceiveCardShield(context.Card))
+            {
+                context.CombatManager.ReportEffectResult($"shield blocked: {amount}");
+                return;
+            }
+
             context.Source.Shield += amount;
             context.CombatManager.ReportEffectResult($"gained {amount} shield");
         }
@@ -98,6 +104,12 @@ namespace KernelPanic.Combat
         {
             int amount = _baseAmount + (context.Card != null && context.Card.WasFirstCardThisTurn ? _firstCardBonus : 0);
             amount = UpgradeMath.ScaleShield(UpgradeMath.ApplySourceFlatBonus(amount, context), context.Card);
+            if (!context.CombatManager.CanPlayerReceiveCardShield(context.Card))
+            {
+                context.CombatManager.ReportEffectResult($"shield blocked: {amount}");
+                return;
+            }
+
             context.Source.Shield += amount;
             context.CombatManager.ReportEffectResult($"gained {amount} shield");
         }
@@ -129,7 +141,7 @@ namespace KernelPanic.Combat
                 int roll = RandomRoll.RollRange(1, 100, new RollContext(context.Source));
                 int damageAmount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_damageAmount, context), context.Card);
                 int amount = roll <= _successPercent ? damageAmount : 0;
-                context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, false, false));
+                context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, false, true));
                 context.CombatManager.ReportEffectResult(amount == 0 ? "typeof -> NaN (0)" : $"typeof -> {amount}");
             }
         }
@@ -176,6 +188,13 @@ namespace KernelPanic.Combat
         {
             if (_targetSelf)
             {
+                if (StatusEffectController.GetDescriptor(_statusType).IsBeneficial
+                    && !context.CombatManager.CanPlayerReceiveCardBuff(context.Card))
+                {
+                    context.CombatManager.ReportEffectResult($"{_statusType} blocked");
+                    return;
+                }
+
                 context.StatusEffects.Apply(context.Source, _statusType, UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_stacks, context), context.Card), _duration, context.Source, _skipNextTick);
                 return;
             }
@@ -473,10 +492,16 @@ namespace KernelPanic.Combat
 
                 int amount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_amount, context), context.Card);
                 int survivable = target.CurrentUptime + target.Shield;
-                context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, false, false));
-                int overkill = UnityEngine.Mathf.Max(0, amount - survivable);
+                DamageResult result = context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, false, true));
+                int overkill = UnityEngine.Mathf.Max(0, result.IncomingAmount - survivable);
                 if (overkill > 0)
                 {
+                    if (!context.CombatManager.CanPlayerReceiveCardShield(context.Card))
+                    {
+                        context.CombatManager.ReportEffectResult($"overkill shield blocked: {overkill}");
+                        continue;
+                    }
+
                     context.Source.Shield += overkill;
                     context.CombatManager.ReportEffectResult($"overkill -> {overkill} shield");
                 }

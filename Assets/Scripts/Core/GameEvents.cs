@@ -157,17 +157,39 @@ namespace KernelPanic.Core
     public readonly struct DamageDealtEvent
     {
         public DamageDealtEvent(CombatantState source, CombatantState target, int amount, Language language)
+            : this(source, target, amount, language, amount, 0, false)
+        {
+        }
+
+        public DamageDealtEvent(CombatantState source, CombatantState target, int amount, Language language, int incomingAmount, int absorbedAmount, bool wasCritical)
+            : this(source, target, amount, language, incomingAmount, absorbedAmount, wasCritical, 0, amount)
+        {
+        }
+
+        public DamageDealtEvent(CombatantState source, CombatantState target, int amount, Language language, int incomingAmount, int absorbedAmount, bool wasCritical, int shieldDamage, int uptimeDamage)
         {
             Source = source;
             Target = target;
             Amount = amount;
             Language = language;
+            IncomingAmount = incomingAmount;
+            AbsorbedAmount = absorbedAmount;
+            WasCritical = wasCritical;
+            ShieldDamage = shieldDamage;
+            UptimeDamage = uptimeDamage;
         }
 
         public CombatantState Source { get; }
         public CombatantState Target { get; }
         public int Amount { get; }
         public Language Language { get; }
+        public int IncomingAmount { get; }
+        public int AbsorbedAmount { get; }
+        public bool WasCritical { get; }
+        public int ShieldDamage { get; }
+        public int UptimeDamage { get; }
+        public bool WasFullyBlocked => IncomingAmount > 0 && UptimeDamage <= 0;
+        public bool WasMitigated => ShieldDamage > 0 || AbsorbedAmount > 0 || WasFullyBlocked;
     }
 
     /// <summary>

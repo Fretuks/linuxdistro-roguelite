@@ -895,6 +895,48 @@ namespace KernelPanic.Combat
             return string.Equals(runConfig?.Distro?.Id, id, StringComparison.OrdinalIgnoreCase);
         }
 
+        public bool CanPlayerReceiveCardShield(CardInstance card)
+        {
+            return CanPlayerReceiveCardBuff(card);
+        }
+
+        public bool CanPlayerReceiveCardHeal(CardInstance card)
+        {
+            return CanPlayerReceiveCardBuff(card);
+        }
+
+        public bool CanPlayerReceiveCardBuff(CardInstance card)
+        {
+            return !IsDistro("mint") || IsCurrentDistroExclusiveCard(card);
+        }
+
+        private bool IsCurrentDistroExclusiveCard(CardInstance card)
+        {
+            CardDefinition definition = card?.Definition;
+            IReadOnlyList<CardDefinition> exclusiveCards = runConfig?.Distro?.ExclusiveCards;
+            if (definition == null || exclusiveCards == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < exclusiveCards.Count; i++)
+            {
+                CardDefinition exclusive = exclusiveCards[i];
+                if (exclusive == null)
+                {
+                    continue;
+                }
+
+                if (ReferenceEquals(exclusive, definition)
+                    || string.Equals(exclusive.Id, definition.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private CombatContext BuildContext(CardInstance card, IReadOnlyList<CombatantState> targets)
         {
             return new CombatContext(card, playerState, targets, this, damagePipeline, statusEffects, deckController, handController, enemies);
@@ -1151,7 +1193,7 @@ namespace KernelPanic.Combat
             List<CombatantState> targets = LivingEnemyStates();
             for (int i = 0; i < targets.Count; i++)
             {
-                damagePipeline.DealDamage(new DamageRequest(playerState, targets[i], amount, language, false, false));
+                damagePipeline.DealDamage(new DamageRequest(playerState, targets[i], amount, language, false, true));
             }
 
             Log($"{label}: dealt {amount} to all enemies");
