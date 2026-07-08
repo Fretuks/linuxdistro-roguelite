@@ -72,6 +72,9 @@ namespace KernelPanic.UI
             LoadStyles();
             ApplyTerminalFont();
             BuildLayout();
+
+            root.AddToClassList("scene-fade-hidden");
+            root.schedule.Execute(() => root.RemoveFromClassList("scene-fade-hidden")).StartingIn(0);
         }
 
         private void ApplyTerminalFont()
@@ -515,7 +518,7 @@ namespace KernelPanic.UI
                 overlay.Add(OverlayLine($"waves cleared: {runManager.WavesCleared}"));
                 overlay.Add(OverlayLine($"+{runManager.AccruedBandwidth} bandwidth"));
                 overlay.Add(OverlayLine($"+{runManager.AccruedEntropy} entropy"));
-                Button returnButton = new(SceneLoader.LoadMainMenu) { text = "> return to menu" };
+                Button returnButton = new(() => SceneLoader.LoadMainMenu(root)) { text = "> return to menu" };
                 returnButton.AddToClassList("primary-action");
                 overlay.Add(returnButton);
                 return;

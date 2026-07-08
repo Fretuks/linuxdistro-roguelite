@@ -144,6 +144,8 @@ Button {
     border-bottom-color: var(--kp-amber);
     background-color: var(--kp-bg-solid);
     color: var(--kp-amber);
+    transition-property: background-color, color;
+    transition-duration: 120ms;
 }
 
 .currency-plus-button:hover {
@@ -205,6 +207,8 @@ Button {
     margin-bottom: 3px;
     border-left-width: 2px;
     border-left-color: transparent;
+    transition-property: background-color, border-left-color;
+    transition-duration: 120ms;
 }
 
 .command-row:hover,
@@ -592,6 +596,8 @@ Button {
     margin-bottom: 3px;
     border-left-width: 2px;
     border-left-color: transparent;
+    transition-property: background-color, border-left-color;
+    transition-duration: 120ms;
 }
 
 .gacha-banner-row:hover,
@@ -743,6 +749,8 @@ Button {
     border-bottom-color: transparent;
     background-color: transparent;
     color: var(--kp-muted);
+    transition-property: color, border-bottom-color;
+    transition-duration: 120ms;
 }
 
 .collection-tab.selected {
@@ -873,6 +881,8 @@ Button {
     border-left-width: 2px;
     border-left-color: var(--kp-primary);
     background-color: var(--kp-hover);
+    transition-property: background-color;
+    transition-duration: 120ms;
 }
 
 .version-upgrade-command:hover {
@@ -940,6 +950,8 @@ Button {
     padding: 8px 10px;
     border-left-width: 2px;
     border-left-color: transparent;
+    transition-property: background-color, border-left-color;
+    transition-duration: 120ms;
 }
 
 .collection-row.selected {
@@ -1039,6 +1051,8 @@ Button {
     margin-top: 4px;
     border-left-width: 2px;
     border-left-color: transparent;
+    transition-property: background-color, border-left-color;
+    transition-duration: 120ms;
 }
 
 .package-row.selected,
@@ -1178,6 +1192,25 @@ Button {
     align-items: center;
     justify-content: center;
     background-color: rgba(5, 8, 7, 0.88);
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 160ms;
+}
+
+.modal-overlay.modal-open {
+    opacity: 1;
+}
+
+.modal-overlay > .starter-dialog,
+.modal-overlay > .root-credit-dialog {
+    scale: 0.94 0.94;
+    transition-property: scale;
+    transition-duration: 160ms;
+}
+
+.modal-overlay.modal-open > .starter-dialog,
+.modal-overlay.modal-open > .root-credit-dialog {
+    scale: 1 1;
 }
 
 .starter-dialog {
@@ -1230,6 +1263,8 @@ Button {
     background-color: transparent;
     color: var(--kp-amber);
     -unity-text-align: middle-center;
+    transition-property: color, border-left-color, border-right-color, border-top-color, border-bottom-color;
+    transition-duration: 120ms;
 }
 
 .modal-close-button:hover {
@@ -1317,6 +1352,12 @@ Button {
     border-top-color: var(--kp-border);
     border-bottom-color: var(--kp-border);
     background-color: var(--kp-panel);
+    transition-property: background-color, border-left-color, border-right-color, border-top-color, border-bottom-color, scale;
+    transition-duration: 140ms;
+}
+
+.starter-card:hover {
+    scale: 1.015 1.015;
 }
 
 .starter-card.selected {
@@ -1364,6 +1405,8 @@ Button {
     background-color: var(--kp-panel);
     color: var(--kp-primary);
     font-size: 16px;
+    transition-property: background-color, color;
+    transition-duration: 120ms;
 }
 
 .terminal-button:hover {
@@ -1396,4 +1439,93 @@ Button {
 .settings-toggle,
 .prompt-text {
     color: var(--kp-primary);
+}
+
+.scene-fade-curtain {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgb(0, 0, 0);
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 200ms;
+}
+
+.scene-fade-curtain.scene-fade-visible {
+    opacity: 1;
+}
+
+.gacha-result-block {
+    margin-top: 8px;
+}
+
+.gacha-result-list {
+    flex-direction: column;
+    margin-top: 8px;
+}
+
+.gacha-result-card {
+    flex-direction: row;
+    align-items: center;
+    min-height: 26px;
+    padding-left: 8px;
+    padding-right: 8px;
+    margin-bottom: 4px;
+    border-left-width: 2px;
+    border-left-color: var(--kp-primary-dim);
+    background-color: var(--kp-hover);
+    color: var(--kp-primary);
+    opacity: 1;
+    translate: 0 0;
+    scale: 1 1;
+    transition-property: opacity, translate, scale, border-left-color, background-color;
+    transition-duration: 220ms;
+}
+
+.gacha-result-card-hidden {
+    opacity: 0;
+    translate: -12px 0;
+    scale: 0.96 0.96;
+}
+
+.gacha-result-card-shown {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1 1;
+}
+
+.gacha-result-card-rare {
+    border-left-color: var(--kp-primary);
+}
+
+.gacha-result-card-legendary {
+    border-left-color: var(--kp-amber);
+    color: var(--kp-amber);
+}
+
+.gacha-result-card-flash {
+    background-color: var(--kp-amber);
+    color: var(--kp-bg);
+    transition-property: background-color, color;
+    transition-duration: 90ms;
+}
+
+.reduced-motion .scene-fade-curtain,
+.reduced-motion .modal-overlay,
+.reduced-motion .modal-overlay > .starter-dialog,
+.reduced-motion .modal-overlay > .root-credit-dialog,
+.reduced-motion .command-row,
+.reduced-motion .gacha-banner-row,
+.reduced-motion .collection-tab,
+.reduced-motion .collection-row,
+.reduced-motion .package-row,
+.reduced-motion .starter-card,
+.reduced-motion .terminal-button,
+.reduced-motion .currency-plus-button,
+.reduced-motion .modal-close-button,
+.reduced-motion .version-upgrade-command,
+.reduced-motion .gacha-result-card {
+    transition-duration: 0ms;
 }

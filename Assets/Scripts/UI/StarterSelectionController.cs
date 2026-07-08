@@ -15,6 +15,8 @@ namespace KernelPanic.UI
     public sealed class StarterSelectionController
     {
         private const int StarterCount = 3;
+        private const string ModalOpenClassName = "modal-open";
+        private const int ModalTransitionMs = 160;
 
         private readonly List<VisualElement> _cards = new();
         private readonly List<Label> _names = new();
@@ -35,6 +37,8 @@ namespace KernelPanic.UI
         private bool _showingError;
         private bool _confirming;
         private IVisualElementScheduledItem _closeSchedule;
+        private IVisualElementScheduledItem _modalOpenSchedule;
+        private IVisualElementScheduledItem _modalHideSchedule;
 
         public bool IsActive => _active;
 
@@ -90,7 +94,7 @@ namespace KernelPanic.UI
             _errorLabel.AddToClassList("hidden");
             _options.RemoveFromClassList("hidden");
             _confirmLabel.AddToClassList("hidden");
-            _modal.RemoveFromClassList("hidden");
+            OpenModal();
 
             for (int i = 0; i < _cards.Count; i++)
             {
@@ -165,6 +169,8 @@ namespace KernelPanic.UI
         public void PauseSchedules()
         {
             _closeSchedule?.Pause();
+            _modalOpenSchedule?.Pause();
+            _modalHideSchedule?.Pause();
         }
 
         private bool TryGetStarters(out IReadOnlyList<DistroDefinition> starters, out string error)
@@ -204,8 +210,16 @@ namespace KernelPanic.UI
             _confirmLabel.AddToClassList("hidden");
             _errorLabel.text = $"starter selection unavailable: {error}. press enter to continue.";
             _errorLabel.RemoveFromClassList("hidden");
-            _modal.RemoveFromClassList("hidden");
+            OpenModal();
             _root.Focus();
+        }
+
+        private void OpenModal()
+        {
+            _modalHideSchedule?.Pause();
+            _modal.RemoveFromClassList("hidden");
+            _modalOpenSchedule?.Pause();
+            _modalOpenSchedule = _modal.schedule.Execute(() => _modal.AddToClassList(ModalOpenClassName)).StartingIn(0);
         }
 
         private void Select(int index)
@@ -292,7 +306,11 @@ namespace KernelPanic.UI
             _active = false;
             _confirming = false;
             _showingError = false;
-            _modal.AddToClassList("hidden");
+            _modalOpenSchedule?.Pause();
+            _modal.RemoveFromClassList(ModalOpenClassName);
+            int delay = UIPreferences.ReducedMotion ? 0 : ModalTransitionMs;
+            _modalHideSchedule?.Pause();
+            _modalHideSchedule = _modal.schedule.Execute(() => _modal.AddToClassList("hidden")).StartingIn(delay);
             _root.Focus();
         }
     }
