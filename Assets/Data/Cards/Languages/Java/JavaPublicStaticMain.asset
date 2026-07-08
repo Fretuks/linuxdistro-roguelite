@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
+  m_Name: JavaPublicStaticMain
+  m_EditorClassIdentifier: 
+  id: lang_java_public_static_main
+  displayName: public static void main
+  description: uses 2 RAM. deal 7. JIT: Java cards cost 1 less this combat each time you play a Java card; the discount decays by 1 after each wave.
+  flavorText: verbose, but warmed up.
+  language: 8
+  rarity: 0
+  cycleCost: 3
+  resolutionTrack: 0
+  distroExclusive: 0
+  isToken: 0
+  isRunOnly: 0
+  designNotes: Java starter heavy hit; JIT cost reduction is handled by combat-wide Java warmup and cools by 1 between waves.
+  requiresSystem: []
+  upgradeTarget: {fileID: 0}
+  effects: []

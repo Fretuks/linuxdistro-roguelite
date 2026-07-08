@@ -10,18 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: FirstToPackage
+  m_Name: JavaSystemOutPrintln
   m_EditorClassIdentifier: 
-  id: fedora_first_to_package
-  displayName: first-to-package
-  description: deal 7, then Java cards cost 1 less this turn.
-  flavorText: Fedora ships new tech first; everything after comes cheaper.
+  id: lang_java_system_out_println
+  displayName: System.out.println
+  description: uses 2 RAM. deal 5. JIT applies.
+  flavorText: standard output, standard damage.
   language: 8
   rarity: 0
-  cycleCost: 1
+  cycleCost: 2
   resolutionTrack: 0
-  distroExclusive: 1
+  distroExclusive: 0
   isToken: 0
-  designNotes: Java native tempo card; reduces the effective cost of all Java cards for the current turn after resolving.
+  isRunOnly: 0
+  designNotes: Java starter mid-cost damage; benefits from combat-wide JIT warmup.
+  requiresSystem: []
   upgradeTarget: {fileID: 0}
   effects: []

@@ -25,6 +25,7 @@ namespace KernelPanic.Combat
         public int UpgradeLevel { get; private set; }
         public int QueuePlayCount { get; private set; }
         public bool WasFirstCardThisTurn { get; private set; }
+        public bool HadFedoraNonCrashBonus { get; private set; }
         public bool IsBroken { get; set; }
         public bool IsLocked { get; set; }
         public bool CanUpgrade => UpgradeLevel == 0;
@@ -100,6 +101,12 @@ namespace KernelPanic.Combat
         public void MarkPlayedThisTurn(bool wasFirst)
         {
             WasFirstCardThisTurn = wasFirst;
+            HadFedoraNonCrashBonus = false;
+        }
+
+        public void MarkFedoraNonCrashBonus()
+        {
+            HadFedoraNonCrashBonus = true;
         }
 
         public CardInstance CopyForCombat()
@@ -117,6 +124,7 @@ namespace KernelPanic.Combat
             copy.UpgradeLevel = UpgradeLevel;
             copy.QueuePlayCount = QueuePlayCount;
             copy.WasFirstCardThisTurn = WasFirstCardThisTurn;
+            copy.HadFedoraNonCrashBonus = HadFedoraNonCrashBonus;
             copy.SetTargetSnapshot(TargetSnapshot);
             return copy;
         }
@@ -142,6 +150,7 @@ namespace KernelPanic.Combat
             TemporaryCostDelta = 0;
             QueuePlayCount = 0;
             WasFirstCardThisTurn = false;
+            HadFedoraNonCrashBonus = false;
             IsBroken = false;
             IsLocked = false;
             ClearTargetSnapshot();

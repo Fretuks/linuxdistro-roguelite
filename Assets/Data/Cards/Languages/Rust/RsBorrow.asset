@@ -10,18 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: FirstToPackage
+  m_Name: RsBorrow
   m_EditorClassIdentifier: 
-  id: fedora_first_to_package
-  displayName: first-to-package
-  description: deal 7, then Java cards cost 1 less this turn.
-  flavorText: Fedora ships new tech first; everything after comes cheaper.
-  language: 8
+  id: lang_rs_borrow
+  displayName: borrow
+  description: gain 5 Shield.
+  flavorText: no ownership transfer required.
+  language: 2
   rarity: 0
-  cycleCost: 1
+  cycleCost: 0
   resolutionTrack: 0
-  distroExclusive: 1
+  distroExclusive: 0
   isToken: 0
-  designNotes: Java native tempo card; reduces the effective cost of all Java cards for the current turn after resolving.
+  isRunOnly: 0
+  designNotes: Rust starter defense.
+  requiresSystem: []
   upgradeTarget: {fileID: 0}
   effects: []

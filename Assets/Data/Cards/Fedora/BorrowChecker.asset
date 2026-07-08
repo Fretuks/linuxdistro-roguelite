@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: BorrowChecker
+  m_Name: DnfAutoremove
   m_EditorClassIdentifier: 
-  id: fedora_borrow_checker
-  displayName: borrow checker
-  description: gain 8 shield. if this is the first card played this turn, gain 8 more.
-  flavorText: no aliasing, no panic.
+  id: fedora_dnf_autoremove
+  displayName: dnf autoremove
+  description: deal 7, then exhaust a junk/NOP/broken card from your hand. if you do, gain 1 Cycle. if you don't, do nothing.
+  flavorText: cleaning out orphaned packages.
   language: 2
   rarity: 0
   cycleCost: 1
   resolutionTrack: 0
   distroExclusive: 1
   isToken: 0
-  designNotes: defensive first-card payoff; should benefit from Bleeding Edge cost discount but not damage multiplier.
+  designNotes: Fedora keeps a tidy system; requires an orphaned token/junk/NOP/broken card in hand, otherwise the card has no effect.
   upgradeTarget: {fileID: 0}
   effects: []

@@ -40,6 +40,7 @@ namespace KernelPanic.Combat
         private int fedoraCrashChance = 10;
         private int cardsPlayedThisTurn;
         private int javaCardsPlayedThisCombat;
+        private int javaCardsDiscountThisTurn;
         private int rawhideBonusCharges;
         private int queuedRepeatCharges;
         private int nextTurnCycleBonus;
@@ -114,6 +115,7 @@ namespace KernelPanic.Combat
             }
 
             awaitingWaveContinue = false;
+            DecayJavaWarmupForNextWave();
             StartWave(preservePlayerUptime: true);
             SetPhase(TurnPhase.Allocate);
         }
@@ -222,6 +224,7 @@ namespace KernelPanic.Combat
                 }
 
                 fedoraCrashChance = Mathf.Min(90, fedoraCrashChance + 10);
+                card.MarkFedoraNonCrashBonus();
                 playerState.DamageMultiplierPercent = runConfig.DistroVersion >= 2 ? 175 : 150;
                 ApplyFedoraGrowth(card, rawhideChargeUsed);
             }
@@ -265,9 +268,9 @@ namespace KernelPanic.Combat
         public int GetEffectiveCardCost(CardInstance card)
         {
             int cost = GetCardCost(card);
-            if (card?.Definition != null && string.Equals(card.Definition.Id, "fedora_dnf_update", StringComparison.OrdinalIgnoreCase))
+            if (card?.Definition != null && card.Definition.Language == Language.Java)
             {
-                cost -= javaCardsPlayedThisCombat;
+                cost -= javaCardsPlayedThisCombat + javaCardsDiscountThisTurn;
             }
 
             return Mathf.Max(0, cost);
@@ -308,6 +311,18 @@ namespace KernelPanic.Combat
             {
                 ReportEffectResult($"next {amount} queued card(s) resolve twice");
             }
+        }
+
+        public void AddJavaCostDiscountThisTurn(int amount)
+        {
+            int safeAmount = Mathf.Max(0, amount);
+            if (safeAmount <= 0)
+            {
+                return;
+            }
+
+            javaCardsDiscountThisTurn += safeAmount;
+            ReportEffectResult($"Java cards cost -{safeAmount} this turn");
         }
 
         public int ConsumeQueuedResolutionCount(CardInstance card)
@@ -514,6 +529,7 @@ namespace KernelPanic.Combat
             fedoraCardsDiscountedThisTurn = 0;
             cardsPlayedThisTurn = 0;
             javaCardsPlayedThisCombat = 0;
+            javaCardsDiscountThisTurn = 0;
             rawhideBonusCharges = 0;
             queuedRepeatCharges = 0;
             nextTurnCycleBonus = 0;
@@ -582,6 +598,7 @@ namespace KernelPanic.Combat
             playerState.Cycles = playerState.MaxCycles;
             fedoraCardsDiscountedThisTurn = 0;
             cardsPlayedThisTurn = 0;
+            javaCardsDiscountThisTurn = 0;
             if (nextTurnCycleBonus > 0)
             {
                 playerState.Cycles += nextTurnCycleBonus;
@@ -717,14 +734,14 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            int room = playerState.Ram - handController.Cards.Count;
+            int room = handController.RemainingRam;
             if (room <= 0)
             {
                 Log($"{label}: hand full");
                 return;
             }
 
-            int drawCount = Mathf.Min(requestedCount, room);
+            int drawCount = requestedCount;
             IReadOnlyList<CardInstance> drawn = deckController.Draw(drawCount);
             int added = 0;
             for (int i = 0; i < drawn.Count; i++)
@@ -732,6 +749,10 @@ namespace KernelPanic.Combat
                 if (handController.Add(drawn[i]))
                 {
                     added++;
+                }
+                else
+                {
+                    deckController.AddToDrawPile(drawn[i], shuffle: false);
                 }
             }
 
@@ -751,7 +772,7 @@ namespace KernelPanic.Combat
 
         private void TryApplyUbuntuAptUpdate()
         {
-            if (!IsDistro("ubuntu") || handController == null || playerState == null || handController.Cards.Count >= handController.RamCapacity)
+            if (!IsDistro("ubuntu") || handController == null || playerState == null || handController.RemainingRam <= 0)
             {
                 return;
             }
@@ -771,6 +792,10 @@ namespace KernelPanic.Combat
             {
                 Log($"apt update: staged {GetCardName(card)} from top {lookCount}");
             }
+            else
+            {
+                deckController.AddToDrawPile(card, shuffle: false);
+            }
         }
 
         private void TryApplyUbuntuEmptyHandRefill()
@@ -787,6 +812,17 @@ namespace KernelPanic.Combat
         private bool CanApplyFedoraBonus()
         {
             return CanApplyFedoraPassiveBonus() || rawhideBonusCharges > 0;
+        }
+
+        private void DecayJavaWarmupForNextWave()
+        {
+            if (javaCardsPlayedThisCombat <= 0)
+            {
+                return;
+            }
+
+            javaCardsPlayedThisCombat = Mathf.Max(0, javaCardsPlayedThisCombat - 1);
+            Log($"Java JIT cooled: discount now -{javaCardsPlayedThisCombat}");
         }
 
         private bool CanApplyFedoraPassiveBonus()
@@ -817,8 +853,7 @@ namespace KernelPanic.Combat
         private static bool IsCrashImmune(CardInstance card)
         {
             string id = card?.Definition?.Id;
-            return string.Equals(id, "fedora_cargo_build", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(id, "fedora_selinux", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(id, "fedora_selinux", StringComparison.OrdinalIgnoreCase);
         }
 
         private void ApplyVersionState(CombatantState state)

@@ -27,7 +27,7 @@ MonoBehaviour:
   asciiArt: {fileID: 4900000, guid: f2373174b6954f2d9088d83d10e0d9e4, type: 3}
   accentColor: {r: 0.23529412, g: 0.43137255, b: 0.7058824, a: 1}
   baseUptime: 55
-  baseRam: 5
+  baseRam: 6
   baseCyclesPerTurn: 3
   exclusiveCards:
   - {fileID: 11400000, guid: 4dfd40ca206341ba9a1a486d69994611, type: 2}

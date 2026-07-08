@@ -216,7 +216,7 @@ namespace KernelPanic.Combat
 
         public void Execute(CombatContext context)
         {
-            int room = context.HandController.RamCapacity - context.HandController.Cards.Count;
+            int room = context.HandController.RemainingRam;
             if (room <= 0)
             {
                 context.CombatManager.ReportEffectResult("hand full: drew 0");
@@ -241,6 +241,10 @@ namespace KernelPanic.Combat
                 if (context.HandController.Add(drawn[i]))
                 {
                     added++;
+                }
+                else
+                {
+                    context.DeckController.AddToDrawPile(drawn[i], shuffle: false);
                 }
             }
 
@@ -285,7 +289,7 @@ namespace KernelPanic.Combat
     {
         public void Execute(CombatContext context)
         {
-            if (context.HandController.Cards.Count >= context.HandController.RamCapacity)
+            if (context.HandController.RemainingRam <= 0)
             {
                 context.CombatManager.ReportEffectResult("hand full: copied 0");
                 return;
@@ -316,6 +320,12 @@ namespace KernelPanic.Combat
             }
 
             CardInstance copy = selected.CopyForCombat();
+            if (!context.HandController.CanAdd(copy))
+            {
+                context.CombatManager.ReportEffectResult("not enough RAM to copy");
+                return;
+            }
+
             if (context.HandController.Add(copy))
             {
                 string name = string.IsNullOrWhiteSpace(copy.Definition.DisplayName) ? copy.Definition.Id : copy.Definition.DisplayName;
@@ -403,7 +413,7 @@ namespace KernelPanic.Combat
 
         public void Execute(CombatContext context)
         {
-            if (context.HandController.Cards.Count >= context.HandController.RamCapacity)
+            if (context.HandController.RemainingRam <= 0)
             {
                 context.CombatManager.ReportEffectResult("hand full: generated 0");
                 return;
@@ -415,7 +425,11 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            if (context.HandController.Add(generatedCard))
+            if (!context.HandController.CanAdd(generatedCard))
+            {
+                context.CombatManager.ReportEffectResult("not enough RAM: generated 0");
+            }
+            else if (context.HandController.Add(generatedCard))
             {
                 context.CombatManager.ReportEffectResult($"generated {GetCardName(generatedCard)} at 0c");
             }
@@ -488,6 +502,92 @@ namespace KernelPanic.Combat
             {
                 new DealDamageEffect(_amount, _amount, _language).Execute(context);
             }
+        }
+    }
+
+    public sealed class FirstToPackageEffect : ICardEffect
+    {
+        private readonly int _amount;
+
+        public FirstToPackageEffect(int amount)
+        {
+            _amount = amount;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            int amount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_amount, context), context.Card);
+            new DealDamageEffect(amount, amount, Language.Java).Execute(context);
+            context.CombatManager.AddJavaCostDiscountThisTurn(1);
+        }
+    }
+
+    public sealed class DnfAutoremoveEffect : ICardEffect
+    {
+        private readonly int _damageAmount;
+        private readonly int _cycleGain;
+
+        public DnfAutoremoveEffect(int damageAmount, int cycleGain)
+        {
+            _damageAmount = damageAmount;
+            _cycleGain = cycleGain;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            CardInstance junk = FindJunkCard(context);
+            if (junk == null)
+            {
+                context.CombatManager.ReportEffectResult("dnf autoremove: no orphaned package");
+                return;
+            }
+
+            int damageAmount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_damageAmount, context), context.Card);
+            new DealDamageEffect(damageAmount, damageAmount, Language.Rust).Execute(context);
+            if (context.HandController.Remove(junk))
+            {
+                context.DeckController.Exhaust(junk);
+                int cycleGain = UpgradeMath.ScaleAmount(_cycleGain, context.Card);
+                context.Source.Cycles += cycleGain;
+                context.CombatManager.ReportEffectResult($"autoremove exhausted {GetCardName(junk)}: +{cycleGain} cycle");
+            }
+        }
+
+        private static CardInstance FindJunkCard(CombatContext context)
+        {
+            for (int i = 0; i < context.HandController.Cards.Count; i++)
+            {
+                CardInstance card = context.HandController.Cards[i];
+                if (IsJunk(card))
+                {
+                    return card;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsJunk(CardInstance card)
+        {
+            if (card == null)
+            {
+                return false;
+            }
+
+            string id = card.Definition?.Id ?? string.Empty;
+            string name = card.Definition?.DisplayName ?? string.Empty;
+            return card.Definition != null && card.Definition.IsToken
+                || card.IsBroken
+                || id.IndexOf("junk", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || id.IndexOf("nop", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("junk", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("NOP", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("broken", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string GetCardName(CardInstance card)
+        {
+            return string.IsNullOrWhiteSpace(card?.Definition?.DisplayName) ? card?.Definition?.Id ?? "--" : card.Definition.DisplayName;
         }
     }
 
@@ -573,6 +673,16 @@ namespace KernelPanic.Combat
                 "lang_py_for_loop" => One(new DealDamageEffect(2, 2, Language.Python, allEnemies: true)),
                 "lang_js_console_log" => One(new DealDamageEffect(3, 9, Language.JavaScript)),
                 "lang_js_fetch" => One(new DealDamageEffect(5, 13, Language.JavaScript)),
+                "lang_rs_fn_main" => One(new OverkillToShieldDamageEffect(6, Language.Rust)),
+                "lang_rs_unwrap" => new ICardEffect[]
+                {
+                    new DealDamageEffect(9, 9, Language.Rust),
+                    new DrawEffect(1)
+                },
+                "lang_rs_borrow" => One(new ShieldEffect(5)),
+                "lang_java_public_static_main" => One(new DealDamageEffect(7, 7, Language.Java)),
+                "lang_java_system_out_println" => One(new DealDamageEffect(5, 5, Language.Java)),
+                "lang_java_new_object" => One(new DealDamageEffect(3, 3, Language.Java)),
                 "ubuntu_ask_ubuntu" => One(new DrawEffect(2)),
                 "ubuntu_unattended_upgrades" => new ICardEffect[]
                 {
@@ -616,8 +726,8 @@ namespace KernelPanic.Combat
                 },
                 "mint_nemo" => One(new ConditionalShieldRepeatDamageEffect(6, Language.JavaScript)),
                 "mint_timeshift" => One(new TimeshiftSnapshotEffect()),
-                "fedora_borrow_checker" => One(new FirstCardShieldEffect(8, 8)),
-                "fedora_cargo_build" => One(new OverkillToShieldDamageEffect(10, Language.Rust)),
+                "fedora_dnf_autoremove" => One(new DnfAutoremoveEffect(7, 1)),
+                "fedora_first_to_package" => One(new FirstToPackageEffect(7)),
                 "fedora_dnf_update" => One(new DealDamageEffect(9, 9, Language.Java)),
                 "fedora_rawhide" => One(new RawhideEffect()),
                 "fedora_selinux" => One(new IncomingAttackHalveEffect(2)),
@@ -628,8 +738,10 @@ namespace KernelPanic.Combat
         public static bool RequiresSingleTarget(CardDefinition definition)
         {
             return definition?.Id is "lang_js_console_log" or "lang_js_fetch" or "lang_js_typeof" or "mint_fix_broken"
+                or "lang_rs_fn_main" or "lang_rs_unwrap" or "lang_java_public_static_main"
+                or "lang_java_system_out_println" or "lang_java_new_object"
                 or "shop_py_list_append" or "shop_js_math_random" or "shop_js_promise_all" or "ubuntu_snap_install"
-                or "mint_nemo" or "fedora_cargo_build" or "fedora_dnf_update";
+                or "mint_nemo" or "fedora_dnf_autoremove" or "fedora_first_to_package" or "fedora_dnf_update";
         }
 
         public static bool TargetsAllEnemies(CardDefinition definition)
@@ -684,6 +796,12 @@ namespace KernelPanic.Combat
                 "lang_js_console_log" => $"deal {UpgradeMath.ScaleAmount(3, card)}-{UpgradeMath.ScaleAmount(9, card)}.{marker}",
                 "lang_js_fetch" => $"deal {UpgradeMath.ScaleAmount(5, card)}-{UpgradeMath.ScaleAmount(13, card)}.{marker}",
                 "lang_js_typeof" => $"75%: deal {UpgradeMath.ScaleAmount(8, card)}. 25%: deal 0.{marker}",
+                "lang_rs_fn_main" => $"deal {UpgradeMath.ScaleAmount(6, card)}. overkill becomes shield.{marker}",
+                "lang_rs_unwrap" => $"deal {UpgradeMath.ScaleAmount(9, card)}. draw {UpgradeMath.ScaleAmount(1, card)}.{marker}",
+                "lang_rs_borrow" => $"gain {UpgradeMath.ScaleShield(5, card)} shield.{marker}",
+                "lang_java_public_static_main" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(7, card)}. JIT: Java cards cost 1 less this combat each time you play a Java card; discount decays by 1 after each wave.{marker}",
+                "lang_java_system_out_println" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(5, card)}. JIT applies; discount decays by 1 after each wave.{marker}",
+                "lang_java_new_object" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(3, card)}. JIT applies; discount decays by 1 after each wave.{marker}",
                 "shop_py_list_append" => $"queue: deal {UpgradeMath.ScaleAmount(4 + UnityEngine.Mathf.Max(0, card.QueuePlayCount - 1), card)}; +1 each time re-queued.{marker}",
                 "shop_py_async_def" => $"queue: draw {UpgradeMath.ScaleAmount(2, card)}. gain {UpgradeMath.ScaleAmount(1, card)} cycle next turn.{marker}",
                 "shop_py_zip" => $"next {UpgradeMath.ScaleAmount(2, card)} queued cards resolve twice.{marker}",
@@ -700,8 +818,8 @@ namespace KernelPanic.Combat
                 "mint_cinnamon" => $"queue: gain {UpgradeMath.ScaleShield(3, card)} shield. draw {UpgradeMath.ScaleAmount(1, card)}.{marker}",
                 "mint_nemo" => $"deal {UpgradeMath.ScaleAmount(6, card)}. if you have shield, deal it again.{marker}",
                 "mint_timeshift" => $"queue: record uptime now. at end of your next turn, restore to it if lower.{marker}",
-                "fedora_borrow_checker" => $"gain {UpgradeMath.ScaleShield(8, card)} shield. if first card this turn, gain {UpgradeMath.ScaleShield(8, card)} more.{marker}",
-                "fedora_cargo_build" => $"deal {UpgradeMath.ScaleAmount(10, card)}. overkill becomes shield.{marker}",
+                "fedora_dnf_autoremove" => $"deal {UpgradeMath.ScaleAmount(7, card)}. exhaust a junk/NOP/broken card from hand; if you do, gain {UpgradeMath.ScaleAmount(1, card)} cycle. if not, do nothing.{marker}",
+                "fedora_first_to_package" => $"deal {UpgradeMath.ScaleAmount(7, card)}. Java cards cost 1 less this turn.{marker}",
                 "fedora_dnf_update" => $"deal {UpgradeMath.ScaleAmount(9, card)}. costs 1 less per Java card played this combat.{marker}",
                 "fedora_rawhide" => $"draw {UpgradeMath.ScaleAmount(2, card)}. next card this turn gains bleeding edge.{marker}",
                 "fedora_selinux" => $"next {UpgradeMath.ScaleAmount(2, card)} enemy attacks deal half damage.{marker}",

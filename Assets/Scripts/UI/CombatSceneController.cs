@@ -417,7 +417,7 @@ namespace KernelPanic.UI
             playerPanel.Add(MeterBlock("shield", state.Shield, Mathf.Max(1, state.Shield), state.Shield > 0 ? MeterTone.Beneficial : MeterTone.Muted));
             playerPanel.Add(CycleBlock(state.Cycles, state.MaxCycles));
 
-            Label ram = new($"ram hand cap {combatManager.HandController.Cards.Count}/{combatManager.HandController.RamCapacity}");
+            Label ram = new($"ram hand cap {combatManager.HandController.UsedRam}/{combatManager.HandController.RamCapacity}");
             ram.AddToClassList("ram-note");
             playerPanel.Add(ram);
             playerPanel.Add(StatusBlock(state, true));
@@ -507,7 +507,7 @@ namespace KernelPanic.UI
             CombatantState state = combatManager.PlayerState;
             IReadOnlyList<CardInstance> hand = combatManager.HandController.Cards;
             turnResourceGrid.Add(TurnStat("cycles", $"{state.Cycles}/{state.MaxCycles}"));
-            turnResourceGrid.Add(TurnStat("hand", $"{hand.Count}/{combatManager.HandController.RamCapacity}"));
+            turnResourceGrid.Add(TurnStat("hand", $"{combatManager.HandController.UsedRam}/{combatManager.HandController.RamCapacity}"));
             turnResourceGrid.Add(TurnStat("draw", combatManager.DeckController.DrawPile.Count.ToString()));
             turnResourceGrid.Add(TurnStat("discard", combatManager.DeckController.DiscardPile.Count.ToString()));
             turnResourceGrid.Add(TurnStat("exhaust", combatManager.DeckController.ExhaustPile.Count.ToString()));

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using KernelPanic.Core;
 
 namespace KernelPanic.Combat
 {
@@ -16,10 +17,25 @@ namespace KernelPanic.Combat
 
         public int RamCapacity { get; private set; }
         public IReadOnlyList<CardInstance> Cards => _cards;
+        public int UsedRam
+        {
+            get
+            {
+                int used = 0;
+                for (int i = 0; i < _cards.Count; i++)
+                {
+                    used += GetRamCost(_cards[i]);
+                }
+
+                return used;
+            }
+        }
+
+        public int RemainingRam => System.Math.Max(0, RamCapacity - UsedRam);
 
         public bool CanAdd(CardInstance card)
         {
-            return card != null && _cards.Count < RamCapacity;
+            return card != null && UsedRam + GetRamCost(card) <= RamCapacity;
         }
 
         public bool Add(CardInstance card)
@@ -41,6 +57,11 @@ namespace KernelPanic.Combat
         public void Clear()
         {
             _cards.Clear();
+        }
+
+        public static int GetRamCost(CardInstance card)
+        {
+            return card?.Definition != null && card.Definition.Language == Language.Java ? 2 : 1;
         }
     }
 }
