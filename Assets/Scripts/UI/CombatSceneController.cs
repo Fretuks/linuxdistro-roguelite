@@ -39,7 +39,7 @@ namespace KernelPanic.UI
         private Label entropyLabel;
         private Label bitsLabel;
         private Label bandwidthLabel;
-        private Label computeCreditsLabel;
+        private Label rootCreditsLabel;
         private Label seedLabel;
         private VisualElement playerPanel;
         private VisualElement interpreterStrip;
@@ -309,7 +309,7 @@ namespace KernelPanic.UI
             bitsLabel = AddStatusReadout(bar, "bits", "0", false);
             entropyLabel = AddStatusReadout(bar, "entropy", "0", false);
             bandwidthLabel = AddStatusReadout(bar, "bandwidth", "0", false);
-            computeCreditsLabel = AddStatusReadout(bar, "compute credits", "TODO", false);
+            rootCreditsLabel = AddStatusReadout(bar, "root credits", "TODO", false);
 
             VisualElement spacer = new();
             spacer.AddToClassList("status-spacer");
@@ -383,7 +383,7 @@ namespace KernelPanic.UI
             bitsLabel.text = runManager.Bits.ToString();
             entropyLabel.text = FormatWalletWithAccrual(data.entropyBalance, runManager.AccruedEntropy);
             bandwidthLabel.text = FormatWalletWithAccrual(data.standardPullCurrency, runManager.AccruedBandwidth);
-            computeCreditsLabel.text = "TODO";
+            rootCreditsLabel.text = "TODO";
             seedLabel.text = $"seed {config?.RunSeed ?? 0}";
         }
 

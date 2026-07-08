@@ -822,7 +822,7 @@ namespace KernelPanic.UI
             _rootCreditsToEntropyButton?.SetEnabled(true);
             bool showPullTokens = IsGachaVisible();
             _pullTokensLabel.text = showPullTokens
-                ? $"bandwidth={_gachaService.PullTokens} compute-credits={_gachaService.LimitedPullTokens} distro-merges={GetTotalDistroMerges()}"
+                ? $"commits={_gachaService.PullTokens} root-credits={_gachaService.LimitedPullTokens} distro-merges={GetTotalDistroMerges()}"
                 : string.Empty;
             _pullTokensLabel.EnableInClassList(HiddenClassName, !showPullTokens);
         }

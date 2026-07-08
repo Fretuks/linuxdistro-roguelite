@@ -273,8 +273,8 @@ namespace KernelPanic.Meta
         {
             return currencyType switch
             {
-                GachaCurrencyType.LimitedPull => "Compute Credits",
-                _ => "Bandwidth"
+                GachaCurrencyType.LimitedPull => "Root Credits",
+                _ => "Commits"
             };
         }
 
