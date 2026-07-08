@@ -41,5 +41,14 @@ namespace KernelPanic.Combat
         public const int StatUpgradeHeal = 5;
         public const int StatUpgradeRam = 1;
         public const int UpgradeMagnitudeBonus = 2;
+
+        // Combat pacing: gaps between phase transitions and per-item resolution steps so
+        // players can follow drawing/queue/enemy resolution instead of seeing it all at once.
+        // Skipped entirely when UIPreferences.ReducedMotion is set.
+        public const float PhaseTransitionDelaySeconds = 0.35f;
+        public const float CardDrawDelaySeconds = 0.12f;
+        public const float QueueCardResolveDelaySeconds = 0.45f;
+        public const float EnemyTelegraphDelaySeconds = 0.35f;
+        public const float EnemyActionDelaySeconds = 0.45f;
     }
 }

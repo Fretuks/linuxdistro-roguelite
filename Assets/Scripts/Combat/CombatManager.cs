@@ -2,8 +2,10 @@ using KernelPanic.Core;
 using KernelPanic.Data;
 using KernelPanic.Run;
 using KernelPanic.Meta;
+using KernelPanic.UI;
 using UnityEngine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -44,6 +46,7 @@ namespace KernelPanic.Combat
         private int rawhideBonusCharges;
         private int queuedRepeatCharges;
         private int nextTurnCycleBonus;
+        private Coroutine phaseCoroutine;
 
         public TurnPhase CurrentPhase => currentPhase;
         public RunConfig RunConfig => runConfig;
@@ -116,7 +119,12 @@ namespace KernelPanic.Combat
 
             awaitingWaveContinue = false;
             DecayJavaWarmupForNextWave();
-            StartWave(preservePlayerUptime: true);
+            StartCoroutine(ContinueToNextWaveSequenced());
+        }
+
+        private IEnumerator ContinueToNextWaveSequenced()
+        {
+            yield return StartWaveSequenced(preservePlayerUptime: true);
             SetPhase(TurnPhase.Allocate);
         }
 
@@ -458,7 +466,13 @@ namespace KernelPanic.Combat
             TurnPhase previousPhase = currentPhase;
             currentPhase = nextPhase;
             GameEvents.RaisePhaseChanged(new PhaseChangedEvent(previousPhase, nextPhase));
-            EnterPhase(nextPhase);
+
+            if (phaseCoroutine != null)
+            {
+                StopCoroutine(phaseCoroutine);
+            }
+
+            phaseCoroutine = StartCoroutine(EnterPhase(nextPhase));
         }
 
         private static TurnPhase GetNextPhase(TurnPhase phase)
@@ -474,52 +488,46 @@ namespace KernelPanic.Combat
             };
         }
 
-        private void EnterPhase(TurnPhase phase)
+        private IEnumerator EnterPhase(TurnPhase phase)
         {
             switch (phase)
             {
                 case TurnPhase.Boot:
-                    BootCombat();
-                    if (!IsCombatPaused)
-                    {
-                        AdvancePhase();
-                    }
+                    yield return BootCombatSequenced();
                     break;
                 case TurnPhase.Allocate:
-                    AllocateTurn();
-                    if (!IsCombatPaused)
-                    {
-                        AdvancePhase();
-                    }
+                    yield return AllocateTurnSequenced();
                     break;
                 case TurnPhase.Execute:
                     StateChanged?.Invoke();
-                    break;
+                    yield break;
                 case TurnPhase.Interpret:
-                    InterpretQueue();
-                    if (!IsCombatPaused)
-                    {
-                        AdvancePhase();
-                    }
+                    yield return InterpretQueueSequenced();
                     break;
                 case TurnPhase.EnemyProcess:
-                    ProcessEnemies();
-                    if (!IsCombatPaused)
-                    {
-                        AdvancePhase();
-                    }
+                    yield return ProcessEnemiesSequenced();
                     break;
                 case TurnPhase.GarbageCollection:
                     GarbageCollect();
-                    if (!IsCombatPaused)
-                    {
-                        AdvancePhase();
-                    }
                     break;
+            }
+
+            if (!IsCombatPaused)
+            {
+                yield return Wait(CombatTuning.PhaseTransitionDelaySeconds);
+                AdvancePhase();
             }
         }
 
-        private void BootCombat()
+        private static IEnumerator Wait(float seconds)
+        {
+            if (!UIPreferences.ReducedMotion && seconds > 0f)
+            {
+                yield return new WaitForSeconds(seconds);
+            }
+        }
+
+        private IEnumerator BootCombatSequenced()
         {
             runLost = false;
             awaitingWaveContinue = false;
@@ -537,12 +545,12 @@ namespace KernelPanic.Combat
             RandomRoll.Seed(runConfig.RunSeed);
             playerState = new CombatantState(runManager.EffectiveMaxUptime(), runManager.EffectiveRam(), runManager.EffectiveMaxCycles());
             ApplyVersionState(playerState);
-            StartWave(preservePlayerUptime: false);
+            yield return StartWaveSequenced(preservePlayerUptime: false);
             Log($"booted {runConfig.Distro.DisplayName} with {runManager.RunDeck.Count} cards");
             StateChanged?.Invoke();
         }
 
-        private void StartWave(bool preservePlayerUptime)
+        private IEnumerator StartWaveSequenced(bool preservePlayerUptime)
         {
             int carriedUptime = playerState == null ? 0 : playerState.CurrentUptime;
             if (!preservePlayerUptime || playerState == null)
@@ -584,15 +592,16 @@ namespace KernelPanic.Combat
             enemies.Clear();
             SpawnStructuralEnemies();
             PickEnemyIntents();
-            DrawOpeningHand();
+            StateChanged?.Invoke();
+            yield return DrawOpeningHandSequenced();
             skipNextAllocateDraw = true;
         }
 
-        private void AllocateTurn()
+        private IEnumerator AllocateTurnSequenced()
         {
             if (CheckLoss())
             {
-                return;
+                yield break;
             }
 
             playerState.Cycles = playerState.MaxCycles;
@@ -606,9 +615,10 @@ namespace KernelPanic.Combat
                 nextTurnCycleBonus = 0;
             }
             statusEffects.Tick(playerState, StatusTickTiming.StartOfTurn, playerState, damagePipeline);
+            StateChanged?.Invoke();
             if (CheckLoss())
             {
-                return;
+                yield break;
             }
 
             TryApplyUbuntuAptUpdate();
@@ -619,13 +629,13 @@ namespace KernelPanic.Combat
             }
             else
             {
-                DrawForTurn();
+                yield return DrawForTurnSequenced();
             }
 
             StateChanged?.Invoke();
         }
 
-        private void InterpretQueue()
+        private IEnumerator InterpretQueueSequenced()
         {
             while (interpreterQueue.TryDequeue(out CardInstance card))
             {
@@ -636,24 +646,27 @@ namespace KernelPanic.Combat
                     ExecuteCardEffects(card, ResolveQueuedTargets(card));
                     if (CheckWinOrLoss())
                     {
-                        return;
+                        yield break;
                     }
                 }
 
                 ResolveCardRiders(card);
                 deckController.Discard(card);
                 GameEvents.RaiseCardResolved(new CardResolvedEvent(card, ResolutionTrack.InterpreterQueue));
+                StateChanged?.Invoke();
                 if (CheckWinOrLoss())
                 {
-                    return;
+                    yield break;
                 }
+
+                yield return Wait(CombatTuning.QueueCardResolveDelaySeconds);
             }
 
             CheckWinOrLoss();
             StateChanged?.Invoke();
         }
 
-        private void ProcessEnemies()
+        private IEnumerator ProcessEnemiesSequenced()
         {
             for (int i = 0; i < enemies.Count; i++)
             {
@@ -667,7 +680,7 @@ namespace KernelPanic.Combat
                 RemoveDefeatedEnemies();
                 if (CheckWinOrLoss())
                 {
-                    return;
+                    yield break;
                 }
 
                 if (enemy.State.IsDefeated)
@@ -677,12 +690,18 @@ namespace KernelPanic.Combat
 
                 Log($"{enemy.Name} executes {enemy.CurrentIntent.DisplayText}");
                 GameEvents.RaiseEnemyWouldAct(new EnemyWouldActEvent(enemy));
+                StateChanged?.Invoke();
+                yield return Wait(CombatTuning.EnemyTelegraphDelaySeconds);
+
                 ExecuteEnemyIntent(enemy);
                 GameEvents.RaiseEnemyActed(new EnemyActedEvent(enemy, enemy.CurrentIntent));
+                StateChanged?.Invoke();
                 if (CheckLoss())
                 {
-                    return;
+                    yield break;
                 }
+
+                yield return Wait(CombatTuning.EnemyActionDelaySeconds);
             }
 
             PickEnemyIntents();
@@ -710,13 +729,13 @@ namespace KernelPanic.Combat
             StateChanged?.Invoke();
         }
 
-        private void DrawOpeningHand()
+        private IEnumerator DrawOpeningHandSequenced()
         {
             int openingDraw = Mathf.Min(CombatTuning.OpeningHandSize, playerState.Ram);
-            DrawCardsToHand(openingDraw, "opening hand");
+            yield return DrawCardsToHandSequenced(openingDraw, "opening hand");
         }
 
-        private void DrawForTurn()
+        private IEnumerator DrawForTurnSequenced()
         {
             int requested = CombatTuning.DrawPerTurn;
             if (CombatTuning.MinimumHandFloor > 0 && handController.Cards.Count < CombatTuning.MinimumHandFloor && deckController.AvailableToDrawCount > 0)
@@ -724,31 +743,32 @@ namespace KernelPanic.Combat
                 requested = Mathf.Max(requested, CombatTuning.MinimumHandFloor - handController.Cards.Count);
             }
 
-            DrawCardsToHand(requested, "turn draw");
+            yield return DrawCardsToHandSequenced(requested, "turn draw");
         }
 
-        private void DrawCardsToHand(int requestedCount, string label)
+        private IEnumerator DrawCardsToHandSequenced(int requestedCount, string label)
         {
             if (handController == null || playerState == null || requestedCount <= 0)
             {
-                return;
+                yield break;
             }
 
             int room = handController.RemainingRam;
             if (room <= 0)
             {
                 Log($"{label}: hand full");
-                return;
+                yield break;
             }
 
-            int drawCount = requestedCount;
-            IReadOnlyList<CardInstance> drawn = deckController.Draw(drawCount);
+            IReadOnlyList<CardInstance> drawn = deckController.Draw(requestedCount);
             int added = 0;
             for (int i = 0; i < drawn.Count; i++)
             {
                 if (handController.Add(drawn[i]))
                 {
                     added++;
+                    StateChanged?.Invoke();
+                    yield return Wait(CombatTuning.CardDrawDelaySeconds);
                 }
                 else
                 {
@@ -806,7 +826,7 @@ namespace KernelPanic.Combat
             }
 
             ubuntuEmptyHandRefillUsed = true;
-            DrawCardsToHand(playerState.Ram, "ubuntu 24.04 refill");
+            StartCoroutine(DrawCardsToHandSequenced(playerState.Ram, "ubuntu 24.04 refill"));
         }
 
         private bool CanApplyFedoraBonus()
@@ -902,7 +922,7 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            DrawCardsToHand(card.DrawRider, "upgrade rider");
+            StartCoroutine(DrawCardsToHandSequenced(card.DrawRider, "upgrade rider"));
         }
 
         private IReadOnlyList<CombatantState> CaptureTargets(CardInstance card)
