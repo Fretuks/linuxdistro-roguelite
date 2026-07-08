@@ -61,7 +61,6 @@ namespace KernelPanic.UI
         private readonly Dictionary<CombatantState, int> previousUptime = new();
         private readonly Dictionary<CombatantState, int> previousShield = new();
         private readonly HashSet<CardInstance> knownHandCards = new();
-        private int queueCascadeIndex;
 
         private void Awake()
         {
@@ -1048,14 +1047,9 @@ namespace KernelPanic.UI
 
             if (payload.Track == ResolutionTrack.InterpreterQueue)
             {
-                int delay = UIPreferences.ReducedMotion ? 0 : Mathf.Min(queueCascadeIndex * 120, 600);
-                queueCascadeIndex++;
-                ScheduleFeedback(() =>
-                {
-                    VisualElement chip = queueChipElements.TryGetValue(payload.Card, out VisualElement queuedChip) ? queuedChip : interpreterStrip;
-                    PlayElementBeat(chip, "queue-chip-resolve", 260);
-                    FlyCardGhost(payload.Card, chip, turnResourceGrid, "feedback-card-discard");
-                }, delay);
+                VisualElement chip = queueChipElements.TryGetValue(payload.Card, out VisualElement queuedChip) ? queuedChip : interpreterStrip;
+                PlayElementBeat(chip, "queue-chip-resolve", 260);
+                FlyCardGhost(payload.Card, chip, turnResourceGrid, "feedback-card-discard");
                 return;
             }
 
@@ -1069,11 +1063,6 @@ namespace KernelPanic.UI
 
         private void HandlePhaseChanged(PhaseChangedEvent payload)
         {
-            if (payload.NextPhase == TurnPhase.Interpret)
-            {
-                queueCascadeIndex = 0;
-            }
-
             ScheduleFeedback(() => PlayElementBeat(phaseLabel, "phase-pulse", 260), 0);
         }
 
