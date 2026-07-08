@@ -14,6 +14,52 @@ using UnityEditor;
 
 namespace KernelPanic.UI
 {
+    internal static class TerminalFontResolver
+    {
+        private static readonly string[] PreferredMonospaceFontFamilies =
+        {
+            "Consolas",
+            "Cascadia Mono",
+            "Menlo",
+            "Monaco",
+            "DejaVu Sans Mono",
+            "Liberation Mono",
+            "Ubuntu Mono",
+            "Courier New"
+        };
+
+        private static FontAsset runtimeMonospaceFont;
+        private static bool warnedMissingFont;
+
+        public static FontAsset Resolve(FontAsset configuredFont)
+        {
+            if (configuredFont != null)
+            {
+                return configuredFont;
+            }
+
+            if (runtimeMonospaceFont != null)
+            {
+                return runtimeMonospaceFont;
+            }
+
+            Font dynamicFont = Font.CreateDynamicFontFromOSFont(PreferredMonospaceFontFamilies, 16);
+            if (dynamicFont == null)
+            {
+                if (!warnedMissingFont)
+                {
+                    Debug.LogWarning("No monospace OS font found; terminal UI will use Unity's default font.");
+                    warnedMissingFont = true;
+                }
+
+                return null;
+            }
+
+            runtimeMonospaceFont = FontAsset.CreateFontAsset(dynamicFont);
+            return runtimeMonospaceFont;
+        }
+    }
+
     /// <summary>
     /// Binds the main menu terminal UI document and routes command activation between panels.
     /// </summary>
@@ -36,7 +82,7 @@ namespace KernelPanic.UI
             _bootIntroPlayed = false;
         }
 
-        [SerializeField] private FontAsset monospaceFont; // TODO: Assign a real monospace FontAsset when typography assets exist.
+        [SerializeField] private FontAsset monospaceFont;
         [SerializeField] private string motdBody = "unstable userspace detected; keep a rollback shell open.";
         [SerializeField] private DistroDatabase distroDatabase;
         [SerializeField] private CardDatabase cardDatabase;
@@ -137,15 +183,16 @@ namespace KernelPanic.UI
             LoadSharedStyles();
             BindCommandEntries();
             RegisterCommandEntryCallbacks();
-            featuredUnitPanel.Bind(_root, monospaceFont);
-            collectionScreen.Bind(_root, monospaceFont, languageDeckDatabase, cardDatabase, _playerCollection, GetMergesBalance, UpgradeCollectionUnit);
             BindScreenFrames();
             starterSelection.Bind(_root, distroDatabase, HandleStarterConfirmed);
-            gachaScreen.Bind(_root, distroDatabase, monospaceFont, _gachaService, _playerCollection, _wallet, ResolvePulledDistros, HandleMetaStateChanged, OpenRootCreditExchange);
+            FontAsset resolvedFont = ResolveMonospaceFont();
+            featuredUnitPanel.Bind(_root, resolvedFont);
+            collectionScreen.Bind(_root, resolvedFont, languageDeckDatabase, cardDatabase, _playerCollection, GetMergesBalance, UpgradeCollectionUnit);
+            gachaScreen.Bind(_root, distroDatabase, resolvedFont, _gachaService, _playerCollection, _wallet, ResolvePulledDistros, HandleMetaStateChanged, OpenRootCreditExchange);
             LoadMetaState();
             _playerCollection.Changed += HandleMetaStateChanged;
             _gachaService.Changed += HandleMetaStateChanged;
-            ApplyOptionalFont();
+            ApplyOptionalFont(resolvedFont);
         }
 
         private void OnEnable()
@@ -250,14 +297,20 @@ namespace KernelPanic.UI
             _commandEntries.Add(new CommandMenuEntry(_root.Q<VisualElement>("CommandQuit"), HandleQuitClicked));
         }
 
-        private void ApplyOptionalFont()
+        private FontAsset ResolveMonospaceFont()
         {
-            if (monospaceFont == null)
+            monospaceFont = TerminalFontResolver.Resolve(monospaceFont);
+            return monospaceFont;
+        }
+
+        private void ApplyOptionalFont(FontAsset resolvedFont)
+        {
+            if (resolvedFont == null)
             {
                 return;
             }
 
-            _root.style.unityFontDefinition = new StyleFontDefinition(monospaceFont);
+            _root.style.unityFontDefinition = new StyleFontDefinition(resolvedFont);
         }
 
         private void RegisterCallbacks()

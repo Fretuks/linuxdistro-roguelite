@@ -18,12 +18,16 @@
     --kp-beneficial: #57d8ff;
     --kp-accent: #ff7a1a;
     --kp-danger: #ff5f5f;
+    --kp-damage: #ffd166;
+    --kp-status-harmful: #ff4fa3;
+    --kp-kill: #ff3333;
+    --kp-empty-fill: #050a07;
     --kp-overlay: rgba(0, 0, 0, 0.88);
 
     --kp-lang-c: #8ea4a9;
     --kp-lang-cpp: #6da6ff;
     --kp-lang-rust: #d78b4a;
-    --kp-lang-python: #f2ce61;
+    --kp-lang-python: #4fb8ff;
     --kp-lang-javascript: #f7df1e;
     --kp-lang-typescript: #5aa7ff;
     --kp-lang-haskell: #b48cff;
@@ -326,16 +330,17 @@
 .empty-state {
     color: var(--kp-text-dim);
     font-size: 12px;
-    background-color: var(--kp-bg);
+    background-color: var(--kp-empty-fill);
     padding-left: 8px;
     padding-right: 8px;
     padding-top: 5px;
     padding-bottom: 5px;
-    border-left-width: 1px;
+    border-left-width: 2px;
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
     border-color: var(--kp-border-empty);
+    border-left-color: var(--kp-text-dim);
 }
 
 .card-chip {
@@ -481,15 +486,36 @@
 }
 
 .hand-card-rare {
+    border-left-color: var(--kp-beneficial);
     border-right-color: var(--kp-beneficial);
+    border-right-width: 4px;
 }
 
 .hand-card-epic {
+    border-left-color: var(--kp-lang-haskell);
     border-right-color: var(--kp-lang-haskell);
+    border-right-width: 4px;
 }
 
 .hand-card-legendary {
+    border-left-color: var(--kp-warning);
     border-right-color: var(--kp-warning);
+    border-right-width: 4px;
+}
+
+.rarity-rare {
+    color: var(--kp-beneficial);
+    border-color: var(--kp-beneficial);
+}
+
+.rarity-epic {
+    color: var(--kp-lang-haskell);
+    border-color: var(--kp-lang-haskell);
+}
+
+.rarity-legendary {
+    color: var(--kp-warning);
+    border-color: var(--kp-warning);
 }
 
 .card-top-row {
@@ -1000,7 +1026,7 @@
 }
 
 .float-damage {
-    color: var(--kp-warning);
+    color: var(--kp-damage);
 }
 
 .float-heal {
@@ -1008,7 +1034,7 @@
 }
 
 .float-status {
-    color: var(--kp-danger);
+    color: var(--kp-status-harmful);
 }
 
 .float-muted {
@@ -1016,7 +1042,7 @@
 }
 
 .float-kill {
-    color: var(--kp-danger);
+    color: var(--kp-kill);
 }
 
 .float-large {
@@ -1038,7 +1064,7 @@
 }
 
 .feedback-card-strike {
-    border-color: var(--kp-warning);
+    border-color: var(--kp-damage);
 }
 
 .feedback-card-discard {
@@ -1052,7 +1078,7 @@
 
 .feedback-hit {
     background-color: var(--kp-action-hover);
-    border-color: var(--kp-warning);
+    border-color: var(--kp-damage);
     scale: 1.025 0.98;
     transition-property: scale, background-color, border-color;
     transition-duration: 90ms;
@@ -1065,7 +1091,7 @@
 }
 
 .feedback-status {
-    border-color: var(--kp-danger);
+    border-color: var(--kp-status-harmful);
 }
 
 .feedback-boost {
@@ -1075,7 +1101,7 @@
 .feedback-killed {
     opacity: 0.5;
     scale: 0.95 0.95;
-    border-color: var(--kp-danger);
+    border-color: var(--kp-kill);
     transition-property: opacity, scale, border-color;
     transition-duration: 180ms;
 }
@@ -1086,7 +1112,7 @@
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
-    border-color: var(--kp-danger);
+    border-color: var(--kp-kill);
     opacity: 0.72;
     transition-property: opacity, scale;
     transition-duration: 300ms;

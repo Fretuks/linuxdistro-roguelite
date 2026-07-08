@@ -70,7 +70,17 @@ namespace KernelPanic.UI
             saveService = new SaveService();
             root = document.rootVisualElement;
             LoadStyles();
+            ApplyTerminalFont();
             BuildLayout();
+        }
+
+        private void ApplyTerminalFont()
+        {
+            var font = TerminalFontResolver.Resolve(null);
+            if (font != null)
+            {
+                root.style.unityFontDefinition = new StyleFontDefinition(font);
+            }
         }
 
         private void OnEnable()
@@ -1610,9 +1620,9 @@ namespace KernelPanic.UI
         {
             return rarity switch
             {
-                Rarity.Rare => "hand-card-rare",
-                Rarity.Epic => "hand-card-epic",
-                Rarity.Legendary => "hand-card-legendary",
+                Rarity.Rare => "rarity-rare",
+                Rarity.Epic => "rarity-epic",
+                Rarity.Legendary => "rarity-legendary",
                 _ => "track-tag"
             };
         }
