@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: shop_py_zip
   displayName: zip()
-  description: 'TODO: next 2 queued cards resolve twice.'
+  description: 'next 2 queued cards resolve twice.'
   flavorText: pairs nicely until lengths disagree.
   language: 3
   rarity: 1
@@ -23,7 +23,7 @@ MonoBehaviour:
   distroExclusive: 0
   isToken: 0
   isRunOnly: 1
-  designNotes: Run-only Repository card. Requires queue-effect-multiply.
+  designNotes: Run-only Repository card. Adds two charges that make queued cards resolve twice.
   requiresSystem:
   - queue-effect-multiply
   upgradeTarget: {fileID: 0}

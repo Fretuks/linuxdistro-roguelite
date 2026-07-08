@@ -100,6 +100,20 @@ namespace KernelPanic.Combat
             }
         }
 
+        public void AddToDrawPile(CardInstance card, bool shuffle)
+        {
+            if (card == null)
+            {
+                return;
+            }
+
+            _drawPile.Add(card);
+            if (shuffle)
+            {
+                ShuffleDrawPile();
+            }
+        }
+
         public void Exhaust(CardInstance card)
         {
             if (card != null)

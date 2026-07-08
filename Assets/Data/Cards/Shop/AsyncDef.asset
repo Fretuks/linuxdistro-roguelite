@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: shop_py_async_def
   displayName: async def
-  description: 'queue: draw 2. TODO: gain 1 Cycle next turn.'
+  description: 'queue: draw 2. gain 1 Cycle next turn.'
   flavorText: returns eventually. emotionally, at least.
   language: 3
   rarity: 1
@@ -23,7 +23,7 @@ MonoBehaviour:
   distroExclusive: 0
   isToken: 0
   isRunOnly: 1
-  designNotes: Run-only Repository card. Draw 2 works now; next-turn cycle grant waits for deferred-cycle-grant.
+  designNotes: Run-only Repository card. Draw 2 and grants +1 Cycle on the next turn.
   requiresSystem:
   - deferred-cycle-grant
   upgradeTarget: {fileID: 0}

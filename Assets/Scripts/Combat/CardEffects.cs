@@ -83,6 +83,26 @@ namespace KernelPanic.Combat
         }
     }
 
+    public sealed class FirstCardShieldEffect : ICardEffect
+    {
+        private readonly int _baseAmount;
+        private readonly int _firstCardBonus;
+
+        public FirstCardShieldEffect(int baseAmount, int firstCardBonus)
+        {
+            _baseAmount = baseAmount;
+            _firstCardBonus = firstCardBonus;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            int amount = _baseAmount + (context.Card != null && context.Card.WasFirstCardThisTurn ? _firstCardBonus : 0);
+            amount = UpgradeMath.ScaleShield(UpgradeMath.ApplySourceFlatBonus(amount, context), context.Card);
+            context.Source.Shield += amount;
+            context.CombatManager.ReportEffectResult($"gained {amount} shield");
+        }
+    }
+
     public sealed class ChanceDamageEffect : ICardEffect
     {
         private readonly int _damageAmount;
@@ -114,6 +134,26 @@ namespace KernelPanic.Combat
             }
         }
     }
+
+    public sealed class QueuedGrowthDamageEffect : ICardEffect
+    {
+        private readonly int _baseAmount;
+        private readonly Language _language;
+
+        public QueuedGrowthDamageEffect(int baseAmount, Language language)
+        {
+            _baseAmount = baseAmount;
+            _language = language;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            int queueGrowth = UnityEngine.Mathf.Max(0, (context.Card?.QueuePlayCount ?? 1) - 1);
+            int amount = _baseAmount + queueGrowth;
+            new DealDamageEffect(amount, amount, _language).Execute(context);
+        }
+    }
+
 
     public sealed class ApplyStatusEffect : ICardEffect
     {
@@ -209,6 +249,81 @@ namespace KernelPanic.Combat
         }
     }
 
+    public sealed class NextTurnCycleEffect : ICardEffect
+    {
+        private readonly int _amount;
+
+        public NextTurnCycleEffect(int amount)
+        {
+            _amount = amount;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            int amount = UpgradeMath.ScaleAmount(_amount, context.Card);
+            context.CombatManager.AddNextTurnCycleBonus(amount);
+            context.CombatManager.ReportEffectResult($"next turn +{amount} cycle");
+        }
+    }
+
+    public sealed class QueueRepeatEffect : ICardEffect
+    {
+        private readonly int _count;
+
+        public QueueRepeatEffect(int count)
+        {
+            _count = count;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            context.CombatManager.AddQueuedRepeatCharges(UpgradeMath.ScaleAmount(_count, context.Card));
+        }
+    }
+
+    public sealed class CopyLowestCostHandCardEffect : ICardEffect
+    {
+        public void Execute(CombatContext context)
+        {
+            if (context.HandController.Cards.Count >= context.HandController.RamCapacity)
+            {
+                context.CombatManager.ReportEffectResult("hand full: copied 0");
+                return;
+            }
+
+            CardInstance selected = null;
+            int selectedCost = int.MaxValue;
+            for (int i = 0; i < context.HandController.Cards.Count; i++)
+            {
+                CardInstance candidate = context.HandController.Cards[i];
+                if (candidate == null || candidate.Definition == null)
+                {
+                    continue;
+                }
+
+                int cost = context.CombatManager.GetEffectiveCardCost(candidate);
+                if (cost < selectedCost)
+                {
+                    selected = candidate;
+                    selectedCost = cost;
+                }
+            }
+
+            if (selected == null)
+            {
+                context.CombatManager.ReportEffectResult("no card to copy");
+                return;
+            }
+
+            CardInstance copy = selected.CopyForCombat();
+            if (context.HandController.Add(copy))
+            {
+                string name = string.IsNullOrWhiteSpace(copy.Definition.DisplayName) ? copy.Definition.Id : copy.Definition.DisplayName;
+                context.CombatManager.ReportEffectResult($"copied {name}");
+            }
+        }
+    }
+
     public sealed class UpgradeHandCardsEffect : ICardEffect
     {
         private readonly int _minCount;
@@ -244,6 +359,34 @@ namespace KernelPanic.Combat
             }
 
             context.CombatManager.ReportEffectResult(upgraded == 0 ? "no cards upgraded" : $"upgraded {upgraded} card(s)");
+        }
+    }
+
+    public sealed class ShuffleTokenIntoDrawPileEffect : ICardEffect
+    {
+        private readonly string _tokenId;
+
+        public ShuffleTokenIntoDrawPileEffect(string tokenId)
+        {
+            _tokenId = tokenId;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            if (context.CombatManager.TryCreateGeneratedCardById(_tokenId, out CardInstance token))
+            {
+                context.DeckController.AddToDrawPile(token, shuffle: true);
+                context.CombatManager.ReportEffectResult($"shuffled {GetCardName(token)} into draw pile");
+            }
+            else
+            {
+                context.CombatManager.ReportEffectResult($"token {_tokenId} unavailable");
+            }
+        }
+
+        private static string GetCardName(CardInstance card)
+        {
+            return string.IsNullOrWhiteSpace(card?.Definition?.DisplayName) ? card?.Definition?.Id ?? "--" : card.Definition.DisplayName;
         }
     }
 
@@ -293,18 +436,123 @@ namespace KernelPanic.Combat
         }
     }
 
-    public sealed class NoOpCardEffect : ICardEffect
+    public sealed class OverkillToShieldDamageEffect : ICardEffect
     {
-        private readonly string _todo;
+        private readonly int _amount;
+        private readonly Language _language;
 
-        public NoOpCardEffect(string todo)
+        public OverkillToShieldDamageEffect(int amount, Language language)
         {
-            _todo = todo;
+            _amount = amount;
+            _language = language;
         }
 
         public void Execute(CombatContext context)
         {
-            context.CombatManager.LogEffectTodo(context.Card, _todo);
+            for (int i = 0; i < context.Targets.Count; i++)
+            {
+                CombatantState target = context.Targets[i];
+                if (target == null || target.IsDefeated)
+                {
+                    continue;
+                }
+
+                int amount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_amount, context), context.Card);
+                int survivable = target.CurrentUptime + target.Shield;
+                context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, false, false));
+                int overkill = UnityEngine.Mathf.Max(0, amount - survivable);
+                if (overkill > 0)
+                {
+                    context.Source.Shield += overkill;
+                    context.CombatManager.ReportEffectResult($"overkill -> {overkill} shield");
+                }
+            }
+        }
+    }
+
+    public sealed class ConditionalShieldRepeatDamageEffect : ICardEffect
+    {
+        private readonly int _amount;
+        private readonly Language _language;
+
+        public ConditionalShieldRepeatDamageEffect(int amount, Language language)
+        {
+            _amount = amount;
+            _language = language;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            int repeats = context.Source.Shield > 0 ? 2 : 1;
+            for (int repeat = 0; repeat < repeats; repeat++)
+            {
+                new DealDamageEffect(_amount, _amount, _language).Execute(context);
+            }
+        }
+    }
+
+    public sealed class UpdateManagerEffect : ICardEffect
+    {
+        private readonly int _amount;
+
+        public UpdateManagerEffect(int amount)
+        {
+            _amount = amount;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            int amount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_amount, context), context.Card);
+            new DealDamageEffect(amount, amount, Language.Python, allEnemies: true).Execute(context);
+            context.CombatManager.ScheduleUpdateManagerRepeat(amount);
+        }
+    }
+
+    public sealed class TimeshiftSnapshotEffect : ICardEffect
+    {
+        public void Execute(CombatContext context)
+        {
+            context.CombatManager.ScheduleTimeshiftRestore(context.Source.CurrentUptime);
+        }
+    }
+
+    public sealed class RawhideEffect : ICardEffect
+    {
+        public void Execute(CombatContext context)
+        {
+            new DrawEffect(2).Execute(context);
+            context.CombatManager.GrantRawhideBonus(1);
+            context.CombatManager.ReportEffectResult("rawhide armed next card");
+        }
+    }
+
+    public sealed class IncomingAttackHalveEffect : ICardEffect
+    {
+        private readonly int _charges;
+
+        public IncomingAttackHalveEffect(int charges)
+        {
+            _charges = charges;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            context.CombatManager.AddIncomingAttackHalfCharges(UpgradeMath.ScaleAmount(_charges, context.Card));
+        }
+    }
+
+    public sealed class NoOpCardEffect : ICardEffect
+    {
+        private readonly string _message;
+
+        public NoOpCardEffect(string message)
+        {
+            _message = message;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            context.CombatManager.LogEffectTodo(context.Card, _message);
         }
     }
 
@@ -337,9 +585,13 @@ namespace KernelPanic.Combat
                     new CleanseEffect(harmfulOnly: true)
                 },
                 "lang_js_typeof" => One(new ChanceDamageEffect(8, 75, Language.JavaScript)),
-                "shop_py_list_append" => One(new DealDamageEffect(4, 4, Language.Python)),
-                "shop_py_async_def" => One(new DrawEffect(2)),
-                "shop_py_zip" => Todo("TODO: zip() needs queue-effect-multiply support."),
+                "shop_py_list_append" => One(new QueuedGrowthDamageEffect(4, Language.Python)),
+                "shop_py_async_def" => new ICardEffect[]
+                {
+                    new DrawEffect(2),
+                    new NextTurnCycleEffect(1)
+                },
+                "shop_py_zip" => One(new QueueRepeatEffect(2)),
                 "shop_js_math_random" => One(new DealDamageEffect(2, 20, Language.JavaScript)),
                 "shop_js_promise_all" => new ICardEffect[]
                 {
@@ -347,28 +599,37 @@ namespace KernelPanic.Combat
                     new DealDamageEffect(4, 10, Language.JavaScript),
                     new DealDamageEffect(4, 10, Language.JavaScript)
                 },
-                "shop_js_spread" => Todo("TODO: spread ... needs card-copy support."),
-                "ubuntu_snap_install" => Todo("TODO: snap install needs token/junk insertion system."),
+                "shop_js_spread" => One(new CopyLowestCostHandCardEffect()),
+                "ubuntu_snap_install" => new ICardEffect[]
+                {
+                    new DealDamageEffect(6, 14, Language.JavaScript),
+                    new ShuffleTokenIntoDrawPileEffect("ubuntu_pro_trial")
+                },
                 "ubuntu_do_release_upgrade" => One(new UpgradeHandCardsEffect(1, 3)),
                 "ubuntu_apt_install" => One(new GenerateCardEffect(Language.Python, Rarity.Common)),
-                "ubuntu_pro_trial" => Todo("TODO: ubuntu pro trial needs unplayable token handling."),
-                "mint_update_manager" => Todo("TODO: update manager needs delayed repeat system."),
-                "mint_cinnamon" => Todo("TODO: cinnamon needs shield effect support."),
-                "mint_nemo" => Todo("TODO: nemo needs conditional repeat based on shield."),
-                "mint_timeshift" => Todo("TODO: timeshift snapshot V3 needs delayed restore system before threshold/restore can be upgraded."),
-                "fedora_borrow_checker" => Todo("TODO: borrow checker needs shield and first-card tracking."),
-                "fedora_cargo_build" => Todo("TODO: cargo build --release needs overkill-to-shield handling."),
-                "fedora_dnf_update" => Todo("TODO: dnf update needs Java played count and cost mutation."),
-                "fedora_rawhide" => Todo("TODO: rawhide V3 needs permanent damage-growth doubling after growth effects exist."),
-                "fedora_selinux" => Todo("TODO: SELinux enforcing needs enemy attack mitigation statuses."),
-                _ => Todo("TODO: card effect is not implemented yet.")
+                "ubuntu_pro_trial" => One(new NoOpCardEffect("ubuntu pro trial is unplayable")),
+                "mint_update_manager" => One(new UpdateManagerEffect(5)),
+                "mint_cinnamon" => new ICardEffect[]
+                {
+                    new ShieldEffect(3),
+                    new DrawEffect(1)
+                },
+                "mint_nemo" => One(new ConditionalShieldRepeatDamageEffect(6, Language.JavaScript)),
+                "mint_timeshift" => One(new TimeshiftSnapshotEffect()),
+                "fedora_borrow_checker" => One(new FirstCardShieldEffect(8, 8)),
+                "fedora_cargo_build" => One(new OverkillToShieldDamageEffect(10, Language.Rust)),
+                "fedora_dnf_update" => One(new DealDamageEffect(9, 9, Language.Java)),
+                "fedora_rawhide" => One(new RawhideEffect()),
+                "fedora_selinux" => One(new IncomingAttackHalveEffect(2)),
+                _ => Todo("card effect is not authored")
             };
         }
 
         public static bool RequiresSingleTarget(CardDefinition definition)
         {
             return definition?.Id is "lang_js_console_log" or "lang_js_fetch" or "lang_js_typeof" or "mint_fix_broken"
-                or "shop_py_list_append" or "shop_js_math_random" or "shop_js_promise_all";
+                or "shop_py_list_append" or "shop_js_math_random" or "shop_js_promise_all" or "ubuntu_snap_install"
+                or "mint_nemo" or "fedora_cargo_build" or "fedora_dnf_update";
         }
 
         public static bool TargetsAllEnemies(CardDefinition definition)
@@ -423,18 +684,28 @@ namespace KernelPanic.Combat
                 "lang_js_console_log" => $"deal {UpgradeMath.ScaleAmount(3, card)}-{UpgradeMath.ScaleAmount(9, card)}.{marker}",
                 "lang_js_fetch" => $"deal {UpgradeMath.ScaleAmount(5, card)}-{UpgradeMath.ScaleAmount(13, card)}.{marker}",
                 "lang_js_typeof" => $"75%: deal {UpgradeMath.ScaleAmount(8, card)}. 25%: deal 0.{marker}",
-                "shop_py_list_append" => $"queue: deal {UpgradeMath.ScaleAmount(4, card)}. TODO: grows when re-queued.{marker}",
-                "shop_py_async_def" => $"queue: draw {UpgradeMath.ScaleAmount(2, card)}. TODO: gain 1 cycle next turn.{marker}",
-                "shop_py_zip" => $"TODO: next 2 queued cards resolve twice.{marker}",
+                "shop_py_list_append" => $"queue: deal {UpgradeMath.ScaleAmount(4 + UnityEngine.Mathf.Max(0, card.QueuePlayCount - 1), card)}; +1 each time re-queued.{marker}",
+                "shop_py_async_def" => $"queue: draw {UpgradeMath.ScaleAmount(2, card)}. gain {UpgradeMath.ScaleAmount(1, card)} cycle next turn.{marker}",
+                "shop_py_zip" => $"next {UpgradeMath.ScaleAmount(2, card)} queued cards resolve twice.{marker}",
                 "shop_js_math_random" => $"deal {UpgradeMath.ScaleAmount(2, card)}-{UpgradeMath.ScaleAmount(20, card)}.{marker}",
                 "shop_js_promise_all" => $"deal {UpgradeMath.ScaleAmount(4, card)}-{UpgradeMath.ScaleAmount(10, card)} three times.{marker}",
-                "shop_js_spread" => $"TODO: copy the lowest-cost card in hand.{marker}",
+                "shop_js_spread" => $"copy the lowest-cost card in hand.{marker}",
                 "ubuntu_ask_ubuntu" => $"queue: draw {UpgradeMath.ScaleAmount(2, card)}.{marker}",
                 "ubuntu_unattended_upgrades" => $"queue: gain {UpgradeMath.ScaleShield(4, card)} shield now and next 2 turns.{marker}",
+                "ubuntu_snap_install" => $"deal {UpgradeMath.ScaleAmount(6, card)}-{UpgradeMath.ScaleAmount(14, card)}. shuffle an ubuntu pro trial into your draw pile.{marker}",
                 "ubuntu_do_release_upgrade" => $"upgrade {UpgradeMath.ScaleAmount(1, card)}-{UpgradeMath.ScaleAmount(3, card)} random hand cards.{marker}",
                 "ubuntu_apt_install" => $"queue: generate a random common Python card at 0c.{marker}",
                 "mint_fix_broken" => $"deal {UpgradeMath.ScaleAmount(8, card)}. cleanse harmful statuses.{marker}",
-                _ => string.IsNullOrWhiteSpace(card.Definition.Description) ? "TODO: effect not implemented." : $"{card.Definition.Description}{marker}"
+                "mint_update_manager" => $"queue: deal {UpgradeMath.ScaleAmount(5, card)} to all enemies. repeats at the end of your next turn.{marker}",
+                "mint_cinnamon" => $"queue: gain {UpgradeMath.ScaleShield(3, card)} shield. draw {UpgradeMath.ScaleAmount(1, card)}.{marker}",
+                "mint_nemo" => $"deal {UpgradeMath.ScaleAmount(6, card)}. if you have shield, deal it again.{marker}",
+                "mint_timeshift" => $"queue: record uptime now. at end of your next turn, restore to it if lower.{marker}",
+                "fedora_borrow_checker" => $"gain {UpgradeMath.ScaleShield(8, card)} shield. if first card this turn, gain {UpgradeMath.ScaleShield(8, card)} more.{marker}",
+                "fedora_cargo_build" => $"deal {UpgradeMath.ScaleAmount(10, card)}. overkill becomes shield.{marker}",
+                "fedora_dnf_update" => $"deal {UpgradeMath.ScaleAmount(9, card)}. costs 1 less per Java card played this combat.{marker}",
+                "fedora_rawhide" => $"draw {UpgradeMath.ScaleAmount(2, card)}. next card this turn gains bleeding edge.{marker}",
+                "fedora_selinux" => $"next {UpgradeMath.ScaleAmount(2, card)} enemy attacks deal half damage.{marker}",
+                _ => string.IsNullOrWhiteSpace(card.Definition.Description) ? "effect not authored." : $"{card.Definition.Description}{marker}"
             };
         }
 

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: shop_js_spread
   displayName: spread ...
-  description: 'TODO: copy the lowest-cost card in hand.'
+  description: 'copy the lowest-cost card in hand.'
   flavorText: cloning by punctuation, naturally.
   language: 4
   rarity: 1
@@ -23,7 +23,7 @@ MonoBehaviour:
   distroExclusive: 0
   isToken: 0
   isRunOnly: 1
-  designNotes: Run-only Repository card. Requires card-copy.
+  designNotes: Run-only Repository card. Copies the lowest-cost card currently in hand.
   requiresSystem:
   - card-copy
   upgradeTarget: {fileID: 0}

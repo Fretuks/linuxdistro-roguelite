@@ -120,6 +120,12 @@ namespace KernelPanic.UI
         private IReadOnlyList<CardDefinition> BuildGeneratedCardPool()
         {
             List<CardDefinition> cards = new();
+            if (cardDatabase != null)
+            {
+                cards.AddRange(cardDatabase.AllCards);
+                return cards;
+            }
+
             if (languageDeckDatabase == null)
             {
                 return cards;
@@ -795,7 +801,7 @@ namespace KernelPanic.UI
                 button.AddToClassList("hand-card-selected");
             }
 
-            if (CombatManager.GetCardCost(card) > combatManager.PlayerState.Cycles)
+            if (GetDisplayCardCost(card) > combatManager.PlayerState.Cycles)
             {
                 button.AddToClassList("hand-card-unaffordable");
             }
@@ -804,7 +810,7 @@ namespace KernelPanic.UI
             return button;
         }
 
-        private static VisualElement CardFaceView(CardInstance card)
+        private VisualElement CardFaceView(CardInstance card)
         {
             VisualElement face = new();
             face.AddToClassList("hand-card");
@@ -812,7 +818,7 @@ namespace KernelPanic.UI
             return face;
         }
 
-        private static void PopulateCardFace(VisualElement target, CardInstance card)
+        private void PopulateCardFace(VisualElement target, CardInstance card)
         {
             string cardRarityClass = CardRarityClass(card.Definition.Rarity);
             if (!string.IsNullOrEmpty(cardRarityClass))
@@ -822,7 +828,7 @@ namespace KernelPanic.UI
 
             VisualElement top = new();
             top.AddToClassList("card-top-row");
-            Label cost = new(CombatManager.GetCardCost(card).ToString());
+            Label cost = new(GetDisplayCardCost(card).ToString());
             cost.AddToClassList("card-cost");
             Label name = new($"{DisplayName(card.Definition)}{(card.IsUpgraded ? " +" : string.Empty)}");
             name.AddToClassList("card-name");
@@ -1337,7 +1343,7 @@ namespace KernelPanic.UI
             chip.AddToClassList(LanguageClass(card.Definition.Language));
             Label name = new(DisplayName(card.Definition));
             name.AddToClassList("card-chip-name");
-            Label meta = new($"{CombatManager.GetCardCost(card)}c / {TrackText(card.Definition.ResolutionTrack)}");
+            Label meta = new($"{GetDisplayCardCost(card)}c / {TrackText(card.Definition.ResolutionTrack)}");
             meta.AddToClassList("card-chip-meta");
             chip.Add(name);
             chip.Add(meta);
@@ -1349,6 +1355,11 @@ namespace KernelPanic.UI
             Label label = new(text);
             label.AddToClassList("empty-state");
             return label;
+        }
+
+        private int GetDisplayCardCost(CardInstance card)
+        {
+            return combatManager == null ? CombatManager.GetCardCost(card) : combatManager.GetEffectiveCardCost(card);
         }
 
         private static VisualElement CreatePanel(string title, string subtitle, float width)

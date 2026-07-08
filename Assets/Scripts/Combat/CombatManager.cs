@@ -25,6 +25,7 @@ namespace KernelPanic.Combat
         private readonly List<EnemyInstance> enemies = new();
         private readonly HashSet<string> loggedEffectTodos = new();
         private readonly List<CardDefinition> generatedCardPool = new();
+        private readonly List<DelayedCombatEffect> delayedEffects = new();
         private RunManager runManager;
         private RunConfig runConfig;
         private HandController handController;
@@ -37,6 +38,11 @@ namespace KernelPanic.Combat
         private bool ubuntuEmptyHandRefillUsed;
         private int fedoraCardsDiscountedThisTurn;
         private int fedoraCrashChance = 10;
+        private int cardsPlayedThisTurn;
+        private int javaCardsPlayedThisCombat;
+        private int rawhideBonusCharges;
+        private int queuedRepeatCharges;
+        private int nextTurnCycleBonus;
 
         public TurnPhase CurrentPhase => currentPhase;
         public RunConfig RunConfig => runConfig;
@@ -145,8 +151,14 @@ namespace KernelPanic.Combat
                 return false;
             }
 
+            if (card.Definition.IsToken)
+            {
+                Log($"{GetCardName(card)} is unplayable");
+                return false;
+            }
+
             bool fedoraBonus = CanApplyFedoraBonus();
-            int cost = GetCardCost(card);
+            int cost = GetEffectiveCardCost(card);
             if (fedoraBonus)
             {
                 cost = Mathf.Max(0, cost - 1);
@@ -173,6 +185,13 @@ namespace KernelPanic.Combat
 
             playerState.Cycles -= cost;
             ResolutionTrack track = card.Definition.ResolutionTrack;
+            card.MarkPlayedThisTurn(cardsPlayedThisTurn == 0);
+            cardsPlayedThisTurn++;
+            if (card.Definition.Language == Language.Java)
+            {
+                javaCardsPlayedThisCombat++;
+            }
+
             GameEvents.RaiseCardPlayed(new CardPlayedEvent(card, track));
             LogPlayIntent(card);
             card.SetTargetSnapshot(CaptureTargets(card));
@@ -180,7 +199,13 @@ namespace KernelPanic.Combat
             if (fedoraBonus)
             {
                 fedoraCardsDiscountedThisTurn++;
-                if (RandomRoll.RollRange(1, 100, new RollContext(playerState)) <= fedoraCrashChance)
+                bool rawhideChargeUsed = rawhideBonusCharges > 0;
+                if (rawhideChargeUsed)
+                {
+                    rawhideBonusCharges--;
+                }
+
+                if (!IsCrashImmune(card) && RandomRoll.RollRange(1, 100, new RollContext(playerState)) <= fedoraCrashChance)
                 {
                     fedoraCrashChance = 10;
                     if (IsDistro("fedora") && runConfig.DistroVersion >= 4)
@@ -198,11 +223,13 @@ namespace KernelPanic.Combat
 
                 fedoraCrashChance = Mathf.Min(90, fedoraCrashChance + 10);
                 playerState.DamageMultiplierPercent = runConfig.DistroVersion >= 2 ? 175 : 150;
+                ApplyFedoraGrowth(card, rawhideChargeUsed);
             }
 
             switch (track)
             {
                 case ResolutionTrack.InterpreterQueue:
+                    card.MarkQueued();
                     interpreterQueue.Enqueue(card);
                     break;
                 case ResolutionTrack.LazyStack:
@@ -235,6 +262,17 @@ namespace KernelPanic.Combat
             return Mathf.Max(0, card.Definition.CycleCost + card.PermanentCostDelta + card.TemporaryCostDelta);
         }
 
+        public int GetEffectiveCardCost(CardInstance card)
+        {
+            int cost = GetCardCost(card);
+            if (card?.Definition != null && string.Equals(card.Definition.Id, "fedora_dnf_update", StringComparison.OrdinalIgnoreCase))
+            {
+                cost -= javaCardsPlayedThisCombat;
+            }
+
+            return Mathf.Max(0, cost);
+        }
+
         public bool RequiresTarget(CardInstance card)
         {
             return card?.Definition != null && CardEffectFactory.RequiresSingleTarget(card.Definition) && LivingEnemyStates().Count > 0;
@@ -258,6 +296,86 @@ namespace KernelPanic.Combat
             }
         }
 
+        public void AddNextTurnCycleBonus(int amount)
+        {
+            nextTurnCycleBonus += Mathf.Max(0, amount);
+        }
+
+        public void AddQueuedRepeatCharges(int amount)
+        {
+            queuedRepeatCharges += Mathf.Max(0, amount);
+            if (amount > 0)
+            {
+                ReportEffectResult($"next {amount} queued card(s) resolve twice");
+            }
+        }
+
+        public int ConsumeQueuedResolutionCount(CardInstance card)
+        {
+            if (queuedRepeatCharges <= 0 || card == null)
+            {
+                return 1;
+            }
+
+            queuedRepeatCharges--;
+            return 2;
+        }
+
+        public void GrantRawhideBonus(int charges)
+        {
+            rawhideBonusCharges += Mathf.Max(0, charges);
+        }
+
+        public void AddIncomingAttackHalfCharges(int charges)
+        {
+            if (playerState == null)
+            {
+                return;
+            }
+
+            playerState.IncomingAttackHalfCharges += Mathf.Max(0, charges);
+            ReportEffectResult($"next {charges} enemy attack(s) halved");
+        }
+
+        public void ScheduleUpdateManagerRepeat(int damageAmount)
+        {
+            delayedEffects.Add(DelayedCombatEffect.UpdateManagerRepeat(damageAmount, 2));
+            ReportEffectResult("update manager scheduled repeat");
+        }
+
+        public void ScheduleTimeshiftRestore(int uptime)
+        {
+            delayedEffects.Add(DelayedCombatEffect.TimeshiftRestore(uptime, 2));
+            ReportEffectResult($"timeshift snapshot recorded {uptime} uptime");
+        }
+
+        public bool TryCreateGeneratedCardById(string id, out CardInstance generatedCard)
+        {
+            generatedCard = null;
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return false;
+            }
+
+            IReadOnlyList<CardDefinition> source = generatedCardPool.Count > 0 ? generatedCardPool : runConfig?.StartingDeck;
+            if (source == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                CardDefinition definition = source[i];
+                if (definition != null && string.Equals(definition.Id, id, StringComparison.OrdinalIgnoreCase))
+                {
+                    generatedCard = new CardInstance(definition);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public void SetGeneratedCardPool(IEnumerable<CardDefinition> cardPool)
         {
             generatedCardPool.Clear();
@@ -268,7 +386,7 @@ namespace KernelPanic.Combat
 
             foreach (CardDefinition card in cardPool)
             {
-                if (card != null && !card.IsToken && !card.IsRunOnly)
+                if (card != null)
                 {
                     generatedCardPool.Add(card);
                 }
@@ -394,6 +512,12 @@ namespace KernelPanic.Combat
             ubuntuEmptyHandRefillUsed = false;
             fedoraCrashChance = 10;
             fedoraCardsDiscountedThisTurn = 0;
+            cardsPlayedThisTurn = 0;
+            javaCardsPlayedThisCombat = 0;
+            rawhideBonusCharges = 0;
+            queuedRepeatCharges = 0;
+            nextTurnCycleBonus = 0;
+            delayedEffects.Clear();
             RandomRoll.Seed(runConfig.RunSeed);
             playerState = new CombatantState(runManager.EffectiveMaxUptime(), runManager.EffectiveRam(), runManager.EffectiveMaxCycles());
             ApplyVersionState(playerState);
@@ -418,6 +542,7 @@ namespace KernelPanic.Combat
                 playerState.MaxCycles = runManager.EffectiveMaxCycles();
                 playerState.Cycles = 0;
                 playerState.Shield = 0;
+                playerState.IncomingAttackHalfCharges = 0;
                 playerState.IsDefeated = false;
                 playerState.MutableStatuses.Clear();
                 ApplyVersionState(playerState);
@@ -456,6 +581,13 @@ namespace KernelPanic.Combat
 
             playerState.Cycles = playerState.MaxCycles;
             fedoraCardsDiscountedThisTurn = 0;
+            cardsPlayedThisTurn = 0;
+            if (nextTurnCycleBonus > 0)
+            {
+                playerState.Cycles += nextTurnCycleBonus;
+                Log($"deferred cycle grant: +{nextTurnCycleBonus}");
+                nextTurnCycleBonus = 0;
+            }
             statusEffects.Tick(playerState, StatusTickTiming.StartOfTurn, playerState, damagePipeline);
             if (CheckLoss())
             {
@@ -481,7 +613,16 @@ namespace KernelPanic.Combat
             while (interpreterQueue.TryDequeue(out CardInstance card))
             {
                 LogPlayIntent(card);
-                ExecuteCardEffects(card, ResolveQueuedTargets(card));
+                int resolutionCount = ConsumeQueuedResolutionCount(card);
+                for (int repeatIndex = 0; repeatIndex < resolutionCount; repeatIndex++)
+                {
+                    ExecuteCardEffects(card, ResolveQueuedTargets(card));
+                    if (CheckWinOrLoss())
+                    {
+                        return;
+                    }
+                }
+
                 ResolveCardRiders(card);
                 deckController.Discard(card);
                 GameEvents.RaiseCardResolved(new CardResolvedEvent(card, ResolutionTrack.InterpreterQueue));
@@ -537,6 +678,12 @@ namespace KernelPanic.Combat
             pendingTargetCard = null;
             statusEffects.Tick(playerState, StatusTickTiming.EndOfTurn, playerState, damagePipeline);
             if (CheckLoss())
+            {
+                return;
+            }
+
+            ResolveDelayedEndOfTurnEffects();
+            if (CheckWinOrLoss())
             {
                 return;
             }
@@ -639,6 +786,11 @@ namespace KernelPanic.Combat
 
         private bool CanApplyFedoraBonus()
         {
+            return CanApplyFedoraPassiveBonus() || rawhideBonusCharges > 0;
+        }
+
+        private bool CanApplyFedoraPassiveBonus()
+        {
             if (!IsDistro("fedora") || playerState == null)
             {
                 return false;
@@ -646,6 +798,27 @@ namespace KernelPanic.Combat
 
             int limit = runConfig.DistroVersion >= 5 ? 2 : 1;
             return fedoraCardsDiscountedThisTurn < limit;
+        }
+
+        private void ApplyFedoraGrowth(CardInstance card, bool rawhideChargeUsed)
+        {
+            if (!IsDistro("fedora") || runConfig.DistroVersion < 3 || card == null || !card.WasFirstCardThisTurn)
+            {
+                return;
+            }
+
+            int growth = rawhideChargeUsed ? 2 : 1;
+            if (card.ApplyCombatMagnitudeBonus(growth))
+            {
+                Log($"rawhide growth: {GetCardName(card)} +{growth} effect");
+            }
+        }
+
+        private static bool IsCrashImmune(CardInstance card)
+        {
+            string id = card?.Definition?.Id;
+            return string.Equals(id, "fedora_cargo_build", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(id, "fedora_selinux", StringComparison.OrdinalIgnoreCase);
         }
 
         private void ApplyVersionState(CombatantState state)
@@ -856,6 +1029,7 @@ namespace KernelPanic.Combat
             switch (intent.Kind)
             {
                 case EnemyIntentKind.Attack:
+                    value = ApplyIncomingAttackMitigation(value);
                     DamageResult attackResult = damagePipeline.DealDamage(new DamageRequest(enemy.State, playerState, value, intent.DamageType, intent.TrueDamage, false));
                     GameEvents.RaisePlayerDamaged(new PlayerDamagedEvent(enemy, attackResult.FinalAmount));
                     break;
@@ -877,6 +1051,79 @@ namespace KernelPanic.Combat
                     Log("TODO: special intent needs enemy-specific behavior hooks.");
                     break;
             }
+        }
+
+        private int ApplyIncomingAttackMitigation(int value)
+        {
+            if (playerState == null || playerState.IncomingAttackHalfCharges <= 0)
+            {
+                return value;
+            }
+
+            playerState.IncomingAttackHalfCharges--;
+            int mitigated = Mathf.CeilToInt(Mathf.Max(0, value) * 0.5f);
+            Log($"SELinux enforcing halved attack {value}->{mitigated}");
+            return mitigated;
+        }
+
+        private void ResolveDelayedEndOfTurnEffects()
+        {
+            for (int i = delayedEffects.Count - 1; i >= 0; i--)
+            {
+                DelayedCombatEffect effect = delayedEffects[i];
+                effect.GarbageCollectionsRemaining--;
+                if (effect.GarbageCollectionsRemaining > 0)
+                {
+                    delayedEffects[i] = effect;
+                    continue;
+                }
+
+                delayedEffects.RemoveAt(i);
+                switch (effect.Kind)
+                {
+                    case DelayedCombatEffectKind.UpdateManagerRepeat:
+                        DealToAllEnemies(effect.Amount, Language.Python, "update manager repeat");
+                        break;
+                    case DelayedCombatEffectKind.TimeshiftRestore:
+                        RestoreTimeshift(effect.Amount);
+                        break;
+                }
+            }
+        }
+
+        private void DealToAllEnemies(int amount, Language language, string label)
+        {
+            List<CombatantState> targets = LivingEnemyStates();
+            for (int i = 0; i < targets.Count; i++)
+            {
+                damagePipeline.DealDamage(new DamageRequest(playerState, targets[i], amount, language, false, false));
+            }
+
+            Log($"{label}: dealt {amount} to all enemies");
+            RemoveDefeatedEnemies();
+        }
+
+        private void RestoreTimeshift(int snapshot)
+        {
+            if (playerState == null || playerState.IsDefeated || playerState.CurrentUptime >= snapshot)
+            {
+                return;
+            }
+
+            int target = snapshot;
+            if (IsDistro("mint") && runConfig.DistroVersion >= 3)
+            {
+                target = Mathf.Min(playerState.MaxUptime, snapshot + 2);
+            }
+
+            if (IsDistro("mint") && runConfig.DistroVersion >= 5)
+            {
+                target = playerState.MaxUptime;
+            }
+
+            int restored = target - playerState.CurrentUptime;
+            playerState.CurrentUptime = target;
+            Log($"timeshift restored {restored} uptime");
         }
 
         private bool CheckWinOrLoss()
@@ -944,5 +1191,35 @@ namespace KernelPanic.Combat
         }
 
         private bool IsCombatPaused => awaitingWaveContinue || runLost;
+
+        private enum DelayedCombatEffectKind
+        {
+            UpdateManagerRepeat,
+            TimeshiftRestore
+        }
+
+        private struct DelayedCombatEffect
+        {
+            private DelayedCombatEffect(DelayedCombatEffectKind kind, int amount, int garbageCollectionsRemaining)
+            {
+                Kind = kind;
+                Amount = amount;
+                GarbageCollectionsRemaining = garbageCollectionsRemaining;
+            }
+
+            public DelayedCombatEffectKind Kind { get; }
+            public int Amount { get; }
+            public int GarbageCollectionsRemaining { get; set; }
+
+            public static DelayedCombatEffect UpdateManagerRepeat(int amount, int garbageCollectionsRemaining)
+            {
+                return new DelayedCombatEffect(DelayedCombatEffectKind.UpdateManagerRepeat, amount, garbageCollectionsRemaining);
+            }
+
+            public static DelayedCombatEffect TimeshiftRestore(int uptime, int garbageCollectionsRemaining)
+            {
+                return new DelayedCombatEffect(DelayedCombatEffectKind.TimeshiftRestore, uptime, garbageCollectionsRemaining);
+            }
+        }
     }
 }

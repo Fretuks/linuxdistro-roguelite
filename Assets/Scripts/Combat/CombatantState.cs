@@ -31,6 +31,7 @@ namespace KernelPanic.Combat
         public bool AllowFlatDamageBuffs { get; set; }
         public int FlatEffectBonus { get; set; }
         public int DamageMultiplierPercent { get; set; } = 100;
+        public int IncomingAttackHalfCharges { get; set; }
         public IReadOnlyList<StatusInstance> Statuses => _statuses;
         public IReadOnlyDictionary<StatusType, int> ActiveStatuses => BuildStatusSnapshot();
 

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: shop_py_list_append
   displayName: list.append()
-  description: 'queue: deal 4. TODO: grows when re-queued.'
+  description: 'queue: deal 4. gains +1 damage each time it is re-queued.'
   flavorText: mutable state, but make it cute.
   language: 3
   rarity: 1
@@ -23,7 +23,7 @@ MonoBehaviour:
   distroExclusive: 0
   isToken: 0
   isRunOnly: 1
-  designNotes: Run-only Repository card. Base deal 4 works now; permanent per-combat requeue growth waits for requeue-tracking.
+  designNotes: Run-only Repository card. Base deal 4 with per-combat requeue growth.
   requiresSystem:
   - requeue-tracking
   upgradeTarget: {fileID: 0}

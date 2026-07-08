@@ -41,7 +41,7 @@ namespace KernelPanic.Meta
                 {
                     1 => "first card each turn costs 1 less and deals +50%, with crash risk",
                     2 => "first-card damage bonus rises to +75%",
-                    3 => "rawhide TODO: double permanent damage growth on non-crash first-card turn",
+                    3 => "non-crashing first-card plays gain +1 effect this combat; rawhide doubles that growth",
                     4 => "crashes grant +1 Cycle that turn",
                     5 => "first two cards each turn get the discount, bonus, and independent crash rolls",
                     _ => "--"
@@ -50,12 +50,12 @@ namespace KernelPanic.Meta
                 {
                     1 => "random values roll max; no crits; ignores multiplicative damage buffs",
                     2 => "fixed effect values are treated as +2",
-                    3 => "timeshift snapshot TODO: stronger restore when delayed restore exists",
+                    3 => "timeshift snapshot restores 2 uptime beyond the snapshot, up to max uptime",
                     4 => "flat +damage can apply; multiplicative crit/mult remains ignored",
-                    5 => "TODO: re-resolve reduced effect when enemy reduction/coercion exists",
+                    5 => "timeshift snapshot restores to full uptime if lower",
                     _ => "--"
                 },
-                _ => safeVersion == 1 ? "base release" : $"TODO: V{safeVersion} release effect"
+                _ => safeVersion == 1 ? "base release" : $"V{safeVersion} release effect"
             };
         }
     }

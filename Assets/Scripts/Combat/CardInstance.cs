@@ -23,6 +23,8 @@ namespace KernelPanic.Combat
         public int MagnitudeBonus { get; private set; }
         public int DrawRider { get; private set; }
         public int UpgradeLevel { get; private set; }
+        public int QueuePlayCount { get; private set; }
+        public bool WasFirstCardThisTurn { get; private set; }
         public bool IsBroken { get; set; }
         public bool IsLocked { get; set; }
         public bool CanUpgrade => UpgradeLevel == 0;
@@ -67,6 +69,17 @@ namespace KernelPanic.Combat
             return true;
         }
 
+        public bool ApplyCombatMagnitudeBonus(int amount)
+        {
+            if (amount <= 0)
+            {
+                return false;
+            }
+
+            MagnitudeBonus += amount;
+            return true;
+        }
+
         public bool ApplyDrawRider(int amount)
         {
             if (amount <= 0)
@@ -77,6 +90,35 @@ namespace KernelPanic.Combat
             DrawRider += amount;
             UpgradeLevel++;
             return true;
+        }
+
+        public void MarkQueued()
+        {
+            QueuePlayCount++;
+        }
+
+        public void MarkPlayedThisTurn(bool wasFirst)
+        {
+            WasFirstCardThisTurn = wasFirst;
+        }
+
+        public CardInstance CopyForCombat()
+        {
+            CardInstance copy = new(Definition)
+            {
+                TemporaryCostDelta = TemporaryCostDelta,
+                IsBroken = IsBroken,
+                IsLocked = IsLocked
+            };
+
+            copy.PermanentCostDelta = PermanentCostDelta;
+            copy.MagnitudeBonus = MagnitudeBonus;
+            copy.DrawRider = DrawRider;
+            copy.UpgradeLevel = UpgradeLevel;
+            copy.QueuePlayCount = QueuePlayCount;
+            copy.WasFirstCardThisTurn = WasFirstCardThisTurn;
+            copy.SetTargetSnapshot(TargetSnapshot);
+            return copy;
         }
 
         public void SetTargetSnapshot(IEnumerable<CombatantState> targets)
@@ -98,6 +140,8 @@ namespace KernelPanic.Combat
         public void ResetCombatState()
         {
             TemporaryCostDelta = 0;
+            QueuePlayCount = 0;
+            WasFirstCardThisTurn = false;
             IsBroken = false;
             IsLocked = false;
             ClearTargetSnapshot();
