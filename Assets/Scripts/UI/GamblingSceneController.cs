@@ -297,20 +297,12 @@ namespace KernelPanic.UI
                 string displayName = reward.DisplayName;
                 if (reward.RewardType == GachaRewardType.Package)
                 {
-                    PackageDefinition package = GrantRandomPackageByRarity(pending.PackageDatabase, collection, saveData, reward.StarRating, out bool duplicatePackage);
+                    PackageDefinition package = GrantRandomPackageByRarity(pending.PackageDatabase, collection, saveData, reward.StarRating, out bool duplicatePackage, out int cacheAwarded);
                     if (package != null)
                     {
                         displayName = string.IsNullOrWhiteSpace(package.DisplayName) ? package.Id : package.DisplayName;
-                        if (duplicatePackage)
-                        {
-                            outcomeKind = PullOutcomeKind.Dupe;
-                            merges = Mathf.Max(1, GachaTuning.MergesPerDupe);
-                            saveData.packageMerges += merges;
-                        }
-                        else
-                        {
-                            outcomeKind = PullOutcomeKind.Granted;
-                        }
+                        outcomeKind = duplicatePackage ? PullOutcomeKind.Dupe : PullOutcomeKind.Granted;
+                        merges = cacheAwarded;
                     }
                 }
 
@@ -373,7 +365,7 @@ namespace KernelPanic.UI
             SummaryTotals totals = CalculateTotals();
             if (!animate)
             {
-                summaryTotalsLabel.text = FormatTotals(totals.Units, totals.Merges, totals.LanguagesText);
+                summaryTotalsLabel.text = FormatTotals(totals.Units, totals.Merges, totals.Cache, totals.LanguagesText);
                 return;
             }
 
@@ -387,7 +379,8 @@ namespace KernelPanic.UI
                     float t = capturedStep / (float)SummaryTickSteps;
                     int units = Mathf.RoundToInt(Mathf.Lerp(0, totals.Units, t));
                     int merges = Mathf.RoundToInt(Mathf.Lerp(0, totals.Merges, t));
-                    summaryTotalsLabel.text = FormatTotals(units, merges, capturedStep == SummaryTickSteps ? totals.LanguagesText : "...");
+                    int cache = Mathf.RoundToInt(Mathf.Lerp(0, totals.Cache, t));
+                    summaryTotalsLabel.text = FormatTotals(units, merges, cache, capturedStep == SummaryTickSteps ? totals.LanguagesText : "...");
                     if (capturedStep == SummaryTickSteps)
                     {
                         summaryTotalsLabel.RemoveFromClassList("summary-tick");
@@ -400,6 +393,7 @@ namespace KernelPanic.UI
         {
             int units = 0;
             int merges = 0;
+            int cache = 0;
             HashSet<Language> languages = new();
             for (int i = 0; i < rewards.Count; i++)
             {
@@ -408,21 +402,30 @@ namespace KernelPanic.UI
                     units++;
                 }
 
-                merges += rewards[i].MergesAwarded;
+                if (rewards[i].RewardType == GachaRewardType.Package)
+                {
+                    cache += rewards[i].MergesAwarded;
+                }
+                else
+                {
+                    merges += rewards[i].MergesAwarded;
+                }
+
                 for (int languageIndex = 0; languageIndex < rewards[i].LanguagesUnlocked.Count; languageIndex++)
                 {
                     languages.Add(rewards[i].LanguagesUnlocked[languageIndex]);
                 }
             }
 
-            return new SummaryTotals(units, merges, FormatLanguages(languages));
+            return new SummaryTotals(units, merges, cache, FormatLanguages(languages));
         }
 
-        private static string FormatTotals(int units, int merges, string languagesText)
+        private static string FormatTotals(int units, int merges, int cache, string languagesText)
         {
             string unitText = units == 0 ? "none" : units.ToString();
             string mergeText = merges == 0 ? "none" : merges.ToString();
-            return $"units gained: {unitText}   merges: {mergeText}   languages unlocked: {languagesText}";
+            string cacheText = cache == 0 ? "none" : cache.ToString();
+            return $"units gained: {unitText}   merges: {mergeText}   cache: {cacheText}   languages unlocked: {languagesText}";
         }
 
         private static string FormatLanguages(HashSet<Language> languages)
@@ -468,9 +471,10 @@ namespace KernelPanic.UI
             return collection;
         }
 
-        private static PackageDefinition GrantRandomPackageByRarity(PackageDatabase packageDatabase, PlayerCollection collection, SaveData saveData, int rarity, out bool duplicate)
+        private static PackageDefinition GrantRandomPackageByRarity(PackageDatabase packageDatabase, PlayerCollection collection, SaveData saveData, int rarity, out bool duplicate, out int cacheAwarded)
         {
             duplicate = false;
+            cacheAwarded = 0;
             int count = packageDatabase == null ? 0 : packageDatabase.CountByRarity(rarity);
             if (count <= 0)
             {
@@ -484,8 +488,15 @@ namespace KernelPanic.UI
                 return null;
             }
 
-            duplicate = collection.IsPackageOwned(package.Id) || saveData.ownedPackageIds.Exists(id => string.Equals(id, package.Id, StringComparison.OrdinalIgnoreCase));
-            if (!duplicate)
+            duplicate = collection.IsPackageOwned(package.Id);
+            if (duplicate)
+            {
+                // Packages are unique-per-type: a dupe never creates a second instance, it
+                // auto-scraps into Cache immediately, mirroring the distro dupe -> Merges path.
+                cacheAwarded = PackageTuning.GetCacheForRarity(package.Rarity);
+                saveData.cacheBalance += cacheAwarded;
+            }
+            else
             {
                 collection.AddPackageSilently(package);
                 saveData.ownedPackages.Add(new OwnedPackageSaveEntry { id = package.Id, upgradeLevel = 0 });
@@ -758,15 +769,17 @@ namespace KernelPanic.UI
 
         private readonly struct SummaryTotals
         {
-            public SummaryTotals(int units, int merges, string languagesText)
+            public SummaryTotals(int units, int merges, int cache, string languagesText)
             {
                 Units = units;
                 Merges = merges;
+                Cache = cache;
                 LanguagesText = languagesText;
             }
 
             public int Units { get; }
             public int Merges { get; }
+            public int Cache { get; }
             public string LanguagesText { get; }
         }
 

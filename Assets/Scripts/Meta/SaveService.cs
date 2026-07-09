@@ -69,6 +69,7 @@ namespace KernelPanic.Meta
         // Legacy pull-token field kept only so older saves deserialize cleanly.
         public int limitedPullCurrency;
         public int cacheBalance;
+        // Legacy per-pull package-dupe pool. Package dupes now auto-scrap directly to Cache.
         public int packageMerges;
         // Legacy global balance kept only so older saves deserialize cleanly.
         // New duplicate-pull merges live on OwnedUnitSaveEntry.merges.
@@ -83,6 +84,13 @@ namespace KernelPanic.Meta
         public LastRunLoadoutSaveEntry lastRunLoadout = new();
         public string lastRunDistroId;
         public List<DistroBestWaveSaveEntry> distroBestWaves = new();
+
+        // Populated by NormalizeOwnedPackages when a save contains more than one instance of the
+        // same package id (packages are unique-per-type). Not serialized: the owner (bootstrap code
+        // with access to PackageDatabase) consumes this once per load to grant Cache for the extras,
+        // then clears it. See MainMenuController.LoadMetaState.
+        [NonSerialized]
+        public List<CollapsedPackageDuplicate> collapsedPackageDuplicates = new();
 
         public static SaveData CreateDefault()
         {
@@ -228,17 +236,36 @@ namespace KernelPanic.Meta
 
         private void NormalizeOwnedPackages()
         {
-            HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
-            for (int i = ownedPackages.Count - 1; i >= 0; i--)
+            collapsedPackageDuplicates.Clear();
+            Dictionary<string, OwnedPackageSaveEntry> highestById = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, int> extraCountById = new(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < ownedPackages.Count; i++)
             {
                 OwnedPackageSaveEntry entry = ownedPackages[i];
-                if (entry == null || string.IsNullOrWhiteSpace(entry.id) || !seen.Add(entry.id))
+                if (entry == null || string.IsNullOrWhiteSpace(entry.id))
                 {
-                    ownedPackages.RemoveAt(i);
                     continue;
                 }
 
                 entry.upgradeLevel = Math.Max(0, Math.Min(PackageTuning.MaxPackageLevel, entry.upgradeLevel));
+                if (highestById.TryGetValue(entry.id, out OwnedPackageSaveEntry existing))
+                {
+                    extraCountById[entry.id] = extraCountById.TryGetValue(entry.id, out int count) ? count + 1 : 1;
+                    if (entry.upgradeLevel > existing.upgradeLevel)
+                    {
+                        highestById[entry.id] = entry;
+                    }
+                }
+                else
+                {
+                    highestById[entry.id] = entry;
+                }
+            }
+
+            ownedPackages = new List<OwnedPackageSaveEntry>(highestById.Values);
+            foreach (KeyValuePair<string, int> extra in extraCountById)
+            {
+                collapsedPackageDuplicates.Add(new CollapsedPackageDuplicate(extra.Key, extra.Value));
             }
 
             ownedPackageIds.Clear();
@@ -405,6 +432,18 @@ namespace KernelPanic.Meta
     {
         public string id;
         public int upgradeLevel;
+    }
+
+    public sealed class CollapsedPackageDuplicate
+    {
+        public CollapsedPackageDuplicate(string id, int extraCount)
+        {
+            Id = id;
+            ExtraCount = extraCount;
+        }
+
+        public string Id { get; }
+        public int ExtraCount { get; }
     }
 
     [Serializable]
