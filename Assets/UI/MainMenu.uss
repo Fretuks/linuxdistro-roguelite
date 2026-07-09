@@ -1166,6 +1166,33 @@ Button {
     border-top-color: var(--kp-border);
 }
 
+.packages-master-detail {
+    flex-grow: 1;
+    min-height: 0;
+    flex-direction: row;
+}
+
+.packages-slot-list {
+    width: 46%;
+    min-width: 0;
+    margin-right: 14px;
+}
+
+.packages-detail-panel {
+    flex-grow: 1;
+    min-width: 0;
+    padding: 10px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-border);
+    border-right-color: var(--kp-border);
+    border-top-color: var(--kp-border);
+    border-bottom-color: var(--kp-border);
+    background-color: var(--kp-bg-solid);
+}
+
 .package-slot-row {
     min-height: 42px;
     flex-direction: row;
@@ -1184,16 +1211,21 @@ Button {
     background-color: var(--kp-hover);
 }
 
+.package-slot-row.selected {
+    border-left-color: var(--kp-primary);
+    background-color: var(--kp-hover);
+}
+
 .package-slot-label {
-    width: 92px;
-    min-width: 92px;
+    width: 76px;
+    min-width: 76px;
     color: var(--kp-muted);
     font-size: 12px;
 }
 
 .package-slot-name {
-    width: 190px;
-    min-width: 150px;
+    width: 128px;
+    min-width: 95px;
     color: var(--kp-primary);
     white-space: nowrap;
     overflow: hidden;
@@ -1201,14 +1233,14 @@ Button {
 }
 
 .package-slot-rarity {
-    width: 52px;
-    min-width: 52px;
+    width: 40px;
+    min-width: 40px;
     -unity-text-align: middle-center;
 }
 
 .package-slot-level {
-    width: 70px;
-    min-width: 70px;
+    width: 58px;
+    min-width: 58px;
     color: var(--kp-amber);
     font-size: 12px;
     -unity-text-align: middle-center;

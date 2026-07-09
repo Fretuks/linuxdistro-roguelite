@@ -666,16 +666,25 @@ namespace KernelPanic.UI
             SaveData saveData = _getSaveData?.Invoke();
             int cache = Math.Max(0, saveData?.cacheBalance ?? 0);
             int bandwidth = Math.Max(0, saveData?.bandwidthBalance ?? 0);
-            target.Add(BuildDetailLine("wallet", $"Cache={cache} Bandwidth={bandwidth}"));
-            AddPackageSlotSummaryRow(target, unit, PackageSlot.Kernel);
-            AddPackageSlotSummaryRow(target, unit, PackageSlot.Runtime);
-            AddPackageSlotSummaryRow(target, unit, PackageSlot.Daemon);
+            _packagePickerSlot ??= PackageSlot.Kernel;
 
-            if (_packagePickerSlot.HasValue)
-            {
-                AddSelectedPackageSlotActions(target, unit, _packagePickerSlot.Value, cache, bandwidth);
-                AddPackagePicker(target, unit, _packagePickerSlot.Value);
-            }
+            VisualElement layout = new();
+            layout.AddToClassList("packages-master-detail");
+
+            VisualElement slots = new();
+            slots.AddToClassList("packages-slot-list");
+            slots.Add(BuildDetailLine("wallet", $"Cache={cache} Bandwidth={bandwidth}"));
+            AddPackageSlotSummaryRow(slots, unit, PackageSlot.Kernel);
+            AddPackageSlotSummaryRow(slots, unit, PackageSlot.Runtime);
+            AddPackageSlotSummaryRow(slots, unit, PackageSlot.Daemon);
+            layout.Add(slots);
+
+            VisualElement detail = new();
+            detail.AddToClassList("packages-detail-panel");
+            AddSelectedPackageSlotActions(detail, unit, _packagePickerSlot.Value, cache, bandwidth);
+            AddPackagePicker(detail, unit, _packagePickerSlot.Value);
+            layout.Add(detail);
+            target.Add(layout);
         }
 
         private void AddPackageSlotSummaryRow(VisualElement target, DistroDefinition unit, PackageSlot slot)
@@ -684,6 +693,7 @@ namespace KernelPanic.UI
             OwnedPackageInstance owned = equipped == null ? null : _playerCollection.GetOwnedPackage(equipped.Id);
             VisualElement row = new();
             row.AddToClassList("package-slot-row");
+            row.EnableInClassList("selected", _packagePickerSlot == slot);
             row.RegisterCallback<ClickEvent>(_ =>
             {
                 _packagePickerSlot = slot;
@@ -733,12 +743,13 @@ namespace KernelPanic.UI
 
             if (owned == null || equipped == null)
             {
-                target.Add(BuildDetailLine("equipped", "empty"));
+                target.Add(BuildDetailLine("status", "empty slot"));
+                target.Add(BuildDetailLine("equip", "select an owned package below"));
                 return;
             }
 
-            target.Add(BuildDetailLine("equipped", $"{PackageName(equipped)}  Lv {owned.UpgradeLevel}/{PackageTuning.MaxPackageLevel}"));
-            target.Add(BuildDetailLine("effect", FormatPackageEffect(equipped, owned.UpgradeLevel, unit.Id)));
+            target.Add(BuildDetailLine("level", $"Lv {owned.UpgradeLevel}/{PackageTuning.MaxPackageLevel}"));
+            target.Add(BuildDetailLine("current", FormatPackageEffect(equipped, owned.UpgradeLevel, unit.Id)));
 
             int nextLevel = owned.UpgradeLevel + 1;
             bool maxLevel = owned.UpgradeLevel >= PackageTuning.MaxPackageLevel;
@@ -746,6 +757,10 @@ namespace KernelPanic.UI
             int bandwidthCost = maxLevel ? 0 : PackageTuning.GetUpgradeBandwidthCost(nextLevel, equipped.Rarity);
             bool canUpgrade = !maxLevel && cache >= cacheCost && bandwidth >= bandwidthCost && _tryUpgradePackage != null;
             string upgradeState = maxLevel ? "max level" : cache < cacheCost ? "insufficient cache" : bandwidth < bandwidthCost ? "insufficient bandwidth" : "ready";
+            string nextPreview = maxLevel
+                ? "max level reached"
+                : $"{FormatPackageEffect(equipped, owned.UpgradeLevel, unit.Id)} -> {FormatPackageEffect(equipped, nextLevel, unit.Id)}";
+            target.Add(BuildDetailLine("next", nextPreview));
             target.Add(BuildCompactUpgradeCommand($"> make upgrade  (Cache {cacheCost} / Bandwidth {bandwidthCost})", upgradeState, canUpgrade, () => UpgradePackage(owned)));
         }
 
@@ -1425,10 +1440,13 @@ namespace KernelPanic.UI
                 return "--";
             }
 
-            PackageEffectData effect = PackageEffectScaling.Scale(package.EffectFor(distroId), upgradeLevel);
-            return string.IsNullOrWhiteSpace(package.Description)
-                ? $"{effect.Kind} +{Math.Max(0, effect.Amount)}"
-                : $"{package.Description}  current: {effect.Kind} +{Math.Max(0, effect.Amount)}";
+            string summary = FormatEffectSummary(package.EffectFor(distroId), upgradeLevel);
+            if (!string.IsNullOrWhiteSpace(summary))
+            {
+                return summary;
+            }
+
+            return string.IsNullOrWhiteSpace(package.Description) ? "--" : package.Description;
         }
 
         private static string OneLineEffect(PackageDefinition package, int upgradeLevel, string distroId)
@@ -1468,8 +1486,10 @@ namespace KernelPanic.UI
                 PackageEffectKind.FirstTurnFirstWaveDraw => $"draw {amount} on first turn",
                 PackageEffectKind.WaveDraw => $"draw {amount} at wave start",
                 PackageEffectKind.FirstTurnEachWaveCycle => $"+{amount} Cycle on first turn",
+                PackageEffectKind.WaveGenerateBasicCard => $"generate {amount} basic card(s) at wave start",
                 PackageEffectKind.FirstCardEachWaveCostReduction => $"first card each wave costs {amount} less",
                 PackageEffectKind.FirstCardsEachTurnCostReduction => $"first card each turn costs {amount} less",
+                PackageEffectKind.ThirdCardEachTurnGenerate => $"third card each turn generates {amount} card(s)",
                 PackageEffectKind.FirstNativeCardEachWaveFlatDamage => $"first Native card +{amount} damage",
                 PackageEffectKind.ExhaustShield => $"+{amount} Shield when exhausting",
                 PackageEffectKind.EveryNthTurnShield => $"+{amount} Shield every {effect.Threshold} turns",
@@ -1480,7 +1500,9 @@ namespace KernelPanic.UI
                 PackageEffectKind.EveryNthCardEachWaveCycle => $"+{amount} Cycle every {effect.Threshold} cards",
                 PackageEffectKind.StartTurnNoDebuffShield => $"+{amount} Shield if no debuffs",
                 PackageEffectKind.JavaScriptFlatDamage => $"+{amount} JavaScript damage",
-                _ => $"{effect.Kind} +{amount}"
+                PackageEffectKind.WaveThresholdRestore => $"restore {amount} Uptime after wave {effect.Threshold}",
+                PackageEffectKind.DnfFedoraPassive => "Fedora passive can trigger twice",
+                _ => amount > 0 ? $"+{amount} package effect" : "package effect"
             };
         }
 

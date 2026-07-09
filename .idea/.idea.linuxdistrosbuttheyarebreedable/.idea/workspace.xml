@@ -11,117 +11,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4222a6b8-add3-4f43-9c42-fd6bb5a76169" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Apt.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Apt.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/AptFast.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/AptFast.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Auditd.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Auditd.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Ccache.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Ccache.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/CinnamonPackage.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/CinnamonPackage.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Coreutils.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Coreutils.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Cron.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Cron.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Curl.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Curl.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/DNF.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/DNF.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Dbus.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Dbus.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Docker.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Docker.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Ext4.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Ext4.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Firewalld.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Firewalld.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Git.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Git.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Glibc.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Glibc.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Htop.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Htop.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Less.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Less.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Logrotate.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Logrotate.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Lvm.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Lvm.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Make.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Make.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Nano.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Nano.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Nginx.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Nginx.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Ntp.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Ntp.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/OpenSSL.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/OpenSSL.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/PackageDatabase.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/PackageDatabase.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Polkit.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Polkit.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Rsync.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Rsync.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/SELinuxPackage.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/SELinuxPackage.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/SnapStore.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/SnapStore.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Sshd.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Sshd.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Swapfile.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Swapfile.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Syslog.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Syslog.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/SystemdCore.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/SystemdCore.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/SystemdTimer.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/SystemdTimer.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/TimeshiftPackage.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/TimeshiftPackage.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Udev.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Udev.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Vim.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Vim.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Wget.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Wget.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Zlib.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Zlib.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Zram.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Packages/Zram.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Data/PackageDatabase.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Data/PackageDefinition.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/PackageLoadout.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/PackageScrapper.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/PackageTuning.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/PackageUpgrader.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Distros/Ubuntu.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Distros/Ubuntu.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/MainMenuScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/MainMenuScene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CardEffects.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CardEffects.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatManager.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatantState.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatantState.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/DamagePipeline.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/DamagePipeline.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaCurrencyType.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaCurrencyType.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaPullContext.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaPullContext.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaRewardType.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaRewardType.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/GachaService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/PlayerCollection.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/PlayerCollection.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/PullResolver.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/PullResolver.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Meta/SaveService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Meta/SaveService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RunConfig.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RunConfig.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RunContext.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RunContext.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/CollectionScreenController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/CollectionScreenController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/FeaturedUnitPanel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/FeaturedUnitPanel.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/GachaScreenController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/GachaScreenController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/GamblingSceneController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/GamblingSceneController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/MainMenuController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/UI/MainMenu.uss" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/UI/MainMenu.uss" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/UI/MainMenu.uxml" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/UI/MainMenu.uxml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -194,23 +85,23 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.4963024003289789" />
-      <entry key="MS500" value="5.493825018740593" />
-      <entry key="S2" value="16.7623810091312" />
-      <entry key="S5" value="30.131569239395123" />
-      <entry key="S10" value="42.28180741555183" />
-      <entry key="S30" value="57.034967620889354" />
-      <entry key="S60" value="62.13535362816746" />
-      <entry key="M2" value="65.05702793593957" />
-      <entry key="M5" value="68.80146390839094" />
-      <entry key="M10" value="73.0920556177788" />
-      <entry key="M15" value="75.72809697957445" />
-      <entry key="M30" value="88.95784666638842" />
-      <entry key="H1" value="204.48905359593877" />
-      <entry key="H2" value="565.8614083894486" />
-      <entry key="H4" value="1095.0876588283427" />
-      <entry key="D1" value="3089.1206296820615" />
-      <entry key="W1" value="4685.751345931765" />
+      <entry key="MS100" value="1.0000000091420684" />
+      <entry key="MS500" value="1.0441151946756255" />
+      <entry key="S2" value="2.6382509587349663" />
+      <entry key="S5" value="6.4101924935144785" />
+      <entry key="S10" value="10.713628057461193" />
+      <entry key="S30" value="17.176849076864066" />
+      <entry key="S60" value="19.771607581824814" />
+      <entry key="M2" value="21.29576182445417" />
+      <entry key="M5" value="22.295494182618757" />
+      <entry key="M10" value="22.81448190885531" />
+      <entry key="M15" value="24.09566128719646" />
+      <entry key="M30" value="34.68797233141319" />
+      <entry key="H1" value="97.44073884169883" />
+      <entry key="H2" value="364.5207442228668" />
+      <entry key="H4" value="873.7732173113925" />
+      <entry key="D1" value="2984.8513999759525" />
+      <entry key="W1" value="4680.673363994208" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -220,35 +111,35 @@
       <entry key="S10" value="0.0" />
       <entry key="S30" value="0.0" />
       <entry key="S60" value="0.0" />
-      <entry key="M2" value="2.5828778732379276E-268" />
-      <entry key="M5" value="9.222348906385734E-108" />
-      <entry key="M10" value="3.0368320510667516E-54" />
-      <entry key="M15" value="2.0970744528210016E-36" />
-      <entry key="M30" value="1.4481283797362389E-18" />
-      <entry key="H1" value="1.2045649226616757E-9" />
-      <entry key="H2" value="3.65736931549959E-5" />
-      <entry key="H4" value="0.008267125324716448" />
-      <entry key="D1" value="1.3375655629148175" />
-      <entry key="W1" value="3.4158969636928482" />
+      <entry key="M2" value="1.8064028449327028E-281" />
+      <entry key="M5" value="5.0434282114119077E-113" />
+      <entry key="M10" value="7.101709802161887E-57" />
+      <entry key="M15" value="3.6946668261839877E-38" />
+      <entry key="M30" value="1.922152233062087E-19" />
+      <entry key="H1" value="4.3885451429904854E-10" />
+      <entry key="H2" value="2.2075675211666528E-5" />
+      <entry key="H4" value="0.0064228401094546346" />
+      <entry key="D1" value="1.2824600455938682" />
+      <entry key="W1" value="3.3954284700737616" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.4096752248792137" />
-      <entry key="MS500" value="5.428036231472652" />
-      <entry key="S2" value="16.712977941585102" />
-      <entry key="S5" value="30.091551042144605" />
-      <entry key="S10" value="42.251172488375474" />
-      <entry key="S30" value="57.02028505912365" />
-      <entry key="S60" value="62.127231458210936" />
-      <entry key="M2" value="65.05274498886968" />
-      <entry key="M5" value="68.79965480133401" />
-      <entry key="M10" value="73.09110313975116" />
-      <entry key="M15" value="75.72744303179836" />
-      <entry key="M30" value="88.95747776256005" />
-      <entry key="H1" value="204.48869117823617" />
-      <entry key="H2" value="565.860985887298" />
-      <entry key="H4" value="1095.0954876479952" />
-      <entry key="D1" value="3090.4578859402736" />
-      <entry key="W1" value="4689.167162525937" />
+      <entry key="MS100" value="3.677094450878252E-7" />
+      <entry key="MS500" value="0.09520385707309299" />
+      <entry key="S2" value="2.109440495603316" />
+      <entry key="S5" value="6.132967162270056" />
+      <entry key="S10" value="10.54895965976181" />
+      <entry key="S30" value="17.11109977886081" />
+      <entry key="S60" value="19.73679418591952" />
+      <entry key="M2" value="21.277810332230633" />
+      <entry key="M5" value="22.28817422032284" />
+      <entry key="M10" value="22.810795720477756" />
+      <entry key="M15" value="24.093188404100633" />
+      <entry key="M30" value="34.68668997617844" />
+      <entry key="H1" value="97.43998942892169" />
+      <entry key="H2" value="364.5201803453728" />
+      <entry key="H4" value="873.7791451545606" />
+      <entry key="D1" value="2986.1335377085343" />
+      <entry key="W1" value="4684.068708897457" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -340,7 +231,7 @@
       <workItem from="1783410502976" duration="23430000" />
       <workItem from="1783507489679" duration="5909000" />
       <workItem from="1783519887449" duration="6425000" />
-      <workItem from="1783578446731" duration="5031000" />
+      <workItem from="1783578446731" duration="5754000" />
     </task>
     <task id="LOCAL-00001" summary="implement main screen">
       <option name="closed" value="true" />
@@ -534,7 +425,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783531936701</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="Implement many UX improvements, packages and their assets and a UI overhaul in collection">
+      <option name="closed" value="true" />
+      <created>1783585107215</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1783585107215</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -573,7 +472,8 @@
     <MESSAGE value="changed most TODOs to TODONEs" />
     <MESSAGE value="Implement Java and Rust cards alongside some smaller changes" />
     <MESSAGE value="make small changes to design. Implement crits." />
-    <option name="LAST_COMMIT_MESSAGE" value="make small changes to design. Implement crits." />
+    <MESSAGE value="Implement many UX improvements, packages and their assets and a UI overhaul in collection" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implement many UX improvements, packages and their assets and a UI overhaul in collection" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
