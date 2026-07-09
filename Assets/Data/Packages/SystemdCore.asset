@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: SystemdCore
+  m_EditorClassIdentifier: 
+  id: pkg_systemd_core
+  displayName: systemd-core
+  slot: 0
+  rarity: 3
+  description: +1 max Cycles (COMBAT).
+  flavourText: Yes, it manages that too.
+  designNotes: Generic 3-star Kernel powerspike. COMBAT max Cycle package. On/off distro identical.
+  intendedDistroId: 
+  requiresSystem: []
+  offDistroEffect: {kind: 2, amount: 1, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 2, amount: 1, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}

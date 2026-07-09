@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: Curl
+  id: pkg_curl
+  displayName: curl
+  slot: 1
+  rarity: 1
+  description: Draw 1 extra card at the start of each WAVE.
+  flavourText: It downloads help, mostly by accident.
+  designNotes: Generic 1-star Runtime. WAVE start draw. On/off distro identical.
+  intendedDistroId: 
+  requiresSystem: []
+  offDistroEffect: {kind: 3, amount: 1, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 3, amount: 1, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}

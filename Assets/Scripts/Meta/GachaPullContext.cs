@@ -16,9 +16,9 @@ namespace KernelPanic.Meta
         public static bool HasPendingPull => pendingPull != null;
         public static bool HasCompletedPull => completedPull != null;
 
-        public static void SetPending(string bannerId, int pullCount, int entropyTokenCount, DistroDatabase distroDatabase, string focusUnitId)
+        public static void SetPending(string bannerId, int pullCount, int entropyTokenCount, DistroDatabase distroDatabase, PackageDatabase packageDatabase, string focusUnitId)
         {
-            pendingPull = new PendingGachaPull(bannerId, pullCount, entropyTokenCount, distroDatabase, focusUnitId);
+            pendingPull = new PendingGachaPull(bannerId, pullCount, entropyTokenCount, distroDatabase, packageDatabase, focusUnitId);
             completedPull = null;
         }
 
@@ -44,12 +44,13 @@ namespace KernelPanic.Meta
 
     public sealed class PendingGachaPull
     {
-        public PendingGachaPull(string bannerId, int pullCount, int entropyTokenCount, DistroDatabase distroDatabase, string focusUnitId)
+        public PendingGachaPull(string bannerId, int pullCount, int entropyTokenCount, DistroDatabase distroDatabase, PackageDatabase packageDatabase, string focusUnitId)
         {
             BannerId = string.IsNullOrWhiteSpace(bannerId) ? GachaService.BeginnerBannerId : bannerId;
             PullCount = Math.Max(1, pullCount);
             EntropyTokenCount = Math.Max(0, entropyTokenCount);
             DistroDatabase = distroDatabase;
+            PackageDatabase = packageDatabase;
             FocusUnitId = focusUnitId;
         }
 
@@ -57,6 +58,7 @@ namespace KernelPanic.Meta
         public int PullCount { get; }
         public int EntropyTokenCount { get; }
         public DistroDatabase DistroDatabase { get; }
+        public PackageDatabase PackageDatabase { get; }
         public string FocusUnitId { get; }
     }
 
@@ -131,7 +133,7 @@ namespace KernelPanic.Meta
         public bool PityTriggered { get; }
         public bool IsCharacter => RewardType == GachaRewardType.Distro || RewardType == GachaRewardType.FutureStandardFiveStarDistro;
 
-        public string TypeText => IsCharacter ? "character" : "equipment";
+        public string TypeText => IsCharacter ? "character" : "package";
 
         public string StatusText
         {
@@ -173,7 +175,7 @@ namespace KernelPanic.Meta
                 return "unknown result";
             }
 
-            if (rewardType != GachaRewardType.Equipment)
+            if (rewardType != GachaRewardType.Package)
             {
                 return displayName;
             }

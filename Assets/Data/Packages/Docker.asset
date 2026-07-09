@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: Docker
+  id: pkg_docker
+  displayName: docker
+  slot: 1
+  rarity: 3
+  description: At the start of each WAVE, add a random 0-cost basic card of the distro's languages to hand.
+  flavourText: Works on my daemon.
+  designNotes: Generic 3-star Runtime powerspike. WAVE start generation. requiresSystem: card-generation; uses existing generated-card pool when available, TODO logged if not.
+  intendedDistroId: 
+  requiresSystem:
+  - card-generation
+  offDistroEffect: {kind: 4, amount: 1, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 4, amount: 1, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}

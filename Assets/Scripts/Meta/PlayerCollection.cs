@@ -10,11 +10,14 @@ namespace KernelPanic.Meta
     public sealed class PlayerCollection
     {
         private readonly List<DistroDefinition> _ownedUnits = new();
+        private readonly List<OwnedPackageInstance> _ownedPackages = new();
         private readonly Dictionary<string, int> _versions = new(StringComparer.OrdinalIgnoreCase);
         private int _featuredIndex;
 
         // TODO: Populate owned units from SaveService during bootstrap.
         public IReadOnlyList<DistroDefinition> OwnedUnits => _ownedUnits;
+        public IReadOnlyList<OwnedPackageInstance> OwnedPackageInstances => _ownedPackages;
+        public IReadOnlyList<PackageDefinition> OwnedPackages => BuildOwnedPackageDefinitions();
         public DistroDefinition FeaturedUnit => _ownedUnits.Count == 0 ? null : _ownedUnits[Math.Clamp(_featuredIndex, 0, _ownedUnits.Count - 1)];
 
         public event Action Changed;
@@ -32,6 +35,35 @@ namespace KernelPanic.Meta
         public void AddSilently(DistroDefinition unit, int version)
         {
             Add(unit, version, false);
+        }
+
+        public void AddPackage(PackageDefinition package)
+        {
+            AddPackage(package, 0, true);
+        }
+
+        public void AddPackageSilently(PackageDefinition package)
+        {
+            AddPackage(package, 0, false);
+        }
+
+        public void AddPackageSilently(PackageDefinition package, int upgradeLevel)
+        {
+            AddPackage(package, upgradeLevel, false);
+        }
+
+        private void AddPackage(PackageDefinition package, int upgradeLevel, bool notify)
+        {
+            if (package == null || IsPackageOwned(package.Id))
+            {
+                return;
+            }
+
+            _ownedPackages.Add(new OwnedPackageInstance(package, upgradeLevel));
+            if (notify)
+            {
+                Changed?.Invoke();
+            }
         }
 
         private void Add(DistroDefinition unit, int version, bool notify)
@@ -82,6 +114,60 @@ namespace KernelPanic.Meta
             return count;
         }
 
+        public bool IsPackageOwned(string packageId)
+        {
+            if (string.IsNullOrWhiteSpace(packageId))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _ownedPackages.Count; i++)
+            {
+                OwnedPackageInstance package = _ownedPackages[i];
+                if (package != null && string.Equals(package.PackageId, packageId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public OwnedPackageInstance GetOwnedPackage(string packageId)
+        {
+            if (string.IsNullOrWhiteSpace(packageId))
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _ownedPackages.Count; i++)
+            {
+                OwnedPackageInstance package = _ownedPackages[i];
+                if (package != null && string.Equals(package.PackageId, packageId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return package;
+                }
+            }
+
+            return null;
+        }
+
+        public bool RemovePackage(string packageId)
+        {
+            for (int i = _ownedPackages.Count - 1; i >= 0; i--)
+            {
+                OwnedPackageInstance package = _ownedPackages[i];
+                if (package != null && string.Equals(package.PackageId, packageId, StringComparison.OrdinalIgnoreCase))
+                {
+                    _ownedPackages.RemoveAt(i);
+                    Changed?.Invoke();
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public int GetVersion(string unitId)
         {
             if (string.IsNullOrWhiteSpace(unitId))
@@ -130,6 +216,43 @@ namespace KernelPanic.Meta
             }
 
             _featuredIndex = (_featuredIndex + 1) % _ownedUnits.Count;
+        }
+
+        private IReadOnlyList<PackageDefinition> BuildOwnedPackageDefinitions()
+        {
+            List<PackageDefinition> definitions = new();
+            for (int i = 0; i < _ownedPackages.Count; i++)
+            {
+                if (_ownedPackages[i]?.Definition != null)
+                {
+                    definitions.Add(_ownedPackages[i].Definition);
+                }
+            }
+
+            return definitions;
+        }
+    }
+
+    public sealed class OwnedPackageInstance
+    {
+        public OwnedPackageInstance(PackageDefinition definition, int upgradeLevel)
+        {
+            Definition = definition;
+            UpgradeLevel = Math.Max(0, Math.Min(PackageTuning.MaxPackageLevel, upgradeLevel));
+        }
+
+        public PackageDefinition Definition { get; }
+        public string PackageId => Definition == null ? string.Empty : Definition.Id;
+        public int UpgradeLevel { get; private set; }
+
+        public PackageInstance ToRuntimeInstance()
+        {
+            return new PackageInstance(Definition, UpgradeLevel);
+        }
+
+        public void SetUpgradeLevel(int level)
+        {
+            UpgradeLevel = Math.Max(0, Math.Min(PackageTuning.MaxPackageLevel, level));
         }
     }
 }

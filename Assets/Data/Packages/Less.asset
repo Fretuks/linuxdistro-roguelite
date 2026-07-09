@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: Less
+  m_EditorClassIdentifier: 
+  id: pkg_less
+  displayName: less
+  slot: 1
+  rarity: 1
+  description: Once per WAVE, the first card drawn is free to play (0 cost) that TURN.
+  flavourText: Less is more, except when it is just a pager.
+  designNotes: Generic 1-star Runtime. TODO free-cast/draw-tag hook missing.
+  intendedDistroId: 
+  requiresSystem: [free-cast-drawn-card-hook]
+  offDistroEffect: {kind: 0, amount: 0, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 0, amount: 0, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}

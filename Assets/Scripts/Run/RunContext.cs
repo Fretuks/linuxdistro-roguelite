@@ -18,12 +18,22 @@ namespace KernelPanic.Run
 
         public static void Set(DistroDefinition distro, IReadOnlyList<CardDefinition> equippedCards, Language primaryLanguage, Language secondaryLanguage)
         {
-            Set(distro, equippedCards, primaryLanguage, secondaryLanguage, 1);
+            Set(distro, equippedCards, Array.Empty<PackageDefinition>(), primaryLanguage, secondaryLanguage, 1);
         }
 
         public static void Set(DistroDefinition distro, IReadOnlyList<CardDefinition> equippedCards, Language primaryLanguage, Language secondaryLanguage, int distroVersion)
         {
-            pendingRun = new PendingRun(distro, equippedCards, primaryLanguage, secondaryLanguage, Environment.TickCount, distroVersion);
+            Set(distro, equippedCards, Array.Empty<PackageDefinition>(), primaryLanguage, secondaryLanguage, distroVersion);
+        }
+
+        public static void Set(DistroDefinition distro, IReadOnlyList<CardDefinition> equippedCards, IReadOnlyList<PackageDefinition> equippedPackages, Language primaryLanguage, Language secondaryLanguage, int distroVersion)
+        {
+            pendingRun = new PendingRun(distro, equippedCards, ToInstances(equippedPackages), primaryLanguage, secondaryLanguage, Environment.TickCount, distroVersion);
+        }
+
+        public static void Set(DistroDefinition distro, IReadOnlyList<CardDefinition> equippedCards, IReadOnlyList<PackageInstance> equippedPackages, Language primaryLanguage, Language secondaryLanguage, int distroVersion)
+        {
+            pendingRun = new PendingRun(distro, equippedCards, equippedPackages, primaryLanguage, secondaryLanguage, Environment.TickCount, distroVersion);
         }
 
         public static bool TryCreateRunConfig(LanguageDeckDatabase languageDeckDatabase, out RunConfig config)
@@ -43,12 +53,13 @@ namespace KernelPanic.Run
         {
             private readonly DistroDefinition distro;
             private readonly List<CardDefinition> equippedCards = new();
+            private readonly List<PackageInstance> equippedPackages = new();
             private readonly Language primaryLanguage;
             private readonly Language secondaryLanguage;
             private readonly int runSeed;
             private readonly int distroVersion;
 
-            public PendingRun(DistroDefinition distro, IReadOnlyList<CardDefinition> cards, Language primaryLanguage, Language secondaryLanguage, int runSeed, int distroVersion)
+            public PendingRun(DistroDefinition distro, IReadOnlyList<CardDefinition> cards, IReadOnlyList<PackageInstance> packages, Language primaryLanguage, Language secondaryLanguage, int runSeed, int distroVersion)
             {
                 this.distro = distro;
                 this.primaryLanguage = primaryLanguage;
@@ -68,6 +79,19 @@ namespace KernelPanic.Run
                         equippedCards.Add(cards[i]);
                     }
                 }
+
+                if (packages == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < packages.Count; i++)
+                {
+                    if (packages[i]?.Definition != null)
+                    {
+                        equippedPackages.Add(packages[i]);
+                    }
+                }
             }
 
             public DistroDefinition Distro => distro;
@@ -77,7 +101,7 @@ namespace KernelPanic.Run
                 List<CardDefinition> startingDeck = new(equippedCards);
                 AddLanguageDeck(languageDeckDatabase, primaryLanguage, startingDeck);
                 AddLanguageDeck(languageDeckDatabase, secondaryLanguage, startingDeck);
-                return new RunConfig(distro, primaryLanguage, secondaryLanguage, startingDeck, runSeed, distroVersion);
+                return new RunConfig(distro, primaryLanguage, secondaryLanguage, startingDeck, equippedPackages, runSeed, distroVersion);
             }
 
             private static void AddLanguageDeck(LanguageDeckDatabase languageDeckDatabase, Language language, List<CardDefinition> target)
@@ -100,6 +124,25 @@ namespace KernelPanic.Run
                     }
                 }
             }
+        }
+
+        private static IReadOnlyList<PackageInstance> ToInstances(IReadOnlyList<PackageDefinition> packages)
+        {
+            if (packages == null)
+            {
+                return Array.Empty<PackageInstance>();
+            }
+
+            List<PackageInstance> instances = new();
+            for (int i = 0; i < packages.Count; i++)
+            {
+                if (packages[i] != null)
+                {
+                    instances.Add(new PackageInstance(packages[i], 0));
+                }
+            }
+
+            return instances;
         }
     }
 }

@@ -5,7 +5,7 @@ namespace KernelPanic.Meta
     /// </summary>
     public enum GachaRewardType
     {
-        Equipment,
+        Package,
         Distro,
         FutureStandardFiveStarDistro
     }

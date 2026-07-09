@@ -30,6 +30,7 @@ namespace KernelPanic.Combat
         public bool IgnoreDamageMultipliers { get; set; }
         public bool AllowFlatDamageBuffs { get; set; }
         public int FlatEffectBonus { get; set; }
+        public int JavaScriptFlatDamageBonus { get; set; }
         public int DamageMultiplierPercent { get; set; } = 100;
         public int IncomingAttackHalfCharges { get; set; }
         public IReadOnlyList<StatusInstance> Statuses => _statuses;

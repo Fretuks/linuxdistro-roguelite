@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: DNF
+  id: pkg_fedora_dnf
+  displayName: DNF
+  slot: 1
+  rarity: 5
+  description: On Fedora, Bleeding Edge applies to the 2nd card each TURN. Also builds a stacking +2 damage buff this WAVE.
+  flavourText: Fast, sharp, occasionally on fire.
+  designNotes: Fedora 5-star Runtime. Ties into Bleeding Edge crash logic; on Fedora enables 2nd-card passive discount+bonus. Off-distro only uses the WAVE stacking +2 damage buff hook.
+  intendedDistroId: fedora
+  requiresSystem:
+  - fedora-passive-hook
+  - per-wave-damage-buff
+  offDistroEffect: {kind: 14, amount: 2, threshold: 1, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 14, amount: 2, threshold: 1, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 1}

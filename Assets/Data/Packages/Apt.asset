@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: Apt
+  id: pkg_ubuntu_apt
+  displayName: apt
+  slot: 2
+  rarity: 5
+  description: Each time you play your 3rd card in a TURN, add a random 0-cost card of your languages to hand; on Ubuntu also refund 1 Cycle.
+  flavourText: There is always one more dependency.
+  designNotes: Ubuntu 5-star Daemon. TURN third-card trigger. requiresSystem: card-generation + per-turn-card-count. On Ubuntu refunds 1 Cycle.
+  intendedDistroId: ubuntu
+  requiresSystem:
+  - card-generation
+  - per-turn-card-count
+  offDistroEffect: {kind: 10, amount: 1, threshold: 3, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 10, amount: 1, threshold: 3, refundCycle: 1, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}

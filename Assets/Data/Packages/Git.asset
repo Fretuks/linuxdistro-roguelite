@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: Git
+  id: pkg_git
+  displayName: git
+  slot: 1
+  rarity: 2
+  description: The first card played each WAVE costs 1 less.
+  flavourText: Everyone blames the branch.
+  designNotes: Generic 2-star Runtime. WAVE first-card economy. On/off distro identical.
+  intendedDistroId: 
+  requiresSystem: []
+  offDistroEffect: {kind: 5, amount: 1, threshold: 1, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 5, amount: 1, threshold: 1, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}

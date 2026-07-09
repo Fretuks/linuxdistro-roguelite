@@ -26,6 +26,9 @@ namespace KernelPanic.Run
         private int maxUptimeBonus;
         private int maxCyclesBonus;
         private int ramBonus;
+        private int packageMaxUptimeBonus;
+        private int packageMaxCyclesBonus;
+        private int packageRamBonus;
         private int wavesCleared;
         private int accruedBandwidth;
         private int accruedEntropy;
@@ -74,10 +77,14 @@ namespace KernelPanic.Run
             maxUptimeBonus = 0;
             maxCyclesBonus = 0;
             ramBonus = 0;
+            packageMaxUptimeBonus = 0;
+            packageMaxCyclesBonus = 0;
+            packageRamBonus = 0;
             wavesCleared = 0;
             accruedBandwidth = 0;
             accruedEntropy = 0;
             rewardsSettled = false;
+            ApplyKernelPackageBonuses(config);
             InitializeRunDeck(config);
             StartCombat();
         }
@@ -171,17 +178,48 @@ namespace KernelPanic.Run
 
         public int EffectiveMaxUptime()
         {
-            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseUptime ?? 1) + maxUptimeBonus);
+            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseUptime ?? 1) + maxUptimeBonus + packageMaxUptimeBonus);
         }
 
         public int EffectiveRam()
         {
-            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseRam ?? 1) + ramBonus);
+            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseRam ?? 1) + ramBonus + packageRamBonus);
         }
 
         public int EffectiveMaxCycles()
         {
-            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseCyclesPerTurn ?? 1) + maxCyclesBonus);
+            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseCyclesPerTurn ?? 1) + maxCyclesBonus + packageMaxCyclesBonus);
+        }
+
+        private void ApplyKernelPackageBonuses(RunConfig config)
+        {
+            if (config?.EquippedPackages == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < config.EquippedPackages.Count; i++)
+            {
+                PackageInstance package = config.EquippedPackages[i];
+                if (package?.Definition == null || package.Definition.Slot != PackageSlot.Kernel)
+                {
+                    continue;
+                }
+
+                PackageEffectData effect = package.EffectFor(config.Distro?.Id);
+                switch (effect.Kind)
+                {
+                    case PackageEffectKind.MaxUptime:
+                        packageMaxUptimeBonus += Mathf.Max(0, effect.Amount);
+                        break;
+                    case PackageEffectKind.MaxCycles:
+                        packageMaxCyclesBonus += Mathf.Max(0, effect.Amount);
+                        break;
+                    case PackageEffectKind.MaxRam:
+                        packageRamBonus += Mathf.Max(0, effect.Amount);
+                        break;
+                }
+            }
         }
 
         public bool TrySettleRunRewards(out int bandwidth, out int entropy)

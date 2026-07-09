@@ -30,11 +30,16 @@ namespace KernelPanic.UI
         private FontAsset _monospaceFont;
         private AsciiArtFitter _asciiFitter;
         private IReadOnlyList<DistroDefinition> _units = Array.Empty<DistroDefinition>();
+        private Func<DistroDefinition, int> _getBestWave;
+        private Action<DistroDefinition> _activateUnit;
+        private DistroDefinition _currentUnit;
         private int _selectedIndex;
 
-        public void Bind(VisualElement root, FontAsset artFont)
+        public void Bind(VisualElement root, FontAsset artFont, Func<DistroDefinition, int> getBestWave = null, Action<DistroDefinition> activateUnit = null)
         {
             _monospaceFont = artFont;
+            _getBestWave = getBestWave;
+            _activateUnit = activateUnit;
             _panel = root.Q<VisualElement>("FeaturedUnitPanel");
             _titleLabel = root.Q<Label>("FeaturedUnitTitle");
             _asciiLabel = root.Q<Label>("FeaturedUnitAscii");
@@ -52,6 +57,7 @@ namespace KernelPanic.UI
             _asciiPlaceholder = DistroArtPresenter.CreatePlaceholder();
             _asciiPlaceholder.AddToClassList("hidden");
             _populatedState.Insert(0, _asciiPlaceholder);
+            _panel?.RegisterCallback<ClickEvent>(_ => ActivateCurrentUnit());
         }
 
         public void Refresh(IReadOnlyList<DistroDefinition> ownedUnits)
@@ -114,6 +120,7 @@ namespace KernelPanic.UI
         {
             _populatedState.AddToClassList("hidden");
             _emptyState.RemoveFromClassList("hidden");
+            _currentUnit = null;
 
             _titleLabel.text = "[ neofetch ]";
             _emptyTitleLabel.text = "no units installed";
@@ -125,14 +132,24 @@ namespace KernelPanic.UI
         {
             _populatedState.RemoveFromClassList("hidden");
             _emptyState.AddToClassList("hidden");
+            _currentUnit = unit;
 
             _titleLabel.text = "[ neofetch ]";
             _asciiFitter.SetArt(DistroArtPresenter.Render(_asciiLabel, _asciiPlaceholder, unit));
             _unitNameLabel.text = DistroPresentation.DisplayName(unit);
             _languagesLabel.text = DistroPresentation.FormatLanguages(unit);
             _passiveLabel.text = unit.Passive == null || string.IsNullOrWhiteSpace(unit.Passive.Name) ? "--" : unit.Passive.Name;
-            _bestWaveLabel.text = "--"; // TODO: Bind best-wave stats from SaveService when stats exist.
+            int bestWave = Math.Max(0, _getBestWave?.Invoke(unit) ?? 0);
+            _bestWaveLabel.text = bestWave > 0 ? bestWave.ToString() : "--";
             SetAccent(ColorUtility.ToHtmlStringRGB(unit.AccentColor));
+        }
+
+        public void ActivateCurrentUnit()
+        {
+            if (_currentUnit != null)
+            {
+                _activateUnit?.Invoke(_currentUnit);
+            }
         }
 
         private void SetAccent(string htmlColor)

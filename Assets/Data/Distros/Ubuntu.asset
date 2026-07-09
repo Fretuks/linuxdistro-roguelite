@@ -28,7 +28,7 @@ MonoBehaviour:
   accentColor: {r: 0.9137255, g: 0.32941177, b: 0.1254902, a: 1}
   baseUptime: 60
   baseRam: 5
-  baseCyclesPerTurn: 3
+  baseCyclesPerTurn: 4
   exclusiveCards:
   - {fileID: 11400000, guid: 9347bcc42fb6834f1907a2c0b661ff95, type: 2}
   - {fileID: 11400000, guid: 1dbc28e480e52d97b9501262af30cc78, type: 2}

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: Sshd
+  m_EditorClassIdentifier: 
+  id: pkg_sshd
+  displayName: sshd
+  slot: 2
+  rarity: 2
+  description: Every 3rd TURN, gain 3 Shield.
+  flavourText: Open port, closed heart.
+  designNotes: Generic 2-star Daemon. Existing nth-TURN shield hook.
+  intendedDistroId: 
+  requiresSystem: []
+  offDistroEffect: {kind: 6, amount: 3, threshold: 3, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 6, amount: 3, threshold: 3, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}

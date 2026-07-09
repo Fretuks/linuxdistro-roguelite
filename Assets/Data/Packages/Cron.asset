@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: Cron
+  id: pkg_cron
+  displayName: cron
+  slot: 2
+  rarity: 1
+  description: Every 3rd TURN, gain 2 Shield.
+  flavourText: Eventually, it helps.
+  designNotes: Generic 1-star Daemon. TURN counter shield. On/off distro identical.
+  intendedDistroId: 
+  requiresSystem: []
+  offDistroEffect: {kind: 6, amount: 2, threshold: 3, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 6, amount: 2, threshold: 3, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}

@@ -14,11 +14,12 @@ namespace KernelPanic.Meta
         public const string LimitedBannerId = "limited";
         public const int BeginnerMaxPulls = 50;
         public const int BeginnerSinglePullCost = 1;
-        public const int BeginnerTenPullCost = 8;
+        public const int BeginnerTenPullCost = 10;
         public const int FourStarHardPity = 10;
         public const int FiveStarSoftPityStart = 66;
         public const int FiveStarHardPity = 80;
-        public const int EntropyPerPullToken = 100;
+        public const int EntropyPerCommit = 100;
+        public const int RootCreditsToEntropy = 1;
         public const int TestRootCreditsBalance = 10000;
 
         private const double FourStarBaseChance = 0.12d;
@@ -41,11 +42,10 @@ namespace KernelPanic.Meta
         {
             this._random = random ?? new Random();
             _currencyBalances[GachaCurrencyType.StandardPull] = 0;
-            _currencyBalances[GachaCurrencyType.LimitedPull] = 0;
         }
 
         public int PullTokens => GetCurrencyBalance(GachaCurrencyType.StandardPull);
-        public int LimitedPullTokens => GetCurrencyBalance(GachaCurrencyType.LimitedPull);
+        public int Commits => PullTokens;
         public int RootCredits { get; private set; }
         public IReadOnlyList<DistroDefinition> BannerPool => _bannerPool;
         public GachaBannerState BeginnerState => _beginnerState;
@@ -62,9 +62,8 @@ namespace KernelPanic.Meta
             }
 
             data.EnsureLists();
-            RootCredits = Math.Max(TestRootCreditsBalance, data.rootCredits);
-            SetCurrencyBalanceSilently(GachaCurrencyType.StandardPull, data.standardPullCurrency);
-            SetCurrencyBalanceSilently(GachaCurrencyType.LimitedPull, data.limitedPullCurrency);
+            RootCredits = Math.Max(0, data.rootCredits);
+            SetCurrencyBalanceSilently(GachaCurrencyType.StandardPull, data.commitsBalance);
             _beginnerState = data.beginnerBannerState ?? new GachaBannerState(BeginnerBannerId);
             _beginnerState.bannerId = BeginnerBannerId;
             _beginnerState.EnsureLists();
@@ -87,8 +86,7 @@ namespace KernelPanic.Meta
 
             data.EnsureLists();
             data.rootCredits = RootCredits;
-            data.standardPullCurrency = GetCurrencyBalance(GachaCurrencyType.StandardPull);
-            data.limitedPullCurrency = GetCurrencyBalance(GachaCurrencyType.LimitedPull);
+            data.commitsBalance = GetCurrencyBalance(GachaCurrencyType.StandardPull);
             data.beginnerBannerState = CloneState(_beginnerState);
         }
 
@@ -126,26 +124,31 @@ namespace KernelPanic.Meta
 
         public bool ConvertRootCreditsToEntropy(EntropyWallet wallet, int amount, out string failureReason)
         {
+            return BuyEntropy(wallet, amount, out failureReason);
+        }
+
+        public bool BuyEntropy(EntropyWallet wallet, int rootCredits, out string failureReason)
+        {
             if (wallet == null)
             {
                 failureReason = "entropy wallet unavailable";
                 return false;
             }
 
-            if (amount <= 0)
+            if (rootCredits <= 0)
             {
-                failureReason = "no root-credits selected";
+                failureReason = "no Root Credits selected";
                 return false;
             }
 
-            if (RootCredits < amount)
+            if (RootCredits < rootCredits)
             {
-                failureReason = $"need {amount} root-credits";
+                failureReason = $"need {rootCredits} Root Credits";
                 return false;
             }
 
-            RootCredits -= amount;
-            wallet.Add(amount);
+            RootCredits -= rootCredits;
+            wallet.Add(rootCredits * RootCreditsToEntropy);
             failureReason = null;
             Changed?.Invoke();
             return true;
@@ -188,6 +191,11 @@ namespace KernelPanic.Meta
 
         public bool CanPullBeginner(int pullCount, out string failureReason)
         {
+            return CanAffordPull(pullCount, null, PullPaymentSource.Commits, out failureReason);
+        }
+
+        public bool CanAffordPull(int pullCount, EntropyWallet wallet, PullPaymentSource source, out string failureReason)
+        {
             if (pullCount != 1 && pullCount != 10)
             {
                 failureReason = "only single and ten pulls are supported";
@@ -208,13 +216,44 @@ namespace KernelPanic.Meta
             }
 
             int cost = GetBeginnerPullCost(pullCount);
-            if (GetCurrencyBalance(GachaCurrencyType.StandardPull) < cost)
+            if (source == PullPaymentSource.Commits && GetCurrencyBalance(GachaCurrencyType.StandardPull) < cost)
             {
                 failureReason = $"need {cost} {FormatCurrencyName(GachaCurrencyType.StandardPull)}";
                 return false;
             }
 
+            int entropyCost = cost * EntropyPerCommit;
+            if (source == PullPaymentSource.Entropy && (wallet == null || wallet.Balance < entropyCost))
+            {
+                failureReason = $"need {entropyCost} Entropy";
+                return false;
+            }
+
             failureReason = null;
+            return true;
+        }
+
+        public bool PayForPull(int pullCount, EntropyWallet wallet, PullPaymentSource source, out int commitsSpent, out int entropySpent, out string failureReason)
+        {
+            commitsSpent = 0;
+            entropySpent = 0;
+            if (!CanAffordPull(pullCount, wallet, source, out failureReason))
+            {
+                return false;
+            }
+
+            int cost = GetBeginnerPullCost(pullCount);
+            if (source == PullPaymentSource.Commits)
+            {
+                commitsSpent = cost;
+                SetCurrencyBalanceSilently(GachaCurrencyType.StandardPull, GetCurrencyBalance(GachaCurrencyType.StandardPull) - commitsSpent);
+            }
+            else
+            {
+                entropySpent = cost * EntropyPerCommit;
+                wallet.Spend(entropySpent);
+            }
+
             return true;
         }
 
@@ -223,34 +262,27 @@ namespace KernelPanic.Meta
             return Math.Max(0, pullCost - GetCurrencyBalance(currencyType));
         }
 
-        public bool CanCoverMissingPullTokensWithEntropy(EntropyWallet wallet, int missingPullTokens)
-        {
-            return missingPullTokens <= 0 || (wallet != null && wallet.Balance >= missingPullTokens * EntropyPerPullToken);
-        }
-
         public GachaPullResult PerformBeginnerPull(int pullCount)
         {
-            return PerformBeginnerPull(pullCount, null, 0);
+            return PerformBeginnerPull(pullCount, null, PullPaymentSource.Commits);
         }
 
         public GachaPullResult PerformBeginnerPull(int pullCount, EntropyWallet wallet, int entropyTokenCount)
         {
-            if (!CanPullBeginnerWithEntropy(pullCount, wallet, entropyTokenCount, out string failureReason))
+            PullPaymentSource source = entropyTokenCount > 0 ? PullPaymentSource.Entropy : PullPaymentSource.Commits;
+            return PerformBeginnerPull(pullCount, wallet, source);
+        }
+
+        public GachaPullResult PerformBeginnerPull(int pullCount, EntropyWallet wallet, PullPaymentSource source)
+        {
+            if (!CanAffordPull(pullCount, wallet, source, out string failureReason))
             {
                 return GachaPullResult.Failed(BeginnerBannerId, failureReason);
             }
 
-            int cost = GetBeginnerPullCost(pullCount);
-            int tokenSpend = cost - entropyTokenCount;
-            if (tokenSpend > 0)
+            if (!PayForPull(pullCount, wallet, source, out int commitSpend, out int entropySpent, out failureReason))
             {
-                SetCurrencyBalanceSilently(GachaCurrencyType.StandardPull, GetCurrencyBalance(GachaCurrencyType.StandardPull) - tokenSpend);
-            }
-
-            int entropySpent = entropyTokenCount * EntropyPerPullToken;
-            if (entropySpent > 0)
-            {
-                wallet.Spend(entropySpent);
+                return GachaPullResult.Failed(BeginnerBannerId, failureReason);
             }
 
             List<GachaReward> rewards = new();
@@ -266,14 +298,13 @@ namespace KernelPanic.Meta
             }
 
             Changed?.Invoke();
-            return new GachaPullResult(true, BeginnerBannerId, GachaCurrencyType.StandardPull, tokenSpend, entropySpent, rewards, null);
+            return new GachaPullResult(true, BeginnerBannerId, GachaCurrencyType.StandardPull, commitSpend, entropySpent, rewards, null);
         }
 
         public static string FormatCurrencyName(GachaCurrencyType currencyType)
         {
             return currencyType switch
             {
-                GachaCurrencyType.LimitedPull => "Root Credits",
                 _ => "Commits"
             };
         }
@@ -335,7 +366,7 @@ namespace KernelPanic.Meta
             if (!hitFourStarOrCharacter)
             {
                 _beginnerState.pityCounter++;
-                return GachaReward.Equipment(3, "3-star equipment", false, false);
+                return GachaReward.Package(3, "3-star package", false, false);
             }
 
             _beginnerState.pityCounter = 0;
@@ -345,7 +376,7 @@ namespace KernelPanic.Meta
                 return GachaReward.DistroReward(distro, 4, pityTriggered, false);
             }
 
-            return GachaReward.Equipment(4, "4-star equipment", pityTriggered, false);
+            return GachaReward.Package(4, "4-star package", pityTriggered, false);
         }
 
         private bool TryRollFiveStar(GachaBannerState state, out bool pityTriggered)
@@ -379,7 +410,7 @@ namespace KernelPanic.Meta
         {
             if (_bannerPool.Count == 0 || _random.NextDouble() >= DistroChanceOnFeaturedTier)
             {
-                return GachaReward.Equipment(5, "5-star equipment", pityTriggered, false);
+                return GachaReward.Package(5, "5-star package", pityTriggered, false);
             }
 
             DistroDefinition distro = _bannerPool.Count == 0 ? null : _bannerPool[_random.Next(_bannerPool.Count)];
@@ -420,7 +451,7 @@ namespace KernelPanic.Meta
 
             distro ??= _bannerPool.Count == 0 ? null : _bannerPool[Math.Min(guaranteeIndex, _bannerPool.Count - 1)];
             return distro == null
-                ? GachaReward.Equipment(4, "4-star equipment", true, true)
+                ? GachaReward.Package(4, "4-star package", true, true)
                 : GachaReward.DistroReward(distro, 4, true, true, reason);
         }
 
@@ -446,52 +477,6 @@ namespace KernelPanic.Meta
         private void SetCurrencyBalanceSilently(GachaCurrencyType currencyType, int amount)
         {
             _currencyBalances[currencyType] = Math.Max(0, amount);
-        }
-
-        private bool CanPullBeginnerWithEntropy(int pullCount, EntropyWallet wallet, int entropyTokenCount, out string failureReason)
-        {
-            if (pullCount != 1 && pullCount != 10)
-            {
-                failureReason = "only single and ten pulls are supported";
-                return false;
-            }
-
-            if (!IsBeginnerBannerAvailable)
-            {
-                failureReason = "beginner banner unavailable";
-                return false;
-            }
-
-            int remainingPulls = BeginnerMaxPulls - _beginnerState.totalPulls;
-            if (pullCount > remainingPulls)
-            {
-                failureReason = $"only {remainingPulls} beginner pull(s) remain";
-                return false;
-            }
-
-            int cost = GetBeginnerPullCost(pullCount);
-            if (entropyTokenCount < 0 || entropyTokenCount > cost)
-            {
-                failureReason = "invalid entropy substitute amount";
-                return false;
-            }
-
-            int tokenSpend = cost - entropyTokenCount;
-            if (GetCurrencyBalance(GachaCurrencyType.StandardPull) < tokenSpend)
-            {
-                failureReason = $"need {tokenSpend} {FormatCurrencyName(GachaCurrencyType.StandardPull)}";
-                return false;
-            }
-
-            int entropySpend = entropyTokenCount * EntropyPerPullToken;
-            if (entropySpend > 0 && (wallet == null || wallet.Balance < entropySpend))
-            {
-                failureReason = $"need {entropySpend} entropy";
-                return false;
-            }
-
-            failureReason = null;
-            return true;
         }
 
         private static GachaBannerState CloneState(GachaBannerState state)
@@ -542,9 +527,9 @@ namespace KernelPanic.Meta
         public bool Guaranteed { get; }
         public string GuaranteeReason { get; }
 
-        public static GachaReward Equipment(int starRating, string displayName, bool pityTriggered, bool guaranteed)
+        public static GachaReward Package(int starRating, string displayName, bool pityTriggered, bool guaranteed)
         {
-            return new GachaReward(GachaRewardType.Equipment, starRating, displayName, null, pityTriggered, guaranteed, null);
+            return new GachaReward(GachaRewardType.Package, starRating, displayName, null, pityTriggered, guaranteed, null);
         }
 
         public static GachaReward DistroReward(DistroDefinition distro, int starRating, bool pityTriggered, bool guaranteed, string guaranteeReason = null)

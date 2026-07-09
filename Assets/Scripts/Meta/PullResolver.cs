@@ -93,7 +93,7 @@ namespace KernelPanic.Meta
             owned.merges = Math.Max(0, owned.merges) + merges;
             if (GachaTuning.DupeConsolationBandwidth > 0)
             {
-                context.SaveData.standardPullCurrency += GachaTuning.DupeConsolationBandwidth;
+                context.SaveData.bandwidthBalance += GachaTuning.DupeConsolationBandwidth;
             }
 
             context.Collection?.AddSilently(unit, version);

@@ -5,7 +5,12 @@ namespace KernelPanic.Meta
     /// </summary>
     public enum GachaCurrencyType
     {
-        StandardPull,
-        LimitedPull
+        StandardPull
+    }
+
+    public enum PullPaymentSource
+    {
+        Commits,
+        Entropy
     }
 }

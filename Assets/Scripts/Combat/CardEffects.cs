@@ -84,8 +84,7 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            context.Source.Shield += amount;
-            context.CombatManager.ReportEffectResult($"gained {amount} shield");
+            context.CombatManager.GrantPlayerShield(amount, "card");
         }
     }
 
@@ -110,8 +109,7 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            context.Source.Shield += amount;
-            context.CombatManager.ReportEffectResult($"gained {amount} shield");
+            context.CombatManager.GrantPlayerShield(amount, "card");
         }
     }
 
@@ -502,8 +500,7 @@ namespace KernelPanic.Combat
                         continue;
                     }
 
-                    context.Source.Shield += overkill;
-                    context.CombatManager.ReportEffectResult($"overkill -> {overkill} shield");
+                    context.CombatManager.GrantPlayerShield(overkill, "overkill");
                 }
             }
         }
@@ -572,6 +569,7 @@ namespace KernelPanic.Combat
             if (context.HandController.Remove(junk))
             {
                 context.DeckController.Exhaust(junk);
+                context.CombatManager.HandleCardExhausted(junk);
                 int cycleGain = UpgradeMath.ScaleAmount(_cycleGain, context.Card);
                 context.Source.Cycles += cycleGain;
                 context.CombatManager.ReportEffectResult($"autoremove exhausted {GetCardName(junk)}: +{cycleGain} cycle");

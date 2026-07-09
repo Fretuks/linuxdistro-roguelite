@@ -64,6 +64,7 @@ namespace KernelPanic.Combat
             }
 
             int amount = Mathf.Max(0, request.Amount);
+            amount = ApplyFlatAdditions(amount, request);
             amount = ApplyMultipliers(amount, request);
             amount = ApplyCrit(amount, request, out bool wasCritical);
             amount = ApplyResistancesAndWeaknesses(amount, request);
@@ -93,6 +94,16 @@ namespace KernelPanic.Combat
 
             int multiplier = request.Source == null ? 100 : Mathf.Max(0, request.Source.DamageMultiplierPercent);
             return Mathf.RoundToInt(amount * (multiplier / 100f));
+        }
+
+        private static int ApplyFlatAdditions(int amount, DamageRequest request)
+        {
+            if (request.Source != null && request.Language == Language.JavaScript)
+            {
+                amount += Mathf.Max(0, request.Source.JavaScriptFlatDamageBonus);
+            }
+
+            return amount;
         }
 
         private static int ApplyCrit(int amount, DamageRequest request, out bool wasCritical)

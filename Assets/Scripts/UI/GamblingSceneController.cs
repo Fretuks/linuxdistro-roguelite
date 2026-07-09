@@ -173,8 +173,8 @@ namespace KernelPanic.UI
             commandLabel.text = pending.PullCount == 10 ? "git pull --ten" : "git pull --single";
             int pullCost = pending.PullCount == 10 ? GachaService.BeginnerTenPullCost : GachaService.BeginnerSinglePullCost;
             costLabel.text = pending.EntropyTokenCount > 0
-                ? $"cost: {pullCost} Commits / entropy fallback: {pending.EntropyTokenCount * GachaService.EntropyPerPullToken}"
-                : $"cost: {pullCost} Commits";
+                ? $"cost: {pending.EntropyTokenCount * GachaService.EntropyPerCommit} Entropy"
+                : $"cost: {pullCost} Commits / {pullCost * GachaService.EntropyPerCommit} Entropy";
             flourishLabel.text = "$ fetch-pack | verify | unpack";
 
             CompletedGachaPull completed = ResolvePull(pending);
@@ -248,13 +248,13 @@ namespace KernelPanic.UI
             EntropyWallet wallet = new();
             wallet.SetBalance(saveData.entropyBalance);
 
-            PlayerCollection collection = BuildCollection(saveData, pending.DistroDatabase);
+            PlayerCollection collection = BuildCollection(saveData, pending.DistroDatabase, pending.PackageDatabase);
             GachaService gacha = new();
             RestoreBannerPool(gacha, saveData, pending.DistroDatabase);
             gacha.LoadProgress(saveData);
 
             GachaPullResult result = pending.BannerId == GachaService.BeginnerBannerId
-                ? gacha.PerformBeginnerPull(pending.PullCount, wallet, pending.EntropyTokenCount)
+                ? gacha.PerformBeginnerPull(pending.PullCount, wallet, pending.EntropyTokenCount > 0 ? PullPaymentSource.Entropy : PullPaymentSource.Commits)
                 : GachaPullResult.Failed(pending.BannerId, "remote not implemented yet");
 
             if (!result.Success)
@@ -264,12 +264,10 @@ namespace KernelPanic.UI
 
             List<string> header = new()
             {
-                $"spent {result.CurrencySpent} {GachaService.FormatCurrencyName(result.CurrencyType)}"
+                result.EntropySpent > 0
+                    ? $"spent {result.EntropySpent} Entropy"
+                    : $"spent {result.CurrencySpent} {GachaService.FormatCurrencyName(result.CurrencyType)}"
             };
-            if (result.EntropySpent > 0)
-            {
-                header.Add($"spent {result.EntropySpent} entropy");
-            }
 
             List<DistroDefinition> distroRewards = new();
             for (int i = 0; i < result.Rewards.Count; i++)
@@ -296,7 +294,27 @@ namespace KernelPanic.UI
                 PullOutcomeKind outcomeKind = outcome?.Kind ?? PullOutcomeKind.Invalid;
                 int merges = outcome?.MergesAwarded ?? 0;
                 IReadOnlyList<Language> languages = outcome?.LanguagesNewlyUnlocked ?? Array.Empty<Language>();
-                completedRewards.Add(new CompletedGachaReward(i + 1, reward.StarRating, reward.DisplayName, reward.RewardType, outcomeKind, merges, languages, reward.Guaranteed, reward.PityTriggered));
+                string displayName = reward.DisplayName;
+                if (reward.RewardType == GachaRewardType.Package)
+                {
+                    PackageDefinition package = GrantRandomPackageByRarity(pending.PackageDatabase, collection, saveData, reward.StarRating, out bool duplicatePackage);
+                    if (package != null)
+                    {
+                        displayName = string.IsNullOrWhiteSpace(package.DisplayName) ? package.Id : package.DisplayName;
+                        if (duplicatePackage)
+                        {
+                            outcomeKind = PullOutcomeKind.Dupe;
+                            merges = Mathf.Max(1, GachaTuning.MergesPerDupe);
+                            saveData.packageMerges += merges;
+                        }
+                        else
+                        {
+                            outcomeKind = PullOutcomeKind.Granted;
+                        }
+                    }
+                }
+
+                completedRewards.Add(new CompletedGachaReward(i + 1, reward.StarRating, displayName, reward.RewardType, outcomeKind, merges, languages, reward.Guaranteed, reward.PityTriggered));
             }
 
             WriteState(saveService, saveData, wallet, collection, gacha);
@@ -424,7 +442,7 @@ namespace KernelPanic.UI
             return string.Join(", ", names);
         }
 
-        private static PlayerCollection BuildCollection(SaveData saveData, DistroDatabase distroDatabase)
+        private static PlayerCollection BuildCollection(SaveData saveData, DistroDatabase distroDatabase, PackageDatabase packageDatabase)
         {
             PlayerCollection collection = new();
             for (int i = 0; i < saveData.ownedUnits.Count; i++)
@@ -437,7 +455,44 @@ namespace KernelPanic.UI
                 }
             }
 
+            for (int i = 0; i < saveData.ownedPackages.Count; i++)
+            {
+                OwnedPackageSaveEntry entry = saveData.ownedPackages[i];
+                PackageDefinition package = packageDatabase == null ? null : packageDatabase.FindById(entry?.id);
+                if (package != null)
+                {
+                    collection.AddPackageSilently(package, entry.upgradeLevel);
+                }
+            }
+
             return collection;
+        }
+
+        private static PackageDefinition GrantRandomPackageByRarity(PackageDatabase packageDatabase, PlayerCollection collection, SaveData saveData, int rarity, out bool duplicate)
+        {
+            duplicate = false;
+            int count = packageDatabase == null ? 0 : packageDatabase.CountByRarity(rarity);
+            if (count <= 0)
+            {
+                return null;
+            }
+
+            int index = UnityEngine.Random.Range(0, count);
+            PackageDefinition package = packageDatabase.FindByRarity(rarity, index);
+            if (package == null)
+            {
+                return null;
+            }
+
+            duplicate = collection.IsPackageOwned(package.Id) || saveData.ownedPackageIds.Exists(id => string.Equals(id, package.Id, StringComparison.OrdinalIgnoreCase));
+            if (!duplicate)
+            {
+                collection.AddPackageSilently(package);
+                saveData.ownedPackages.Add(new OwnedPackageSaveEntry { id = package.Id, upgradeLevel = 0 });
+                saveData.ownedPackageIds.Add(package.Id);
+            }
+
+            return package;
         }
 
         private static void RestoreBannerPool(GachaService gacha, SaveData saveData, DistroDatabase distroDatabase)
@@ -475,6 +530,8 @@ namespace KernelPanic.UI
 
             saveData.entropyBalance = wallet.Balance;
             saveData.ownedUnits.Clear();
+            saveData.ownedPackages.Clear();
+            saveData.ownedPackageIds.Clear();
             saveData.ownedUnitIds.Clear();
             saveData.bannerPoolIds.Clear();
             gacha.WriteProgress(saveData);
@@ -490,6 +547,16 @@ namespace KernelPanic.UI
                         version = Mathf.Clamp(collection.GetVersion(unit.Id), 1, GachaTuning.MaxVersion),
                         merges = mergeBalances.TryGetValue(unit.Id, out int merges) ? merges : 0
                     });
+                }
+            }
+
+            for (int i = 0; i < collection.OwnedPackageInstances.Count; i++)
+            {
+                OwnedPackageInstance package = collection.OwnedPackageInstances[i];
+                if (package != null && !string.IsNullOrWhiteSpace(package.PackageId))
+                {
+                    saveData.ownedPackages.Add(new OwnedPackageSaveEntry { id = package.PackageId, upgradeLevel = package.UpgradeLevel });
+                    saveData.ownedPackageIds.Add(package.PackageId);
                 }
             }
 

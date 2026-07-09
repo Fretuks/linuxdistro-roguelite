@@ -41,6 +41,12 @@ namespace KernelPanic.Combat
         private int fedoraCardsDiscountedThisTurn;
         private int fedoraCrashChance = 10;
         private int cardsPlayedThisTurn;
+        private int cardsPlayedThisWave;
+        private int turnNumberThisWave;
+        private bool packageShieldBonusTriggeredThisTurn;
+        private bool packageTimeshiftTriggeredThisWave;
+        private bool packageInterpreterQueueShieldTriggeredThisWave;
+        private bool packageNativeDamageTriggeredThisWave;
         private int javaCardsPlayedThisCombat;
         private int javaCardsDiscountThisTurn;
         private int rawhideBonusCharges;
@@ -70,6 +76,16 @@ namespace KernelPanic.Combat
         private void Awake()
         {
             runManager = GetComponent<RunManager>();
+        }
+
+        private void OnEnable()
+        {
+            GameEvents.DamageDealt += HandlePackageDamageDealt;
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.DamageDealt -= HandlePackageDamageDealt;
         }
 
         public void StartCombat()
@@ -197,6 +213,7 @@ namespace KernelPanic.Combat
             ResolutionTrack track = card.Definition.ResolutionTrack;
             card.MarkPlayedThisTurn(cardsPlayedThisTurn == 0);
             cardsPlayedThisTurn++;
+            cardsPlayedThisWave++;
             if (card.Definition.Language == Language.Java)
             {
                 javaCardsPlayedThisCombat++;
@@ -256,6 +273,7 @@ namespace KernelPanic.Combat
             }
 
             playerState.DamageMultiplierPercent = 100;
+            ApplyPackageCardPlayedEffects(card);
 
             pendingTargetCard = null;
             TryApplyUbuntuEmptyHandRefill();
@@ -281,6 +299,7 @@ namespace KernelPanic.Combat
                 cost -= javaCardsPlayedThisCombat + javaCardsDiscountThisTurn;
             }
 
+            cost = ApplyPackageCostRules(card, cost);
             return Mathf.Max(0, cost);
         }
 
@@ -358,6 +377,16 @@ namespace KernelPanic.Combat
 
             playerState.IncomingAttackHalfCharges += Mathf.Max(0, charges);
             ReportEffectResult($"next {charges} enemy attack(s) halved");
+        }
+
+        public void HandleCardExhausted(CardInstance card)
+        {
+            if (card == null || !HasPackageEffect(PackageEffectKind.ExhaustShield, out PackageEffectData effect))
+            {
+                return;
+            }
+
+            GrantPlayerShield(Mathf.Max(0, effect.Amount), "logrotate");
         }
 
         public void ScheduleUpdateManagerRepeat(int damageAmount)
@@ -536,6 +565,12 @@ namespace KernelPanic.Combat
             fedoraCrashChance = 10;
             fedoraCardsDiscountedThisTurn = 0;
             cardsPlayedThisTurn = 0;
+            cardsPlayedThisWave = 0;
+            turnNumberThisWave = 0;
+            packageShieldBonusTriggeredThisTurn = false;
+            packageTimeshiftTriggeredThisWave = false;
+            packageInterpreterQueueShieldTriggeredThisWave = false;
+            packageNativeDamageTriggeredThisWave = false;
             javaCardsPlayedThisCombat = 0;
             javaCardsDiscountThisTurn = 0;
             rawhideBonusCharges = 0;
@@ -545,6 +580,7 @@ namespace KernelPanic.Combat
             RandomRoll.Seed(runConfig.RunSeed);
             playerState = new CombatantState(runManager.EffectiveMaxUptime(), runManager.EffectiveRam(), runManager.EffectiveMaxCycles());
             ApplyVersionState(playerState);
+            ApplyPackageState(playerState);
             yield return StartWaveSequenced(preservePlayerUptime: false);
             Log($"booted {runConfig.Distro.DisplayName} with {runManager.RunDeck.Count} cards");
             StateChanged?.Invoke();
@@ -557,6 +593,7 @@ namespace KernelPanic.Combat
             {
                 playerState = new CombatantState(runManager.EffectiveMaxUptime(), runManager.EffectiveRam(), runManager.EffectiveMaxCycles());
                 ApplyVersionState(playerState);
+                ApplyPackageState(playerState);
             }
             else
             {
@@ -570,11 +607,16 @@ namespace KernelPanic.Combat
                 playerState.IsDefeated = false;
                 playerState.MutableStatuses.Clear();
                 ApplyVersionState(playerState);
+                ApplyPackageState(playerState);
             }
 
             handController = new HandController(playerState.Ram);
             selectedEnemyIndex = -1;
             pendingTargetCard = null;
+            cardsPlayedThisWave = 0;
+            turnNumberThisWave = 0;
+            packageShieldBonusTriggeredThisTurn = false;
+            packageTimeshiftTriggeredThisWave = false;
 
             List<CardInstance> startingCards = new();
             for (int i = 0; i < runManager.RunDeck.Count; i++)
@@ -594,6 +636,7 @@ namespace KernelPanic.Combat
             PickEnemyIntents();
             StateChanged?.Invoke();
             yield return DrawOpeningHandSequenced();
+            ApplyPackageWaveStartEffects();
             skipNextAllocateDraw = true;
         }
 
@@ -607,7 +650,10 @@ namespace KernelPanic.Combat
             playerState.Cycles = playerState.MaxCycles;
             fedoraCardsDiscountedThisTurn = 0;
             cardsPlayedThisTurn = 0;
+            turnNumberThisWave++;
+            packageShieldBonusTriggeredThisTurn = false;
             javaCardsDiscountThisTurn = 0;
+            ApplyPackageTurnStartEffects();
             if (nextTurnCycleBonus > 0)
             {
                 playerState.Cycles += nextTurnCycleBonus;
@@ -852,7 +898,7 @@ namespace KernelPanic.Combat
                 return false;
             }
 
-            int limit = runConfig.DistroVersion >= 5 ? 2 : 1;
+            int limit = runConfig.DistroVersion >= 5 || HasOnDistroPackageEffect(PackageEffectKind.DnfFedoraPassive, out PackageEffectData dnfEffect) && dnfEffect.EnableFedoraSecondCardPassive ? 2 : 1;
             return fedoraCardsDiscountedThisTurn < limit;
         }
 
@@ -868,6 +914,360 @@ namespace KernelPanic.Combat
             {
                 Log($"rawhide growth: {GetCardName(card)} +{growth} effect");
             }
+        }
+
+        private int ApplyPackageCostRules(CardInstance card, int cost)
+        {
+            if (card == null || cost <= 0)
+            {
+                return cost;
+            }
+
+            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            if (packages == null)
+            {
+                return cost;
+            }
+
+            int nextTurnCard = cardsPlayedThisTurn + 1;
+            int nextWaveCard = cardsPlayedThisWave + 1;
+            for (int i = 0; i < packages.Count; i++)
+            {
+                PackageInstance package = packages[i];
+                if (package?.Definition == null)
+                {
+                    continue;
+                }
+
+                PackageEffectData effect = package.EffectFor(runConfig?.Distro?.Id);
+                switch (effect.Kind)
+                {
+                    case PackageEffectKind.FirstCardEachWaveCostReduction:
+                        if (nextWaveCard == 1)
+                        {
+                            cost -= Mathf.Max(0, effect.Amount);
+                        }
+                        break;
+                    case PackageEffectKind.EveryNthCardEachWaveFree:
+                        if (effect.Threshold > 0 && nextWaveCard % effect.Threshold == 0)
+                        {
+                            cost = 0;
+                        }
+                        break;
+                    case PackageEffectKind.FirstCardsEachTurnCostReduction:
+                        if (nextTurnCard <= Mathf.Max(0, effect.Threshold))
+                        {
+                            cost -= Mathf.Max(0, effect.Amount);
+                        }
+                        break;
+                }
+            }
+
+            return cost;
+        }
+
+        private void ApplyPackageState(CombatantState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            state.JavaScriptFlatDamageBonus = 0;
+            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            if (packages == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < packages.Count; i++)
+            {
+                PackageEffectData effect = packages[i] == null ? default : packages[i].EffectFor(runConfig?.Distro?.Id);
+                if (effect.Kind == PackageEffectKind.JavaScriptFlatDamage)
+                {
+                    state.JavaScriptFlatDamageBonus += Mathf.Max(0, effect.Amount);
+                }
+            }
+        }
+
+        private void ApplyPackageWaveStartEffects()
+        {
+            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            if (packages == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < packages.Count; i++)
+            {
+                PackageInstance package = packages[i];
+                if (package?.Definition == null)
+                {
+                    continue;
+                }
+
+                PackageEffectData effect = package.EffectFor(runConfig?.Distro?.Id);
+                switch (effect.Kind)
+                {
+                    case PackageEffectKind.WaveDraw:
+                        StartCoroutine(DrawCardsToHandSequenced(Mathf.Max(0, effect.Amount), package.Definition.DisplayName));
+                        break;
+                    case PackageEffectKind.WaveStartShield:
+                        GrantPlayerShield(Mathf.Max(0, effect.Amount), package.Definition.DisplayName);
+                        break;
+                    case PackageEffectKind.FirstTurnEachWaveShield:
+                        if (turnNumberThisWave == 0)
+                        {
+                            GrantPlayerShield(Mathf.Max(0, effect.Amount), package.Definition.DisplayName);
+                        }
+                        break;
+                    case PackageEffectKind.FirstTurnFirstWaveDraw:
+                        if (CurrentWaveNumber == 1 && turnNumberThisWave == 0)
+                        {
+                            StartCoroutine(DrawCardsToHandSequenced(Mathf.Max(0, effect.Amount), package.Definition.DisplayName));
+                        }
+                        break;
+                    case PackageEffectKind.WaveGenerateBasicCard:
+                        GeneratePackageLanguageCard(package.Definition.DisplayName);
+                        break;
+                }
+            }
+        }
+
+        private void ApplyPackageTurnStartEffects()
+        {
+            if (HasPackageEffect(PackageEffectKind.EveryNthTurnShield, out PackageEffectData effect)
+                && effect.Threshold > 0
+                && turnNumberThisWave % effect.Threshold == 0)
+            {
+                GrantPlayerShield(Mathf.Max(0, effect.Amount), "cron");
+            }
+
+            if (HasPackageEffect(PackageEffectKind.EveryNthTurnDraw, out effect)
+                && effect.Threshold > 0
+                && turnNumberThisWave % effect.Threshold == 0)
+            {
+                StartCoroutine(DrawCardsToHandSequenced(Mathf.Max(0, effect.Amount), "udev"));
+            }
+
+            if (turnNumberThisWave == 1
+                && HasPackageEffect(PackageEffectKind.FirstTurnEachWaveCycle, out effect)
+                && effect.Amount > 0)
+            {
+                playerState.Cycles += effect.Amount;
+                Log($"apt-fast: gained {effect.Amount} Cycle");
+            }
+
+            if (HasPackageEffect(PackageEffectKind.StartTurnNoDebuffShield, out effect)
+                && !HasHarmfulStatus(playerState))
+            {
+                GrantPlayerShield(Mathf.Max(0, effect.Amount), "auditd");
+            }
+        }
+
+        private void ApplyPackageCardPlayedEffects(CardInstance card)
+        {
+            if (card == null || playerState == null)
+            {
+                return;
+            }
+
+            if (HasPackageEffect(PackageEffectKind.ThirdCardEachTurnGenerate, out PackageEffectData aptEffect)
+                && cardsPlayedThisTurn == Mathf.Max(1, aptEffect.Threshold))
+            {
+                GeneratePackageLanguageCard("apt");
+                if (aptEffect.RefundCycle)
+                {
+                    playerState.Cycles += 1;
+                    Log("apt refunded 1 Cycle");
+                }
+            }
+
+            if (HasPackageEffect(PackageEffectKind.DnfFedoraPassive, out PackageEffectData dnfEffect)
+                && cardsPlayedThisTurn == 1
+                && dnfEffect.Amount > 0)
+            {
+                playerState.FlatEffectBonus += dnfEffect.Amount;
+                Log($"DNF wave buff +{dnfEffect.Amount} damage");
+            }
+
+            if (!packageInterpreterQueueShieldTriggeredThisWave
+                && card.Definition.ResolutionTrack == ResolutionTrack.InterpreterQueue
+                && HasPackageEffect(PackageEffectKind.FirstInterpreterQueueCardEachWaveShield, out PackageEffectData queueEffect))
+            {
+                packageInterpreterQueueShieldTriggeredThisWave = true;
+                GrantPlayerShield(Mathf.Max(0, queueEffect.Amount), "dbus");
+            }
+
+            if (!packageNativeDamageTriggeredThisWave
+                && card.Definition.ResolutionTrack == ResolutionTrack.Native
+                && HasPackageEffect(PackageEffectKind.FirstNativeCardEachWaveFlatDamage, out PackageEffectData nativeEffect)
+                && nativeEffect.Amount > 0)
+            {
+                packageNativeDamageTriggeredThisWave = true;
+                playerState.FlatEffectBonus += nativeEffect.Amount;
+                Log($"make: first Native card +{nativeEffect.Amount} damage");
+            }
+
+            if (HasPackageEffect(PackageEffectKind.EveryNthCardEachWaveCycle, out PackageEffectData cycleEffect)
+                && cycleEffect.Threshold > 0
+                && cardsPlayedThisWave % cycleEffect.Threshold == 0
+                && cycleEffect.Amount > 0)
+            {
+                playerState.Cycles += cycleEffect.Amount;
+                Log($"systemd-timer: gained {cycleEffect.Amount} Cycle");
+            }
+        }
+
+        public void GrantPlayerShield(int amount, string label)
+        {
+            if (playerState == null || amount <= 0)
+            {
+                return;
+            }
+
+            int total = amount;
+            if (!packageShieldBonusTriggeredThisTurn
+                && HasPackageEffect(PackageEffectKind.FirstShieldEachTurnBonus, out PackageEffectData effect))
+            {
+                int bonus = Mathf.Max(0, effect.Amount);
+                if (bonus > 0)
+                {
+                    total += bonus;
+                    packageShieldBonusTriggeredThisTurn = true;
+                    Log($"SELinux shield +{bonus}");
+                }
+            }
+
+            playerState.Shield += total;
+            if (!string.IsNullOrWhiteSpace(label))
+            {
+                Log($"{label}: gained {total} Shield");
+            }
+        }
+
+        private void GeneratePackageLanguageCard(string label)
+        {
+            if (handController == null || handController.RemainingRam <= 0)
+            {
+                return;
+            }
+
+            Language language = RandomRoll.RollRange(0, 1, new RollContext(playerState)) == 0
+                ? runConfig.PrimaryLanguage
+                : runConfig.SecondaryLanguage;
+
+            if (!TryCreateGeneratedCard(language, Rarity.Common, out CardInstance generated))
+            {
+                Log($"{label}: TODO card-generation pool unavailable");
+                return;
+            }
+
+            if (handController.Add(generated))
+            {
+                Log($"{label}: generated {GetCardName(generated)} at 0c");
+                StateChanged?.Invoke();
+            }
+        }
+
+        private void HandlePackageDamageDealt(DamageDealtEvent payload)
+        {
+            if (payload.Target != playerState
+                || payload.UptimeDamage <= 0
+                || packageTimeshiftTriggeredThisWave
+                || !HasPackageEffect(PackageEffectKind.WaveThresholdRestore, out PackageEffectData effect))
+            {
+                return;
+            }
+
+            int thresholdPercent = Mathf.Clamp(effect.Threshold, 1, 100);
+            int restoreTarget = Mathf.CeilToInt(playerState.MaxUptime * (thresholdPercent / 100f));
+            if (playerState.CurrentUptime >= restoreTarget)
+            {
+                return;
+            }
+
+            packageTimeshiftTriggeredThisWave = true;
+            playerState.CurrentUptime = restoreTarget;
+            if (effect.CleanseDebuffs)
+            {
+                statusEffects.CleanseHarmful(playerState);
+            }
+
+            Log($"Timeshift restored uptime to {thresholdPercent}%");
+            StateChanged?.Invoke();
+        }
+
+        private bool HasOnDistroPackageEffect(PackageEffectKind kind, out PackageEffectData effect)
+        {
+            effect = default;
+            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            if (packages == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < packages.Count; i++)
+            {
+                PackageInstance package = packages[i];
+                if (package?.Definition == null || !package.Definition.IsIntendedFor(runConfig?.Distro?.Id))
+                {
+                    continue;
+                }
+
+                effect = package.EffectFor(runConfig?.Distro?.Id);
+                if (effect.Kind == kind)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool HasPackageEffect(PackageEffectKind kind, out PackageEffectData effect)
+        {
+            effect = default;
+            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            if (packages == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < packages.Count; i++)
+            {
+                PackageInstance package = packages[i];
+                if (package?.Definition == null)
+                {
+                    continue;
+                }
+
+                effect = package.EffectFor(runConfig?.Distro?.Id);
+                if (effect.Kind == kind)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasHarmfulStatus(CombatantState state)
+        {
+            if (state == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < state.Statuses.Count; i++)
+            {
+                if (!StatusEffectController.GetDescriptor(state.Statuses[i].Type).IsBeneficial)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IsCrashImmune(CardInstance card)

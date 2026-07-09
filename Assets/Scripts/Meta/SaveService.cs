@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using KernelPanic.Data;
 using UnityEngine;
 
 namespace KernelPanic.Meta
@@ -60,16 +61,28 @@ namespace KernelPanic.Meta
         public bool starterChosen;
         public int entropyBalance;
         public int rootCredits = GachaService.TestRootCreditsBalance;
+        public int commitsBalance;
+        public int bandwidthBalance;
+        // Legacy conflated balance. Older builds used this for both Commits and Bandwidth.
+        // Migration preserves it as Bandwidth and starts Commits at 0 because the source is ambiguous.
         public int standardPullCurrency;
+        // Legacy pull-token field kept only so older saves deserialize cleanly.
         public int limitedPullCurrency;
+        public int cacheBalance;
+        public int packageMerges;
         // Legacy global balance kept only so older saves deserialize cleanly.
         // New duplicate-pull merges live on OwnedUnitSaveEntry.merges.
         public int merges;
         public List<OwnedUnitSaveEntry> ownedUnits = new();
+        public List<OwnedPackageSaveEntry> ownedPackages = new();
+        public List<string> ownedPackageIds = new();
+        public List<PackageLoadoutSaveEntry> packageLoadouts = new();
         public List<string> ownedUnitIds = new();
         public List<string> bannerPoolIds = new();
         public GachaBannerState beginnerBannerState = new(GachaService.BeginnerBannerId);
         public LastRunLoadoutSaveEntry lastRunLoadout = new();
+        public string lastRunDistroId;
+        public List<DistroBestWaveSaveEntry> distroBestWaves = new();
 
         public static SaveData CreateDefault()
         {
@@ -79,17 +92,54 @@ namespace KernelPanic.Meta
         public void EnsureLists()
         {
             ownedUnits ??= new List<OwnedUnitSaveEntry>();
+            ownedPackages ??= new List<OwnedPackageSaveEntry>();
+            ownedPackageIds ??= new List<string>();
+            packageLoadouts ??= new List<PackageLoadoutSaveEntry>();
             ownedUnitIds ??= new List<string>();
             bannerPoolIds ??= new List<string>();
+            distroBestWaves ??= new List<DistroBestWaveSaveEntry>();
             beginnerBannerState ??= new GachaBannerState(GachaService.BeginnerBannerId);
             beginnerBannerState.bannerId = GachaService.BeginnerBannerId;
             beginnerBannerState.EnsureLists();
             lastRunLoadout ??= new LastRunLoadoutSaveEntry();
             lastRunLoadout.EnsureLists();
+            if (string.IsNullOrWhiteSpace(lastRunDistroId) && !string.IsNullOrWhiteSpace(lastRunLoadout.distroId))
+            {
+                lastRunDistroId = lastRunLoadout.distroId;
+            }
+
+            MigrateLegacyConflatedCurrency();
+            entropyBalance = Math.Max(0, entropyBalance);
+            rootCredits = Math.Max(0, rootCredits);
+            commitsBalance = Math.Max(0, commitsBalance);
+            bandwidthBalance = Math.Max(0, bandwidthBalance);
             merges = Math.Max(0, merges);
+            packageMerges = Math.Max(0, packageMerges);
+            cacheBalance = Math.Max(0, cacheBalance);
             MigrateLegacyOwnedUnitIds();
+            MigrateLegacyOwnedPackageIds();
             NormalizeOwnedUnits();
+            NormalizeOwnedPackages();
+            NormalizePackageLoadouts();
+            NormalizeDistroBestWaves();
             MigrateLegacyGlobalMerges();
+        }
+
+        private void MigrateLegacyConflatedCurrency()
+        {
+            if (standardPullCurrency <= 0)
+            {
+                return;
+            }
+
+            if (bandwidthBalance <= 0)
+            {
+                bandwidthBalance = Math.Max(0, standardPullCurrency);
+                Debug.Log("Migrated legacy standardPullCurrency to Bandwidth. Commits defaulted to 0 because the old field conflated pull tokens and upgrade currency.");
+            }
+
+            standardPullCurrency = 0;
+            limitedPullCurrency = 0;
         }
 
         public OwnedUnitSaveEntry FindOwnedUnit(string id)
@@ -176,6 +226,133 @@ namespace KernelPanic.Meta
             }
         }
 
+        private void NormalizeOwnedPackages()
+        {
+            HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+            for (int i = ownedPackages.Count - 1; i >= 0; i--)
+            {
+                OwnedPackageSaveEntry entry = ownedPackages[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.id) || !seen.Add(entry.id))
+                {
+                    ownedPackages.RemoveAt(i);
+                    continue;
+                }
+
+                entry.upgradeLevel = Math.Max(0, Math.Min(PackageTuning.MaxPackageLevel, entry.upgradeLevel));
+            }
+
+            ownedPackageIds.Clear();
+            for (int i = 0; i < ownedPackages.Count; i++)
+            {
+                ownedPackageIds.Add(ownedPackages[i].id);
+            }
+        }
+
+        public int GetBestWave(string distroId)
+        {
+            if (string.IsNullOrWhiteSpace(distroId))
+            {
+                return 0;
+            }
+
+            EnsureLists();
+            for (int i = 0; i < distroBestWaves.Count; i++)
+            {
+                DistroBestWaveSaveEntry entry = distroBestWaves[i];
+                if (entry != null && string.Equals(entry.distroId, distroId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Math.Max(0, entry.bestWave);
+                }
+            }
+
+            return 0;
+        }
+
+        public void RecordRunStats(string distroId, int waveReached)
+        {
+            if (string.IsNullOrWhiteSpace(distroId))
+            {
+                return;
+            }
+
+            EnsureLists();
+            lastRunDistroId = distroId;
+            lastRunLoadout ??= new LastRunLoadoutSaveEntry();
+            lastRunLoadout.distroId = distroId;
+            int safeWave = Math.Max(0, waveReached);
+            for (int i = 0; i < distroBestWaves.Count; i++)
+            {
+                DistroBestWaveSaveEntry entry = distroBestWaves[i];
+                if (entry != null && string.Equals(entry.distroId, distroId, StringComparison.OrdinalIgnoreCase))
+                {
+                    entry.bestWave = Math.Max(entry.bestWave, safeWave);
+                    return;
+                }
+            }
+
+            distroBestWaves.Add(new DistroBestWaveSaveEntry { distroId = distroId, bestWave = safeWave });
+        }
+
+        private void NormalizeDistroBestWaves()
+        {
+            HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+            for (int i = distroBestWaves.Count - 1; i >= 0; i--)
+            {
+                DistroBestWaveSaveEntry entry = distroBestWaves[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.distroId) || !seen.Add(entry.distroId))
+                {
+                    distroBestWaves.RemoveAt(i);
+                    continue;
+                }
+
+                entry.bestWave = Math.Max(0, entry.bestWave);
+            }
+        }
+
+        private void MigrateLegacyOwnedPackageIds()
+        {
+            for (int i = 0; i < ownedPackageIds.Count; i++)
+            {
+                string id = ownedPackageIds[i];
+                if (string.IsNullOrWhiteSpace(id) || HasOwnedPackageEntry(id))
+                {
+                    continue;
+                }
+
+                ownedPackages.Add(new OwnedPackageSaveEntry { id = id, upgradeLevel = 0 });
+            }
+        }
+
+        private bool HasOwnedPackageEntry(string id)
+        {
+            for (int i = 0; i < ownedPackages.Count; i++)
+            {
+                OwnedPackageSaveEntry entry = ownedPackages[i];
+                if (entry != null && string.Equals(entry.id, id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void NormalizePackageLoadouts()
+        {
+            HashSet<string> seenDistros = new(StringComparer.OrdinalIgnoreCase);
+            for (int i = packageLoadouts.Count - 1; i >= 0; i--)
+            {
+                PackageLoadoutSaveEntry entry = packageLoadouts[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.distroId) || !seenDistros.Add(entry.distroId))
+                {
+                    packageLoadouts.RemoveAt(i);
+                    continue;
+                }
+
+                entry.EnsureLists();
+            }
+        }
+
         private void MigrateLegacyGlobalMerges()
         {
             if (merges <= 0 || ownedUnits.Count == 0)
@@ -224,6 +401,13 @@ namespace KernelPanic.Meta
     }
 
     [Serializable]
+    public sealed class OwnedPackageSaveEntry
+    {
+        public string id;
+        public int upgradeLevel;
+    }
+
+    [Serializable]
     public sealed class LastRunLoadoutSaveEntry
     {
         public string distroId;
@@ -233,5 +417,40 @@ namespace KernelPanic.Meta
         {
             cardIds ??= new List<string>();
         }
+    }
+
+    [Serializable]
+    public sealed class DistroBestWaveSaveEntry
+    {
+        public string distroId;
+        public int bestWave;
+    }
+
+    [Serializable]
+    public sealed class PackageLoadoutSaveEntry
+    {
+        public string distroId;
+        public List<PackageLoadoutSlotSaveEntry> slots = new();
+
+        public void EnsureLists()
+        {
+            slots ??= new List<PackageLoadoutSlotSaveEntry>();
+            HashSet<PackageSlot> seen = new();
+            for (int i = slots.Count - 1; i >= 0; i--)
+            {
+                PackageLoadoutSlotSaveEntry slot = slots[i];
+                if (slot == null || string.IsNullOrWhiteSpace(slot.packageId) || !seen.Add(slot.slot))
+                {
+                    slots.RemoveAt(i);
+                }
+            }
+        }
+    }
+
+    [Serializable]
+    public sealed class PackageLoadoutSlotSaveEntry
+    {
+        public PackageSlot slot;
+        public string packageId;
     }
 }

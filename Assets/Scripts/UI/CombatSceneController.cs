@@ -329,10 +329,10 @@ namespace KernelPanic.UI
 
             waveLabel = AddStatusReadout(bar, "wave", "--", false);
             phaseLabel = AddStatusReadout(bar, "phase", "--", true);
-            bitsLabel = AddStatusReadout(bar, "bits", "0", false);
-            entropyLabel = AddStatusReadout(bar, "entropy", "0", false);
-            bandwidthLabel = AddStatusReadout(bar, "bandwidth", "0", false);
-            rootCreditsLabel = AddStatusReadout(bar, "root credits", "TODO", false);
+            bitsLabel = AddStatusReadout(bar, "Bits", "0", false);
+            entropyLabel = AddStatusReadout(bar, "Entropy", "0", false);
+            bandwidthLabel = AddStatusReadout(bar, "Bandwidth", "0", false);
+            rootCreditsLabel = AddStatusReadout(bar, "Root Credits", "0", false);
 
             VisualElement spacer = new();
             spacer.AddToClassList("status-spacer");
@@ -405,8 +405,8 @@ namespace KernelPanic.UI
             phaseLabel.text = PhaseText(combatManager.CurrentPhase);
             bitsLabel.text = runManager.Bits.ToString();
             entropyLabel.text = FormatWalletWithAccrual(data.entropyBalance, runManager.AccruedEntropy);
-            bandwidthLabel.text = FormatWalletWithAccrual(data.standardPullCurrency, runManager.AccruedBandwidth);
-            rootCreditsLabel.text = "TODO";
+            bandwidthLabel.text = FormatWalletWithAccrual(data.bandwidthBalance, runManager.AccruedBandwidth);
+            rootCreditsLabel.text = data.rootCredits.ToString();
             seedLabel.text = $"seed {config?.RunSeed ?? 0}";
         }
 
@@ -575,8 +575,9 @@ namespace KernelPanic.UI
             }
 
             SaveData data = saveService.Load();
-            data.standardPullCurrency = Math.Max(0, data.standardPullCurrency) + bandwidth;
+            data.bandwidthBalance = Math.Max(0, data.bandwidthBalance) + bandwidth;
             data.entropyBalance = Math.Max(0, data.entropyBalance) + entropy;
+            data.RecordRunStats(runManager.CurrentConfig?.Distro?.Id, runManager.CurrentWaveNumber);
             saveService.Save(data);
         }
 

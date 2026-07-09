@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: OpenSSL
+  m_EditorClassIdentifier: 
+  id: pkg_openssl
+  displayName: openssl
+  slot: 0
+  rarity: 1
+  description: +1 max Uptime (COMBAT), +1 Shield at WAVE start.
+  flavourText: The lock icon is mostly vibes, but the vibes are encrypted.
+  designNotes: Generic 1-star Kernel. Uses MaxUptime now; WAVE shield portion TODO until multi-effect packages exist.
+  intendedDistroId: 
+  requiresSystem: [multi-effect-package]
+  offDistroEffect: {kind: 1, amount: 1, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}
+  onDistroEffect: {kind: 1, amount: 1, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0}

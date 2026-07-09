@@ -161,13 +161,14 @@ namespace KernelPanic.UI
             title.AddToClassList("gacha-detail-title");
             _bannerDetail.Add(title);
 
-            _bannerDetail.Add(BuildInfoLine("entropy", _wallet == null ? "--" : _wallet.Balance.ToString()));
+            _bannerDetail.Add(BuildInfoLine("Entropy", _wallet == null ? "--" : _wallet.Balance.ToString()));
+            _bannerDetail.Add(BuildInfoLine("Commits", _gachaService.PullTokens.ToString()));
             _bannerDetail.Add(BuildInfoLine("pulls", $"{state.totalPulls}/{GachaService.BeginnerMaxPulls}"));
             _bannerDetail.Add(BuildInfoLine("4-star pity", $"{state.pityCounter}/{GachaService.FourStarHardPity}"));
-            _bannerDetail.Add(BuildInfoLine("ten pull", $"{GachaService.BeginnerTenPullCost} Commits for 10 pulls"));
+            _bannerDetail.Add(BuildInfoLine("cost", $"1 Commit / {GachaService.EntropyPerCommit} Entropy per pull"));
             _bannerDetail.Add(BuildInfoLine("guarantees", FormatBeginnerGuarantees()));
 
-            Label rules = new("Base result is a 3-star equipment cache. A 4-star equipment cache or starter distro can appear early, with one 4-star+ result guaranteed every 10 pulls.");
+            Label rules = new("Base result is a 3-star package cache. A 4-star package cache or starter distro can appear early, with one 4-star+ result guaranteed every 10 pulls.");
             rules.AddToClassList("gacha-rules");
             _bannerDetail.Add(rules);
 
@@ -185,7 +186,7 @@ namespace KernelPanic.UI
 
             Button tenButton = new(() => RequestPullSelectedBanner(10))
             {
-                text = $"git pull --ten\n8x {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)}"
+                text = $"git pull --ten\n10x {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)}"
             };
             tenButton.AddToClassList("terminal-button");
             tenButton.AddToClassList("gacha-action-button");
@@ -214,10 +215,7 @@ namespace KernelPanic.UI
             title.AddToClassList("gacha-detail-title");
             _bannerDetail.Add(title);
 
-            string currency = bannerId == GachaService.StandardBannerId
-                ? GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)
-                : GachaService.FormatCurrencyName(GachaCurrencyType.LimitedPull);
-            _bannerDetail.Add(BuildInfoLine("pull currency", currency));
+            _bannerDetail.Add(BuildInfoLine("pull currency", $"Commits or Entropy ({GachaService.EntropyPerCommit}:1)"));
             _bannerDetail.Add(BuildInfoLine("status", "not implemented yet"));
             _bannerDetail.Add(BuildInfoLine("pity", "own counter, 10-pull 4-star+ guarantee"));
             _bannerDetail.Add(new Label("Use the beginner implementation as the template: define the banner pool, persist a separate GachaBannerState, then route single/ten pulls through GachaService.") { name = "FutureBannerHint" });
@@ -250,7 +248,8 @@ namespace KernelPanic.UI
                 return;
             }
 
-            GachaPullResult result = _gachaService.PerformBeginnerPull(pullCount, _wallet, entropyTokenCount);
+            PullPaymentSource source = entropyTokenCount > 0 ? PullPaymentSource.Entropy : PullPaymentSource.Commits;
+            GachaPullResult result = _gachaService.PerformBeginnerPull(pullCount, _wallet, source);
             if (!result.Success)
             {
                 _resultBannerId = bannerId;
@@ -262,11 +261,9 @@ namespace KernelPanic.UI
             }
 
             List<string> header = new();
-            header.Add($"git pull complete: spent {result.CurrencySpent} {GachaService.FormatCurrencyName(result.CurrencyType)}");
-            if (result.EntropySpent > 0)
-            {
-                header.Add($"entropy fallback: spent {result.EntropySpent} entropy");
-            }
+            header.Add(result.EntropySpent > 0
+                ? $"git pull complete: spent {result.EntropySpent} Entropy"
+                : $"git pull complete: spent {result.CurrencySpent} {GachaService.FormatCurrencyName(result.CurrencyType)}");
 
             List<DistroDefinition> distroRewards = new();
             for (int i = 0; i < result.Rewards.Count; i++)
@@ -419,7 +416,7 @@ namespace KernelPanic.UI
 
         private static string FormatRewardDisplayName(GachaReward reward)
         {
-            if (reward.RewardType != GachaRewardType.Equipment || string.IsNullOrWhiteSpace(reward.DisplayName))
+            if (reward.RewardType != GachaRewardType.Package || string.IsNullOrWhiteSpace(reward.DisplayName))
             {
                 return reward.DisplayName;
             }
@@ -450,7 +447,8 @@ namespace KernelPanic.UI
                 return;
             }
 
-            if (!_gachaService.CanCoverMissingPullTokensWithEntropy(_wallet, missingTokens))
+            int entropyCost = cost * GachaService.EntropyPerCommit;
+            if (_wallet == null || _wallet.Balance < entropyCost)
             {
                 if (_gachaService.RootCredits > 0)
                 {
@@ -459,13 +457,13 @@ namespace KernelPanic.UI
                 }
 
                 _resultBannerId = bannerId;
-                _resultText = $"git pull failed: need {missingTokens} {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)} or {missingTokens * GachaService.EntropyPerPullToken} entropy";
+                _resultText = $"git pull failed: need {cost} {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)} or {entropyCost} Entropy";
                 RenderSelectedBanner();
                 return;
             }
 
             _pendingPullCount = pullCount;
-            _pendingMissingTokens = missingTokens;
+            _pendingMissingTokens = cost;
             _resultBannerId = bannerId;
             _resultText = null;
             RenderSelectedBanner();
@@ -476,8 +474,8 @@ namespace KernelPanic.UI
             VisualElement prompt = new();
             prompt.AddToClassList("gacha-entropy-prompt");
 
-            int entropyCost = _pendingMissingTokens * GachaService.EntropyPerPullToken;
-            Label copy = new($"missing {_pendingMissingTokens} Commits. spend {entropyCost} entropy to complete git pull?");
+            int entropyCost = _pendingMissingTokens * GachaService.EntropyPerCommit;
+            Label copy = new($"spend {entropyCost} Entropy instead of {_pendingMissingTokens} Commits?");
             copy.AddToClassList("gacha-result");
             prompt.Add(copy);
 
@@ -499,9 +497,9 @@ namespace KernelPanic.UI
             Button confirm = new(() =>
             {
                 int pullCount = _pendingPullCount;
-                int missingTokens = _pendingMissingTokens;
+                int entropyPulls = _pendingMissingTokens;
                 ClearEntropyPrompt();
-                PullSelectedBanner(pullCount, missingTokens);
+                PullSelectedBanner(pullCount, entropyPulls);
             })
             {
                 text = $"git pull --use-entropy={entropyCost}"
@@ -526,9 +524,10 @@ namespace KernelPanic.UI
                 return false;
             }
 
-            int missingTokens = _gachaService.GetMissingPullTokens(GachaCurrencyType.StandardPull, _gachaService.GetBeginnerPullCost(pullCount));
+            int cost = _gachaService.GetBeginnerPullCost(pullCount);
+            int missingTokens = _gachaService.GetMissingPullTokens(GachaCurrencyType.StandardPull, cost);
             return missingTokens > 0 &&
-                   (_gachaService.CanCoverMissingPullTokensWithEntropy(_wallet, missingTokens) ||
+                   ((_wallet != null && _wallet.Balance >= cost * GachaService.EntropyPerCommit) ||
                     _gachaService.RootCredits > 0);
         }
 
