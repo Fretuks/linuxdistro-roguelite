@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48447d3db18343398488d3064324147d, type: 3}
+  m_Name: Aur
+  m_EditorClassIdentifier: 
+  id: pkg_aur
+  displayName: AUR
+  slot: 1
+  rarity: 4
+  description: start each TURN with a generated C/Rust card. on Arch, any rarity and costs 1 less this turn; off-distro, common only with no discount.
+  flavourText: probably maintained by one person and a shell script named pls-work.sh.
+  designNotes: Arch 4-star Runtime package. Scope TURN. On Arch: generate random C/Rust card up to Legendary rarity and apply -1 temporary cost. Off-distro: generate Common C/Rust only with no discount. Uses existing generated-card pool; requiresSystem card-generation if no eligible pool is available. Runtime slot intentionally does not conflict with systemd Daemon.
+  intendedDistroId: arch
+  requiresSystem:
+  - card-generation
+  offDistroEffect: {kind: 26, amount: 0, threshold: 0, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0, persistArchBtw: 0}
+  onDistroEffect: {kind: 26, amount: 1, threshold: 3, refundCycle: 0, cleanseDebuffs: 0, enableFedoraSecondCardPassive: 0, persistArchBtw: 0}

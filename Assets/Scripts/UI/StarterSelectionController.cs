@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using KernelPanic.Data;
+using KernelPanic.Meta;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -196,7 +197,24 @@ namespace KernelPanic.UI
                 return false;
             }
 
-            starters = allDistros;
+            List<DistroDefinition> starterDistros = new();
+            for (int i = 0; i < allDistros.Count; i++)
+            {
+                DistroDefinition distro = allDistros[i];
+                if (GachaService.IsBeginnerStarterDistro(distro))
+                {
+                    starterDistros.Add(distro);
+                }
+            }
+
+            if (starterDistros.Count < StarterCount)
+            {
+                starters = Array.Empty<DistroDefinition>();
+                error = $"DistroDatabase needs at least {StarterCount} starter distros (found {starterDistros.Count})";
+                return false;
+            }
+
+            starters = starterDistros;
             error = null;
             return true;
         }

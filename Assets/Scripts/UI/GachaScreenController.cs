@@ -607,7 +607,7 @@ namespace KernelPanic.UI
             IReadOnlyList<string> ids = _gachaService.BeginnerState.guaranteedDistroIds;
             string first = ids.Count > 0 ? ids[0] : "--";
             string second = ids.Count > 1 ? ids[1] : "--";
-            return $"20={first}, 40={second}, 50=future standard 5-star";
+            return $"20={first}, 40={second}, 50=guaranteed 5-star";
         }
 
         private static VisualElement BuildInfoLine(string key, string value)

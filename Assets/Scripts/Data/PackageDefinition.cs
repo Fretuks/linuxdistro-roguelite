@@ -37,7 +37,9 @@ namespace KernelPanic.Data
         FirstInterpreterQueueCardEachWaveShield = 21,
         EveryNthTurnDraw = 22,
         StartTurnNoDebuffShield = 23,
-        EveryNthCardEachWaveCycle = 24
+        EveryNthCardEachWaveCycle = 24,
+        FirstCThisTurnDamageMultiplier = 25,
+        TurnStartGenerateLanguageCard = 26
     }
 
     [Serializable]
@@ -49,8 +51,9 @@ namespace KernelPanic.Data
         [SerializeField] private bool refundCycle;
         [SerializeField] private bool cleanseDebuffs;
         [SerializeField] private bool enableFedoraSecondCardPassive;
+        [SerializeField] private bool persistArchBtw;
 
-        public PackageEffectData(PackageEffectKind kind, int amount, int threshold, bool refundCycle, bool cleanseDebuffs, bool enableFedoraSecondCardPassive)
+        public PackageEffectData(PackageEffectKind kind, int amount, int threshold, bool refundCycle, bool cleanseDebuffs, bool enableFedoraSecondCardPassive, bool persistArchBtw = false)
         {
             this.kind = kind;
             this.amount = amount;
@@ -58,6 +61,7 @@ namespace KernelPanic.Data
             this.refundCycle = refundCycle;
             this.cleanseDebuffs = cleanseDebuffs;
             this.enableFedoraSecondCardPassive = enableFedoraSecondCardPassive;
+            this.persistArchBtw = persistArchBtw;
         }
 
         public PackageEffectKind Kind => kind;
@@ -66,6 +70,7 @@ namespace KernelPanic.Data
         public bool RefundCycle => refundCycle;
         public bool CleanseDebuffs => cleanseDebuffs;
         public bool EnableFedoraSecondCardPassive => enableFedoraSecondCardPassive;
+        public bool PersistArchBtw => persistArchBtw;
     }
 
     /// <summary>
@@ -142,7 +147,7 @@ namespace KernelPanic.Data
             }
 
             int amount = effect.Amount + GetAmountPerLevel(effect.Kind, effect.Amount) * level;
-            return new PackageEffectData(effect.Kind, amount, effect.Threshold, effect.RefundCycle, effect.CleanseDebuffs, effect.EnableFedoraSecondCardPassive);
+            return new PackageEffectData(effect.Kind, amount, effect.Threshold, effect.RefundCycle, effect.CleanseDebuffs, effect.EnableFedoraSecondCardPassive, effect.PersistArchBtw);
         }
 
         private static int GetAmountPerLevel(PackageEffectKind kind, int baseAmount)
@@ -159,6 +164,7 @@ namespace KernelPanic.Data
                 PackageEffectKind.FirstCardEachWaveCostReduction => 1,
                 PackageEffectKind.FirstNativeCardEachWaveFlatDamage => 1,
                 PackageEffectKind.JavaScriptFlatDamage => 1,
+                PackageEffectKind.TurnStartGenerateLanguageCard => 0,
                 _ => 1
             };
         }

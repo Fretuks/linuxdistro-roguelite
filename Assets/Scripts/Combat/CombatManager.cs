@@ -42,6 +42,7 @@ namespace KernelPanic.Combat
         private int fedoraCrashChance = 10;
         private int cardsPlayedThisTurn;
         private int cardsPlayedThisWave;
+        private int cCardsPlayedThisTurn;
         private int turnNumberThisWave;
         private bool packageShieldBonusTriggeredThisTurn;
         private bool packageTimeshiftTriggeredThisWave;
@@ -214,6 +215,19 @@ namespace KernelPanic.Combat
             card.MarkPlayedThisTurn(cardsPlayedThisTurn == 0);
             cardsPlayedThisTurn++;
             cardsPlayedThisWave++;
+            if (IsDistro("arch"))
+            {
+                playerState.ArchBtwStacks++;
+            }
+
+            playerState.HasPreviousPlayedCardLanguage = playerState.HasLastPlayedCardLanguage;
+            if (playerState.HasLastPlayedCardLanguage)
+            {
+                playerState.PreviousPlayedCardLanguage = playerState.LastPlayedCardLanguage;
+            }
+
+            playerState.LastPlayedCardLanguage = card.Definition.Language;
+            playerState.HasLastPlayedCardLanguage = true;
             if (card.Definition.Language == Language.Java)
             {
                 javaCardsPlayedThisCombat++;
@@ -254,6 +268,11 @@ namespace KernelPanic.Combat
                 ApplyFedoraGrowth(card, rawhideChargeUsed);
             }
 
+            if (card.Definition.Language == Language.C && cCardsPlayedThisTurn == 0 && HasPackageEffect(PackageEffectKind.FirstCThisTurnDamageMultiplier, out PackageEffectData cPackageEffect))
+            {
+                playerState.CurrentCardDamageMultiplierPercent = Mathf.Max(100, cPackageEffect.Amount);
+            }
+
             switch (track)
             {
                 case ResolutionTrack.InterpreterQueue:
@@ -273,6 +292,12 @@ namespace KernelPanic.Combat
             }
 
             playerState.DamageMultiplierPercent = 100;
+            playerState.CurrentCardDamageMultiplierPercent = 100;
+            if (card.Definition.Language == Language.C)
+            {
+                cCardsPlayedThisTurn++;
+            }
+
             ApplyPackageCardPlayedEffects(card);
 
             pendingTargetCard = null;
@@ -485,6 +510,16 @@ namespace KernelPanic.Combat
             return true;
         }
 
+        public void DrawCards(int count, string label)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            StartCoroutine(DrawCardsToHandSequenced(count, label));
+        }
+
         private void SetPhase(TurnPhase nextPhase)
         {
             if (IsCombatPaused && nextPhase != TurnPhase.Boot)
@@ -566,6 +601,7 @@ namespace KernelPanic.Combat
             fedoraCardsDiscountedThisTurn = 0;
             cardsPlayedThisTurn = 0;
             cardsPlayedThisWave = 0;
+            cCardsPlayedThisTurn = 0;
             turnNumberThisWave = 0;
             packageShieldBonusTriggeredThisTurn = false;
             packageTimeshiftTriggeredThisWave = false;
@@ -617,6 +653,7 @@ namespace KernelPanic.Combat
             turnNumberThisWave = 0;
             packageShieldBonusTriggeredThisTurn = false;
             packageTimeshiftTriggeredThisWave = false;
+            ResetArchWaveState();
 
             List<CardInstance> startingCards = new();
             for (int i = 0; i < runManager.RunDeck.Count; i++)
@@ -650,6 +687,7 @@ namespace KernelPanic.Combat
             playerState.Cycles = playerState.MaxCycles;
             fedoraCardsDiscountedThisTurn = 0;
             cardsPlayedThisTurn = 0;
+            cCardsPlayedThisTurn = 0;
             turnNumberThisWave++;
             packageShieldBonusTriggeredThisTurn = false;
             javaCardsDiscountThisTurn = 0;
@@ -770,6 +808,7 @@ namespace KernelPanic.Combat
                 return;
             }
 
+            ResetArchBtwAtEndOfTurn();
             RemoveDefeatedEnemies();
             CheckWinOrLoss();
             StateChanged?.Invoke();
@@ -1063,6 +1102,11 @@ namespace KernelPanic.Combat
             {
                 GrantPlayerShield(Mathf.Max(0, effect.Amount), "auditd");
             }
+
+            if (HasPackageEffect(PackageEffectKind.TurnStartGenerateLanguageCard, out effect))
+            {
+                GenerateAurPackageCard(effect);
+            }
         }
 
         private void ApplyPackageCardPlayedEffects(CardInstance card)
@@ -1170,8 +1214,77 @@ namespace KernelPanic.Combat
             }
         }
 
+        private void GenerateAurPackageCard(PackageEffectData effect)
+        {
+            if (handController == null || handController.RemainingRam <= 0)
+            {
+                return;
+            }
+
+            int maxRarity = Mathf.Clamp(effect.Threshold, 0, (int)Rarity.Legendary);
+            List<CardDefinition> pool = new();
+            HashSet<string> seenIds = new(StringComparer.OrdinalIgnoreCase);
+            IReadOnlyList<CardDefinition> source = generatedCardPool.Count > 0 ? generatedCardPool : runConfig?.StartingDeck;
+            if (source == null)
+            {
+                Log("AUR: TODO card-generation pool unavailable");
+                return;
+            }
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                CardDefinition definition = source[i];
+                if (definition == null
+                    || definition.IsToken
+                    || definition.IsRunOnly
+                    || (int)definition.Rarity > maxRarity
+                    || definition.Language != Language.C && definition.Language != Language.Rust)
+                {
+                    continue;
+                }
+
+                if (seenIds.Add(definition.Id))
+                {
+                    pool.Add(definition);
+                }
+            }
+
+            if (pool.Count == 0)
+            {
+                Log("AUR: TODO card-generation pool unavailable");
+                return;
+            }
+
+            int index = RandomRoll.RollRange(0, pool.Count - 1, new RollContext(playerState));
+            CardDefinition selected = pool[index];
+            CardInstance generated = new(selected)
+            {
+                TemporaryCostDelta = -Mathf.Clamp(effect.Amount, 0, selected.CycleCost)
+            };
+
+            if (handController.Add(generated))
+            {
+                string discount = effect.Amount > 0 ? " at -1c" : string.Empty;
+                Log($"AUR: generated {GetCardName(generated)}{discount}");
+                StateChanged?.Invoke();
+            }
+        }
+
         private void HandlePackageDamageDealt(DamageDealtEvent payload)
         {
+            if (payload.Target == playerState && playerState != null && playerState.ArchRollingReleaseRecoveredThisHit)
+            {
+                playerState.ArchRollingReleaseRecoveredThisHit = false;
+                string recovery = "rolling release: recovered at 1 Uptime";
+                if (playerState.ArchRollingReleaseShieldOnSave > 0 || playerState.ArchRollingReleaseCyclesOnSave > 0)
+                {
+                    recovery += $", +{playerState.ArchRollingReleaseShieldOnSave} Shield, +{playerState.ArchRollingReleaseCyclesOnSave} Cycle";
+                }
+
+                Log(recovery);
+                StateChanged?.Invoke();
+            }
+
             if (payload.Target != playerState
                 || payload.UptimeDamage <= 0
                 || packageTimeshiftTriggeredThisWave
@@ -1196,6 +1309,39 @@ namespace KernelPanic.Combat
 
             Log($"Timeshift restored uptime to {thresholdPercent}%");
             StateChanged?.Invoke();
+        }
+
+        private void ResetArchBtwAtEndOfTurn()
+        {
+            if (!IsDistro("arch") || playerState == null || playerState.ArchBtwStacks <= 0 || ArchBtwPersistsThisWave())
+            {
+                return;
+            }
+
+            playerState.ArchBtwStacks = 0;
+        }
+
+        private void ResetArchWaveState()
+        {
+            if (playerState == null)
+            {
+                return;
+            }
+
+            playerState.ArchBtwStacks = 0;
+            playerState.ArchRollingReleaseSavesRemaining = IsDistro("arch") ? runConfig.DistroVersion >= 5 ? 2 : 1 : 0;
+            playerState.ArchRollingReleaseAvailableThisWave = playerState.ArchRollingReleaseSavesRemaining > 0;
+            playerState.ArchRollingReleaseRecoveredThisHit = false;
+            playerState.HasLastPlayedCardLanguage = false;
+            playerState.HasPreviousPlayedCardLanguage = false;
+        }
+
+        private bool ArchBtwPersistsThisWave()
+        {
+            return IsDistro("arch")
+                && (runConfig.DistroVersion >= 5
+                || HasOnDistroPackageEffect(PackageEffectKind.FirstCThisTurnDamageMultiplier, out PackageEffectData effect)
+                && effect.PersistArchBtw);
         }
 
         private bool HasOnDistroPackageEffect(PackageEffectKind kind, out PackageEffectData effect)
@@ -1288,6 +1434,11 @@ namespace KernelPanic.Combat
             state.AllowFlatDamageBuffs = IsDistro("mint") && runConfig.DistroVersion >= 4;
             state.FlatEffectBonus = IsDistro("mint") && runConfig.DistroVersion >= 2 ? 2 : 0;
             state.DamageMultiplierPercent = 100;
+            state.CurrentCardDamageMultiplierPercent = 100;
+            state.ArchBtwDamagePerStack = IsDistro("arch") && runConfig.DistroVersion >= 2 ? 2 : 1;
+            state.ArchMakepkgBtwMultiplier = IsDistro("arch") && runConfig.DistroVersion >= 3 ? 3 : 2;
+            state.ArchRollingReleaseShieldOnSave = IsDistro("arch") && runConfig.DistroVersion >= 4 ? 15 : 0;
+            state.ArchRollingReleaseCyclesOnSave = IsDistro("arch") && runConfig.DistroVersion >= 4 ? 2 : 0;
         }
 
         private bool IsDistro(string id)

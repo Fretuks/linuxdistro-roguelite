@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b1f51fb7c354203a2f93ad22fbeb101, type: 3}
+  m_Name: IUseArchBtw
+  m_EditorClassIdentifier: 
+  id: arch_i_use_arch_btw
+  displayName: I use Arch, btw
+  rulesText: Each card played adds 1 btw until end of turn. C and Rust damage gains +1 per btw. Once per wave, lethal uptime sets Arch to 1 instead and clears btw.
+  flavorText: Compiled from source, emotionally and otherwise.
+  designNotes: V1 base passive. Increment btw before resolving each played card. End of TURN resets btw unless Arch has systemd equipped on-distro. First lethal damage each WAVE consumes rolling-release save, sets uptime to 1, clears btw, and logs a recovery beat.

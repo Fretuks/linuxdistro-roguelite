@@ -9,7 +9,8 @@ namespace KernelPanic.Meta
         {
             ["ubuntu"] = new[] { "20.04", "21.04", "22.04", "23.04", "24.04" },
             ["fedora"] = new[] { "38", "39", "40", "41", "42" },
-            ["mint"] = new[] { "21", "21.2", "21.3", "22", "22.1" }
+            ["mint"] = new[] { "21", "21.2", "21.3", "22", "22.1" },
+            ["arch"] = new[] { "2024.01", "2024.06", "2024.12", "2025.06", "2025.12" }
         };
 
         public static string GetReleaseLabel(string unitId, int version)
@@ -53,6 +54,15 @@ namespace KernelPanic.Meta
                     3 => "timeshift snapshot restores 2 uptime beyond the snapshot, up to max uptime",
                     4 => "flat +damage can apply; multiplicative crit/mult remains ignored",
                     5 => "timeshift snapshot restores to full uptime if lower",
+                    _ => "--"
+                },
+                "arch" => safeVersion switch
+                {
+                    1 => "btw stacks add C/Rust damage; once per wave, lethal uptime recovers to 1",
+                    2 => "btw stacks add +2 C/Rust damage instead of +1",
+                    3 => "makepkg scales at btw x3 instead of x2",
+                    4 => "rolling-release recovery also grants 15 Shield and 2 Cycles",
+                    5 => "btw persists for the wave and rolling release can save twice per wave",
                     _ => "--"
                 },
                 _ => safeVersion == 1 ? "base release" : $"V{safeVersion} release effect"

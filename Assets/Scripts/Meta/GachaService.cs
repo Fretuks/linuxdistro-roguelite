@@ -309,6 +309,21 @@ namespace KernelPanic.Meta
             };
         }
 
+        public static bool IsBeginnerInstallMediaDistro(DistroDefinition distro)
+        {
+            return distro != null
+                && (string.Equals(distro.Id, "ubuntu", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(distro.Id, "fedora", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(distro.Id, "mint", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(distro.Id, "arch", StringComparison.OrdinalIgnoreCase));
+        }
+
+        public static bool IsBeginnerStarterDistro(DistroDefinition distro)
+        {
+            return IsBeginnerInstallMediaDistro(distro)
+                && !string.Equals(distro.Id, "arch", StringComparison.OrdinalIgnoreCase);
+        }
+
         public static double GetFiveStarChance(GachaBannerState state)
         {
             return GetFiveStarChance(state == null ? 0 : state.fiveStarPityCounter);
@@ -353,7 +368,8 @@ namespace KernelPanic.Meta
             if (pullNumber == 50)
             {
                 _beginnerState.pityCounter = 0;
-                return GachaReward.FutureStandardFiveStar("future standard 5-star distro", "50-pull beginner capstone");
+                _beginnerState.fiveStarPityCounter = 0;
+                return RewardGuaranteedBeginnerFiveStar("50-pull beginner guarantee");
             }
 
             if (TryRollFiveStar(_beginnerState, out bool fiveStarPityTriggered))
@@ -372,8 +388,11 @@ namespace KernelPanic.Meta
             _beginnerState.pityCounter = 0;
             if (_bannerPool.Count > 0 && _random.NextDouble() < DistroChanceOnFeaturedTier)
             {
-                DistroDefinition distro = _bannerPool[_random.Next(_bannerPool.Count)];
-                return GachaReward.DistroReward(distro, 4, pityTriggered, false);
+                DistroDefinition distro = FindRandomBannerPoolDistroByStars(4);
+                if (distro != null)
+                {
+                    return GachaReward.DistroReward(distro, 4, pityTriggered, false);
+                }
             }
 
             return GachaReward.Package(4, "4-star package", pityTriggered, false);
@@ -413,8 +432,18 @@ namespace KernelPanic.Meta
                 return GachaReward.Package(5, "5-star package", pityTriggered, false);
             }
 
-            DistroDefinition distro = _bannerPool.Count == 0 ? null : _bannerPool[_random.Next(_bannerPool.Count)];
-            return GachaReward.DistroReward(distro, 5, pityTriggered, false);
+            DistroDefinition distro = FindRandomBannerPoolDistroByStars(5);
+            return distro == null
+                ? GachaReward.Package(5, "5-star package", pityTriggered, false)
+                : GachaReward.DistroReward(distro, 5, pityTriggered, false);
+        }
+
+        private GachaReward RewardGuaranteedBeginnerFiveStar(string reason)
+        {
+            DistroDefinition distro = FindRandomBannerPoolDistroByStars(5);
+            return distro == null
+                ? GachaReward.Package(5, "5-star package", true, true)
+                : GachaReward.DistroReward(distro, 5, true, true, reason);
         }
 
         public bool ResolveFeaturedTierIsDistro()
@@ -446,16 +475,16 @@ namespace KernelPanic.Meta
             DistroDefinition distro = null;
             if (guaranteeIndex >= 0 && guaranteeIndex < _beginnerState.guaranteedDistroIds.Count)
             {
-                distro = FindBannerPoolDistro(_beginnerState.guaranteedDistroIds[guaranteeIndex]);
+                distro = FindBannerPoolDistroByStars(_beginnerState.guaranteedDistroIds[guaranteeIndex], 4);
             }
 
-            distro ??= _bannerPool.Count == 0 ? null : _bannerPool[Math.Min(guaranteeIndex, _bannerPool.Count - 1)];
+            distro ??= FindBannerPoolDistroByStars(guaranteeIndex, 4);
             return distro == null
                 ? GachaReward.Package(4, "4-star package", true, true)
                 : GachaReward.DistroReward(distro, 4, true, true, reason);
         }
 
-        private DistroDefinition FindBannerPoolDistro(string id)
+        private DistroDefinition FindBannerPoolDistroByStars(string id, int stars)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -465,13 +494,55 @@ namespace KernelPanic.Meta
             for (int i = 0; i < _bannerPool.Count; i++)
             {
                 DistroDefinition distro = _bannerPool[i];
-                if (distro != null && string.Equals(distro.Id, id, StringComparison.OrdinalIgnoreCase))
+                if (distro != null && GetDistroStars(distro) == stars && string.Equals(distro.Id, id, StringComparison.OrdinalIgnoreCase))
                 {
                     return distro;
                 }
             }
 
             return null;
+        }
+
+        private DistroDefinition FindBannerPoolDistroByStars(int index, int stars)
+        {
+            int seen = 0;
+            for (int i = 0; i < _bannerPool.Count; i++)
+            {
+                DistroDefinition distro = _bannerPool[i];
+                if (distro == null || GetDistroStars(distro) != stars)
+                {
+                    continue;
+                }
+
+                if (seen == index)
+                {
+                    return distro;
+                }
+
+                seen++;
+            }
+
+            return null;
+        }
+
+        private DistroDefinition FindRandomBannerPoolDistroByStars(int stars)
+        {
+            List<DistroDefinition> eligible = new();
+            for (int i = 0; i < _bannerPool.Count; i++)
+            {
+                DistroDefinition distro = _bannerPool[i];
+                if (distro != null && GetDistroStars(distro) == stars)
+                {
+                    eligible.Add(distro);
+                }
+            }
+
+            return eligible.Count == 0 ? null : eligible[_random.Next(eligible.Count)];
+        }
+
+        private static int GetDistroStars(DistroDefinition distro)
+        {
+            return distro != null && string.Equals(distro.Id, "arch", StringComparison.OrdinalIgnoreCase) ? 5 : 4;
         }
 
         private void SetCurrencyBalanceSilently(GachaCurrencyType currencyType, int amount)

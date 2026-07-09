@@ -707,7 +707,7 @@ namespace KernelPanic.UI
 
             if (_saveData.starterChosen)
             {
-                AddAllFourStarDistrosToBeginnerBannerPool();
+                AddBeginnerInstallMediaDistrosToBannerPool();
             }
 
             if (_gachaService.BeginnerState.guaranteedDistroIds.Count == 0 && _saveData.bannerPoolIds.Count > 0)
@@ -730,7 +730,7 @@ namespace KernelPanic.UI
             }
         }
 
-        private void AddAllFourStarDistrosToBeginnerBannerPool()
+        private void AddBeginnerInstallMediaDistrosToBannerPool()
         {
             if (distroDatabase == null)
             {
@@ -740,7 +740,11 @@ namespace KernelPanic.UI
             IReadOnlyList<DistroDefinition> distros = distroDatabase.AllDistros;
             for (int i = 0; i < distros.Count; i++)
             {
-                _gachaService.AddToBannerPool(distros[i]);
+                DistroDefinition distro = distros[i];
+                if (GachaService.IsBeginnerInstallMediaDistro(distro))
+                {
+                    _gachaService.AddToBannerPool(distro);
+                }
             }
         }
 
@@ -806,7 +810,7 @@ namespace KernelPanic.UI
         private void HandleStarterConfirmed(DistroDefinition picked, IReadOnlyList<DistroDefinition> remaining)
         {
             _playerCollection.Add(picked, 1);
-            AddAllFourStarDistrosToBeginnerBannerPool();
+            AddBeginnerInstallMediaDistrosToBannerPool();
             _gachaService.SetBeginnerGuaranteedDistros(remaining);
             _saveData.starterChosen = true;
             SaveCurrentState();

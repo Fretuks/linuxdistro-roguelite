@@ -391,7 +391,7 @@ namespace KernelPanic.Run
                         continue;
                     }
 
-                    if (card.IsRunOnly || card.Language == CurrentConfig.PrimaryLanguage || card.Language == CurrentConfig.SecondaryLanguage)
+                    if (card.Language == CurrentConfig.PrimaryLanguage || card.Language == CurrentConfig.SecondaryLanguage)
                     {
                         pool.Add(card);
                     }

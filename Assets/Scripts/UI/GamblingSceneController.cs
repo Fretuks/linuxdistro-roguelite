@@ -517,12 +517,16 @@ namespace KernelPanic.UI
                 }
             }
 
-            if (saveData.starterChosen && gacha.BannerPool.Count == 0)
+            if (saveData.starterChosen)
             {
                 IReadOnlyList<DistroDefinition> distros = distroDatabase.AllDistros;
                 for (int i = 0; i < distros.Count; i++)
                 {
-                    gacha.AddToBannerPool(distros[i]);
+                    DistroDefinition distro = distros[i];
+                    if (GachaService.IsBeginnerInstallMediaDistro(distro))
+                    {
+                        gacha.AddToBannerPool(distro);
+                    }
                 }
             }
         }

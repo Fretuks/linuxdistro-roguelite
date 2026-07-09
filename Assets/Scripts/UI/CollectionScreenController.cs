@@ -707,7 +707,7 @@ namespace KernelPanic.UI
 
         private static int GetDistroStars(DistroDefinition unit)
         {
-            return 4;
+            return unit != null && string.Equals(unit.Id, "arch", StringComparison.OrdinalIgnoreCase) ? 5 : 4;
         }
 
         private static Color GetLanguageColor(Language language)
@@ -2024,6 +2024,8 @@ namespace KernelPanic.UI
                 PackageEffectKind.JavaScriptFlatDamage => $"+{amount} JavaScript damage",
                 PackageEffectKind.WaveThresholdRestore => $"restore {amount} Uptime after wave {effect.Threshold}",
                 PackageEffectKind.DnfFedoraPassive => "Fedora passive can trigger twice",
+                PackageEffectKind.FirstCThisTurnDamageMultiplier => $"first C card each turn deals {amount}% damage",
+                PackageEffectKind.TurnStartGenerateLanguageCard => amount > 0 ? "turn start: generate C/Rust card at -1c" : "turn start: generate common C/Rust card",
                 _ => amount > 0 ? $"+{amount} package effect" : "package effect"
             };
         }

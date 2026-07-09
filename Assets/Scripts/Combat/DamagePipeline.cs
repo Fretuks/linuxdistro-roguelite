@@ -70,6 +70,7 @@ namespace KernelPanic.Combat
             amount = ApplyResistancesAndWeaknesses(amount, request);
 
             int finalAmount = ApplyShieldAndUptime(amount, request, out int absorbedAmount, out int shieldDamage, out int uptimeDamage);
+            ApplyArchRollingReleaseSave(request);
             GameEvents.RaiseDamageDealt(new DamageDealtEvent(request.Source, request.Target, finalAmount, request.Language, amount, absorbedAmount, wasCritical, shieldDamage, uptimeDamage));
 
             bool defeated = false;
@@ -93,7 +94,8 @@ namespace KernelPanic.Combat
             }
 
             int multiplier = request.Source == null ? 100 : Mathf.Max(0, request.Source.DamageMultiplierPercent);
-            return Mathf.RoundToInt(amount * (multiplier / 100f));
+            int currentCardMultiplier = request.Source == null ? 100 : Mathf.Max(0, request.Source.CurrentCardDamageMultiplierPercent);
+            return Mathf.RoundToInt(amount * (multiplier / 100f) * (currentCardMultiplier / 100f));
         }
 
         private static int ApplyFlatAdditions(int amount, DamageRequest request)
@@ -101,6 +103,11 @@ namespace KernelPanic.Combat
             if (request.Source != null && request.Language == Language.JavaScript)
             {
                 amount += Mathf.Max(0, request.Source.JavaScriptFlatDamageBonus);
+            }
+
+            if (request.Source != null && (request.Language == Language.C || request.Language == Language.Rust))
+            {
+                amount += Mathf.Max(0, request.Source.ArchBtwStacks) * Mathf.Max(1, request.Source.ArchBtwDamagePerStack);
             }
 
             return amount;
@@ -114,8 +121,27 @@ namespace KernelPanic.Combat
                 return amount;
             }
 
-            wasCritical = RandomRoll.RollRange(1, 100, new RollContext(request.Source)) <= 25;
+            int critChance = request.Language == Language.C ? 50 : 25;
+            wasCritical = RandomRoll.RollRange(1, 100, new RollContext(request.Source)) <= critChance;
             return wasCritical ? Mathf.CeilToInt(amount * 1.5f) : amount;
+        }
+
+        private static void ApplyArchRollingReleaseSave(DamageRequest request)
+        {
+            CombatantState target = request.Target;
+            if (target == null || target.CurrentUptime > 0 || target.ArchRollingReleaseSavesRemaining <= 0)
+            {
+                return;
+            }
+
+            target.ArchRollingReleaseSavesRemaining--;
+            target.ArchRollingReleaseAvailableThisWave = target.ArchRollingReleaseSavesRemaining > 0;
+            target.ArchBtwStacks = 0;
+            target.CurrentUptime = 1;
+            target.Shield += Mathf.Max(0, target.ArchRollingReleaseShieldOnSave);
+            target.Cycles += Mathf.Max(0, target.ArchRollingReleaseCyclesOnSave);
+            target.IsDefeated = false;
+            target.ArchRollingReleaseRecoveredThisHit = true;
         }
 
         private static int ApplyResistancesAndWeaknesses(int amount, DamageRequest request)

@@ -49,8 +49,33 @@ namespace KernelPanic.Combat
                     ? minAmount
                     : RandomRoll.RollRange(minAmount, maxAmount, new RollContext(context.Source));
 
-                context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, _trueDamage, _canCrit));
+                bool rustOverkillToShield = _language == Language.Rust || context.Card?.Definition?.Language == Language.Rust;
+                int survivable = rustOverkillToShield
+                    ? _trueDamage ? target.CurrentUptime : target.CurrentUptime + target.Shield
+                    : 0;
+                DamageResult result = context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, _trueDamage, _canCrit));
+                if (rustOverkillToShield)
+                {
+                    GrantRustOverkillShield(context, result, survivable);
+                }
             }
+        }
+
+        private static void GrantRustOverkillShield(CombatContext context, DamageResult result, int survivable)
+        {
+            int overkill = UnityEngine.Mathf.Max(0, result.IncomingAmount - survivable);
+            if (overkill <= 0)
+            {
+                return;
+            }
+
+            if (!context.CombatManager.CanPlayerReceiveCardShield(context.Card))
+            {
+                context.CombatManager.ReportEffectResult($"overkill shield blocked: {overkill}");
+                return;
+            }
+
+            context.CombatManager.GrantPlayerShield(overkill, "rust overkill");
         }
 
         private static IReadOnlyList<CombatantState> ShuffleTargets(IReadOnlyList<CombatantState> targets, CombatantState source)
@@ -161,6 +186,177 @@ namespace KernelPanic.Combat
             int queueGrowth = UnityEngine.Mathf.Max(0, (context.Card?.QueuePlayCount ?? 1) - 1);
             int amount = _baseAmount + queueGrowth;
             new DealDamageEffect(amount, amount, _language).Execute(context);
+        }
+    }
+
+    public sealed class SegfaultDamageEffect : ICardEffect
+    {
+        private readonly int _amount;
+        private readonly int _selfDamage;
+        private readonly int _segfaultPercent;
+        private readonly bool _trueDamage;
+        private readonly bool _drawOnSegfault;
+
+        public SegfaultDamageEffect(int amount, int selfDamage, int segfaultPercent, bool trueDamage = false, bool drawOnSegfault = false)
+        {
+            _amount = amount;
+            _selfDamage = selfDamage;
+            _segfaultPercent = segfaultPercent;
+            _trueDamage = trueDamage;
+            _drawOnSegfault = drawOnSegfault;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            new DealDamageEffect(_amount, _amount, Language.C, _trueDamage).Execute(context);
+            bool segfault = RandomRoll.RollRange(1, 100, new RollContext(context.Source)) <= _segfaultPercent;
+            if (!segfault)
+            {
+                return;
+            }
+
+            context.DamagePipeline.DealDamage(new DamageRequest(context.Source, context.Source, _selfDamage, Language.C, false, false));
+            context.CombatManager.ReportEffectResult($"segfault: took {_selfDamage}");
+            if (_drawOnSegfault)
+            {
+                context.CombatManager.DrawCards(2, "free() recoil");
+            }
+        }
+    }
+
+    public sealed class PreviousLanguageDamageEffect : ICardEffect
+    {
+        private readonly int _baseAmount;
+        private readonly int _matchingAmount;
+        private readonly Language _language;
+
+        public PreviousLanguageDamageEffect(int baseAmount, int matchingAmount, Language language)
+        {
+            _baseAmount = baseAmount;
+            _matchingAmount = matchingAmount;
+            _language = language;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            bool matches = context.Source != null
+                && context.Source.HasPreviousPlayedCardLanguage
+                && context.Source.PreviousPlayedCardLanguage == _language;
+            int amount = matches ? _matchingAmount : _baseAmount;
+            new DealDamageEffect(amount, amount, _language).Execute(context);
+        }
+    }
+
+    public sealed class BtwScaledDamageEffect : ICardEffect
+    {
+        private readonly int _baseAmount;
+        private readonly int _perBtw;
+        private readonly Language _language;
+
+        public BtwScaledDamageEffect(int baseAmount, int perBtw, Language language)
+        {
+            _baseAmount = baseAmount;
+            _perBtw = perBtw;
+            _language = language;
+        }
+
+        public void Execute(CombatContext context)
+        {
+            int btw = UnityEngine.Mathf.Max(0, context.Source?.ArchBtwStacks ?? 0);
+            int perBtw = UnityEngine.Mathf.Max(_perBtw, context.Source?.ArchMakepkgBtwMultiplier ?? _perBtw);
+            int amount = _baseAmount + (btw * perBtw);
+            new DealDamageEffect(amount, amount, _language).Execute(context);
+        }
+    }
+
+    public sealed class RandomCommonLanguageCardEffect : ICardEffect
+    {
+        public void Execute(CombatContext context)
+        {
+            Language language = RandomRoll.RollRange(0, 1, new RollContext(context.Source)) == 0 ? Language.C : Language.Rust;
+            if (!context.CombatManager.TryCreateGeneratedCard(language, Rarity.Common, out CardInstance generated))
+            {
+                context.CombatManager.ReportEffectResult("TODO card-generation: no C/Rust common available");
+                return;
+            }
+
+            generated.TemporaryCostDelta -= CombatManager.GetCardCost(generated);
+            if (context.HandController.Add(generated))
+            {
+                context.CombatManager.ReportEffectResult($"AUR helper: generated {GetCardName(generated)} at 0c");
+            }
+            else
+            {
+                context.CombatManager.ReportEffectResult("AUR helper: hand full");
+            }
+        }
+
+        private static string GetCardName(CardInstance card)
+        {
+            return card?.Definition == null || string.IsNullOrWhiteSpace(card.Definition.DisplayName) ? card?.Definition?.Id ?? "--" : card.Definition.DisplayName;
+        }
+    }
+
+    public sealed class MinimalInstallEffect : ICardEffect
+    {
+        public void Execute(CombatContext context)
+        {
+            int exhausted = 0;
+            List<CardInstance> candidates = context.HandController.Cards.Where(card => card != null).Take(2).ToList();
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                CardInstance card = candidates[i];
+                if (!context.HandController.Remove(card))
+                {
+                    continue;
+                }
+
+                context.DeckController.Exhaust(card);
+                context.CombatManager.HandleCardExhausted(card);
+                exhausted++;
+            }
+
+            if (exhausted <= 0)
+            {
+                context.CombatManager.ReportEffectResult("minimal install: no hand cards to exhaust");
+                return;
+            }
+
+            int shield = exhausted * 3;
+            if (context.CombatManager.CanPlayerReceiveCardShield(context.Card))
+            {
+                context.CombatManager.GrantPlayerShield(shield, "minimal install");
+            }
+
+            context.Source.Cycles += exhausted;
+            context.CombatManager.ReportEffectResult($"minimal install: exhausted {exhausted}, +{exhausted} Cycle");
+        }
+    }
+
+    public sealed class SizeofDamageEffect : ICardEffect
+    {
+        public void Execute(CombatContext context)
+        {
+            int cCards = context.HandController.Cards.Count(card => card?.Definition != null && card.Definition.Language == Language.C);
+            int amount = 3 * cCards;
+            new DealDamageEffect(amount, amount, Language.C).Execute(context);
+        }
+    }
+
+    public sealed class ConsultWikiEffect : ICardEffect
+    {
+        public void Execute(CombatContext context)
+        {
+            CardInstance broken = context.HandController.Cards.FirstOrDefault(card => card != null && card.IsBroken);
+            if (broken != null)
+            {
+                broken.IsBroken = false;
+                context.CombatManager.DrawCards(1, "consult the wiki");
+                context.CombatManager.ReportEffectResult("fixed a broken card");
+                return;
+            }
+
+            new DealDamageEffect(6, 6, Language.Rust).Execute(context);
         }
     }
 
@@ -696,13 +892,16 @@ namespace KernelPanic.Combat
                 "lang_py_for_loop" => One(new DealDamageEffect(2, 2, Language.Python, allEnemies: true)),
                 "lang_js_console_log" => One(new DealDamageEffect(3, 9, Language.JavaScript)),
                 "lang_js_fetch" => One(new DealDamageEffect(5, 13, Language.JavaScript)),
-                "lang_rs_fn_main" => One(new OverkillToShieldDamageEffect(6, Language.Rust)),
+                "lang_rs_fn_main" => One(new DealDamageEffect(6, 6, Language.Rust)),
                 "lang_rs_unwrap" => new ICardEffect[]
                 {
                     new DealDamageEffect(9, 9, Language.Rust),
                     new DrawEffect(1)
                 },
                 "lang_rs_borrow" => One(new ShieldEffect(5)),
+                "lang_c_malloc" => One(new SegfaultDamageEffect(8, 3, 20)),
+                "lang_c_printf" => One(new DealDamageEffect(4, 4, Language.C)),
+                "lang_c_pointer" => One(new PreviousLanguageDamageEffect(6, 10, Language.C)),
                 "lang_java_public_static_main" => One(new DealDamageEffect(7, 7, Language.Java)),
                 "lang_java_system_out_println" => One(new DealDamageEffect(5, 5, Language.Java)),
                 "lang_java_new_object" => One(new DealDamageEffect(3, 3, Language.Java)),
@@ -754,6 +953,14 @@ namespace KernelPanic.Combat
                 "fedora_dnf_update" => One(new DealDamageEffect(9, 9, Language.Java)),
                 "fedora_rawhide" => One(new RawhideEffect()),
                 "fedora_selinux" => One(new IncomingAttackHalveEffect(2)),
+                "arch_pacman_syu" => One(new DealDamageEffect(8, 8, Language.C)),
+                "arch_consult_wiki" => One(new ConsultWikiEffect()),
+                "arch_makepkg" => One(new BtwScaledDamageEffect(4, 2, Language.C)),
+                "arch_aur_helper" => One(new RandomCommonLanguageCardEffect()),
+                "arch_minimal_install" => One(new MinimalInstallEffect()),
+                "shop_c_free" => One(new SegfaultDamageEffect(12, 3, 20, drawOnSegfault: true)),
+                "shop_c_sizeof" => One(new SizeofDamageEffect()),
+                "shop_c_kernel_exploit" => One(new SegfaultDamageEffect(25, 8, 50, true)),
                 _ => Todo("card effect is not authored")
             };
         }
@@ -761,10 +968,11 @@ namespace KernelPanic.Combat
         public static bool RequiresSingleTarget(CardDefinition definition)
         {
             return definition?.Id is "lang_js_console_log" or "lang_js_fetch" or "lang_js_typeof" or "mint_fix_broken"
-                or "lang_rs_fn_main" or "lang_rs_unwrap" or "lang_java_public_static_main"
+                or "lang_rs_fn_main" or "lang_rs_unwrap" or "lang_c_malloc" or "lang_c_printf" or "lang_c_pointer" or "lang_java_public_static_main"
                 or "lang_java_system_out_println" or "lang_java_new_object"
                 or "shop_py_list_append" or "shop_js_math_random" or "shop_js_promise_all" or "ubuntu_snap_install"
-                or "mint_nemo" or "fedora_dnf_autoremove" or "fedora_first_to_package" or "fedora_dnf_update";
+                or "mint_nemo" or "fedora_dnf_autoremove" or "fedora_first_to_package" or "fedora_dnf_update"
+                or "arch_pacman_syu" or "arch_consult_wiki" or "arch_makepkg" or "shop_c_free" or "shop_c_sizeof" or "shop_c_kernel_exploit";
         }
 
         public static bool TargetsAllEnemies(CardDefinition definition)
@@ -820,8 +1028,11 @@ namespace KernelPanic.Combat
                 "lang_js_fetch" => $"deal {UpgradeMath.ScaleAmount(5, card)}-{UpgradeMath.ScaleAmount(13, card)}.{marker}",
                 "lang_js_typeof" => $"75%: deal {UpgradeMath.ScaleAmount(8, card)}. 25%: deal 0.{marker}",
                 "lang_rs_fn_main" => $"deal {UpgradeMath.ScaleAmount(6, card)}. overkill becomes shield.{marker}",
-                "lang_rs_unwrap" => $"deal {UpgradeMath.ScaleAmount(9, card)}. draw {UpgradeMath.ScaleAmount(1, card)}.{marker}",
+                "lang_rs_unwrap" => $"deal {UpgradeMath.ScaleAmount(9, card)}. overkill becomes shield. draw {UpgradeMath.ScaleAmount(1, card)}.{marker}",
                 "lang_rs_borrow" => $"gain {UpgradeMath.ScaleShield(5, card)} shield.{marker}",
+                "lang_c_malloc" => $"deal {UpgradeMath.ScaleAmount(8, card)}. 20%: segfault, take 3.{marker}",
+                "lang_c_printf" => $"deal {UpgradeMath.ScaleAmount(4, card)}.{marker}",
+                "lang_c_pointer" => $"deal {UpgradeMath.ScaleAmount(6, card)}; {UpgradeMath.ScaleAmount(10, card)} if the previous card was C.{marker}",
                 "lang_java_public_static_main" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(7, card)}. JIT: Java cards cost 1 less this combat each time you play a Java card; discount decays by 1 after each wave.{marker}",
                 "lang_java_system_out_println" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(5, card)}. JIT applies; discount decays by 1 after each wave.{marker}",
                 "lang_java_new_object" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(3, card)}. JIT applies; discount decays by 1 after each wave.{marker}",
@@ -846,6 +1057,14 @@ namespace KernelPanic.Combat
                 "fedora_dnf_update" => $"deal {UpgradeMath.ScaleAmount(9, card)}. costs 1 less per Java card played this combat.{marker}",
                 "fedora_rawhide" => $"draw {UpgradeMath.ScaleAmount(2, card)}. next card this turn gains bleeding edge.{marker}",
                 "fedora_selinux" => $"next {UpgradeMath.ScaleAmount(2, card)} enemy attacks deal half damage.{marker}",
+                "arch_pacman_syu" => $"deal {UpgradeMath.ScaleAmount(8, card)}. TODO: 20% break a random hand card.{marker}",
+                "arch_consult_wiki" => $"fix a broken card and draw {UpgradeMath.ScaleAmount(1, card)}; if none, deal {UpgradeMath.ScaleAmount(6, card)}.{marker}",
+                "arch_makepkg" => $"deal {UpgradeMath.ScaleAmount(4, card)} + btw x2; x3 at Arch v3+.{marker}",
+                "arch_aur_helper" => $"add a random C/Rust common card to hand; it costs 0 this turn.{marker}",
+                "arch_minimal_install" => $"exhaust up to 2 hand cards. per card: gain 3 Shield and 1 Cycle.{marker}",
+                "shop_c_free" => $"deal {UpgradeMath.ScaleAmount(12, card)}. segfault recoil draws 2.{marker}",
+                "shop_c_sizeof" => $"deal 3 x C cards in hand.{marker}",
+                "shop_c_kernel_exploit" => $"deal {UpgradeMath.ScaleAmount(25, card)} ignoring Shield. 50%: take 8.{marker}",
                 _ => string.IsNullOrWhiteSpace(card.Definition.Description) ? "effect not authored." : $"{card.Definition.Description}{marker}"
             };
         }

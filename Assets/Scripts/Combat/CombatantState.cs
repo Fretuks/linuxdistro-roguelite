@@ -32,7 +32,20 @@ namespace KernelPanic.Combat
         public int FlatEffectBonus { get; set; }
         public int JavaScriptFlatDamageBonus { get; set; }
         public int DamageMultiplierPercent { get; set; } = 100;
+        public int CurrentCardDamageMultiplierPercent { get; set; } = 100;
         public int IncomingAttackHalfCharges { get; set; }
+        public int ArchBtwStacks { get; set; }
+        public int ArchBtwDamagePerStack { get; set; } = 1;
+        public int ArchMakepkgBtwMultiplier { get; set; } = 2;
+        public int ArchRollingReleaseSavesRemaining { get; set; }
+        public int ArchRollingReleaseShieldOnSave { get; set; }
+        public int ArchRollingReleaseCyclesOnSave { get; set; }
+        public bool ArchRollingReleaseAvailableThisWave { get; set; }
+        public bool ArchRollingReleaseRecoveredThisHit { get; set; }
+        public bool HasLastPlayedCardLanguage { get; set; }
+        public Language LastPlayedCardLanguage { get; set; }
+        public bool HasPreviousPlayedCardLanguage { get; set; }
+        public Language PreviousPlayedCardLanguage { get; set; }
         public IReadOnlyList<StatusInstance> Statuses => _statuses;
         public IReadOnlyDictionary<StatusType, int> ActiveStatuses => BuildStatusSnapshot();
 

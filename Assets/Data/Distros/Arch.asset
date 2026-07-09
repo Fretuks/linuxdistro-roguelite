@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd550368fd0c75d43a53aa4fb3b6541e, type: 3}
+  m_Name: Arch
+  m_EditorClassIdentifier: 
+  id: arch
+  displayName: Arch
+  primaryLanguage: 0
+  secondaryLanguage: 2
+  passive: {fileID: 11400000, guid: aa100000000000000000000000000001, type: 2}
+  description: The DIY power-user. Maximum control, maximum fragility. She can do things no one else can - and break herself doing it.
+  playstyleSummary: volatile C/Rust tempo. every played card adds btw, which makes C and Rust hits bigger until the turn ends.
+  languageBlurbs:
+  - lang: 0
+    blurb: sharp native damage with a higher crit rate and occasional segfault recoil.
+  - lang: 2
+    blurb: reliable native damage; overkill converts into shield.
+  asciiArt: {fileID: 4900000, guid: 004c732ec64a45fd82c5a47ae7ffed43, type: 3}
+  accentColor: {r: 0.09019608, g: 0.5764706, b: 0.81960785, a: 1}
+  baseUptime: 50
+  baseRam: 6
+  baseCyclesPerTurn: 4
+  exclusiveCards:
+  - {fileID: 11400000, guid: aa110000000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: aa110000000000000000000000000002, type: 2}
+  - {fileID: 11400000, guid: aa110000000000000000000000000003, type: 2}
+  - {fileID: 11400000, guid: aa110000000000000000000000000004, type: 2}
+  - {fileID: 11400000, guid: aa110000000000000000000000000005, type: 2}
