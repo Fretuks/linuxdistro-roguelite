@@ -22,7 +22,7 @@ namespace KernelPanic.Meta
         public const int RootCreditsToEntropy = 1;
         public const int TestRootCreditsBalance = 10000;
 
-        private const double FourStarBaseChance = 0.12d;
+        private const double FourStarBaseChance = 0.07d;
         private const double FiveStarBaseChance = 0.008d;
         private const double FiveStarSoftPityStep = 0.07d;
         private const double DistroChanceOnFeaturedTier = 0.5d;
