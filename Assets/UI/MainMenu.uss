@@ -1166,21 +1166,26 @@ Button {
     border-top-color: var(--kp-border);
 }
 
-.packages-master-detail {
+.packages-master-detail,
+.packages-summary-layout {
     flex-grow: 1;
     min-height: 0;
     flex-direction: row;
+    overflow: hidden;
 }
 
 .packages-slot-list {
-    width: 46%;
+    width: 47%;
     min-width: 0;
     margin-right: 14px;
+    overflow: hidden;
 }
 
-.packages-detail-panel {
+.packages-detail-panel,
+.packages-impact-panel {
     flex-grow: 1;
     min-width: 0;
+    max-width: 53%;
     padding: 10px;
     border-left-width: 1px;
     border-right-width: 1px;
@@ -1193,6 +1198,44 @@ Button {
     background-color: var(--kp-bg-solid);
 }
 
+.packages-active-effects {
+    margin-top: 12px;
+}
+
+.package-stat-line {
+    flex-direction: row;
+    align-items: center;
+    min-height: 24px;
+    margin-top: 4px;
+}
+
+.package-stat-key {
+    width: 82px;
+    min-width: 82px;
+    color: var(--kp-muted);
+}
+
+.package-stat-value {
+    width: 98px;
+    min-width: 98px;
+    color: var(--kp-primary);
+}
+
+.package-stat-bonus {
+    flex-grow: 1;
+    min-width: 0;
+    color: var(--kp-amber);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.package-active-effect {
+    color: var(--kp-muted);
+    white-space: normal;
+    margin-top: 4px;
+}
+
 .package-slot-row {
     min-height: 42px;
     flex-direction: row;
@@ -1202,6 +1245,7 @@ Button {
     border-left-width: 2px;
     border-left-color: transparent;
     background-color: var(--kp-bg-solid);
+    overflow: hidden;
     transition-property: background-color, border-left-color;
     transition-duration: 120ms;
 }
@@ -1249,10 +1293,39 @@ Button {
 .package-slot-effect {
     flex-grow: 1;
     min-width: 0;
+    max-width: 170px;
     color: var(--kp-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.package-slot-action {
+    width: 96px;
+    min-width: 96px;
+    color: var(--kp-primary);
+    font-size: 12px;
+    -unity-text-align: middle-right;
+}
+
+.package-preview-line {
+    flex-direction: row;
+    min-height: 24px;
+    margin-bottom: 6px;
+}
+
+.package-preview-key {
+    width: 64px;
+    min-width: 64px;
+    color: var(--kp-muted);
+}
+
+.package-preview-value {
+    flex-grow: 1;
+    min-width: 0;
+    color: var(--kp-primary);
+    white-space: normal;
+    overflow: hidden;
 }
 
 .collection-row-languages,
@@ -1353,6 +1426,60 @@ Button {
 
 .package-row.dimmed {
     opacity: 0.45;
+}
+
+.packages-detail-panel .package-row {
+    padding: 4px 8px;
+    margin-top: 2px;
+}
+
+.package-picker-row {
+    min-height: 28px;
+    max-height: 28px;
+    overflow: hidden;
+}
+
+.package-picker-row .package-summary {
+    align-items: center;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.package-picker-row .package-name {
+    width: 150px;
+    min-width: 92px;
+    flex-grow: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.package-picker-effect {
+    flex-grow: 1;
+    min-width: 0;
+    color: var(--kp-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.package-picker-row .package-meta {
+    width: 58px;
+    min-width: 58px;
+}
+
+.package-picker-row .package-description {
+    margin-left: 34px;
+    margin-top: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.package-picker-row .package-notice {
+    margin-left: 34px;
+    margin-bottom: 0;
+    font-size: 11px;
 }
 
 .package-summary {
@@ -1489,14 +1616,16 @@ Button {
 }
 
 .modal-overlay > .starter-dialog,
-.modal-overlay > .root-credit-dialog {
+.modal-overlay > .root-credit-dialog,
+.modal-overlay > .package-equip-dialog {
     scale: 0.94 0.94;
     transition-property: scale;
     transition-duration: 160ms;
 }
 
 .modal-overlay.modal-open > .starter-dialog,
-.modal-overlay.modal-open > .root-credit-dialog {
+.modal-overlay.modal-open > .root-credit-dialog,
+.modal-overlay.modal-open > .package-equip-dialog {
     scale: 1 1;
 }
 
@@ -1529,6 +1658,74 @@ Button {
     border-top-color: var(--kp-amber);
     border-bottom-color: var(--kp-amber);
     background-color: var(--kp-bg-solid);
+}
+
+.package-equip-dialog {
+    position: relative;
+    width: 78%;
+    height: 74%;
+    padding: 18px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-primary);
+    border-right-color: var(--kp-primary);
+    border-top-color: var(--kp-primary);
+    border-bottom-color: var(--kp-primary);
+    background-color: var(--kp-bg-solid);
+}
+
+.package-equip-header {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+
+.package-equip-header .collection-detail-name {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.package-equip-list {
+    flex-grow: 1;
+    min-height: 0;
+    margin-top: 8px;
+    margin-bottom: 10px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-border);
+    border-right-color: var(--kp-border);
+    border-top-color: var(--kp-border);
+    border-bottom-color: var(--kp-border);
+}
+
+.package-equip-row {
+    padding: 8px 10px;
+    margin-top: 2px;
+}
+
+.package-equip-row.on-distro {
+    background-color: var(--kp-hover);
+}
+
+.package-equip-row .package-meta {
+    width: 128px;
+    min-width: 128px;
+}
+
+.package-equip-tags {
+    flex-direction: row;
+    margin-left: 34px;
+}
+
+.package-equip-tags .package-notice {
+    margin-right: 12px;
+    margin-bottom: 0;
+    font-size: 12px;
 }
 
 .modal-close-button {
@@ -1803,6 +2000,7 @@ Button {
 .reduced-motion .modal-overlay,
 .reduced-motion .modal-overlay > .starter-dialog,
 .reduced-motion .modal-overlay > .root-credit-dialog,
+.reduced-motion .modal-overlay > .package-equip-dialog,
 .reduced-motion .command-row,
 .reduced-motion .gacha-banner-row,
 .reduced-motion .collection-tab,

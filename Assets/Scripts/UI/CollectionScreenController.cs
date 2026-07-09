@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using KernelPanic.Core;
 using KernelPanic.Data;
 using KernelPanic.Meta;
+using KernelPanic.Run;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
@@ -20,6 +21,9 @@ namespace KernelPanic.UI
         private VisualElement _list;
         private ScrollView _detailScroll;
         private VisualElement _detail;
+        private VisualElement _root;
+        private VisualElement _packageEquipOverlay;
+        private VisualElement _packageEquipDialog;
         private FontAsset _monospaceFont;
         private LanguageDeckDatabase _languageDeckDatabase;
         private CardDatabase _cardDatabase;
@@ -40,11 +44,14 @@ namespace KernelPanic.UI
         private UnitDetailTab _unitDetailTab = UnitDetailTab.Overview;
         private PackageSlot? _packagePickerSlot;
         private bool _unitDetailReturnsToOverview = true;
+        private DistroDefinition _equipWindowUnit;
+        private PackageSlot _equipWindowSlot;
         private int _selectedUnitIndex;
         private int _selectedLanguageIndex;
         private int _selectedCardIndex;
         private string _emptyCardMessage = "no cards installed";
         private string _pendingScrapPackageId;
+        private string _packageSlotNotice;
         private IReadOnlyList<OwnedPackageInstance> _packageInventory = Array.Empty<OwnedPackageInstance>();
         private int _selectedPackageInventoryIndex;
         private PackageSlot? _packageInventoryFilter;
@@ -54,6 +61,7 @@ namespace KernelPanic.UI
         public void Bind(VisualElement root, FontAsset artFont, LanguageDeckDatabase deckDatabase, CardDatabase cardsDatabase, PlayerCollection collection, Func<DistroDefinition, int> getMergesBalance = null, Func<DistroDefinition, VersionUpgradeResult> tryUpgradeUnit = null, PackageDatabase packageDatabase = null, PackageLoadout packageLoadout = null, Action packageLoadoutChanged = null, Func<SaveData> getSaveData = null, Func<OwnedPackageInstance, PackageUpgradeResult> tryUpgradePackage = null, Func<OwnedPackageInstance, PackageScrapResult> tryScrapPackage = null)
         {
             _monospaceFont = artFont;
+            _root = root;
             _languageDeckDatabase = deckDatabase;
             _cardDatabase = cardsDatabase;
             _playerCollection = collection;
@@ -68,6 +76,7 @@ namespace KernelPanic.UI
             _list = root.Q<VisualElement>("CollectionList");
             _detailScroll = root.Q<ScrollView>("CollectionDetail");
             _detail = _detailScroll?.contentContainer;
+            EnsurePackageEquipOverlay();
         }
 
         public bool IsCardSubview => _mode == CollectionMode.CardSubview;
@@ -85,6 +94,7 @@ namespace KernelPanic.UI
 
         public void ShowUnits()
         {
+            ClosePackageEquipWindow();
             _mode = CollectionMode.Units;
             CurrentTitle = "$ ls ~/collection";
             CurrentHint = "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [enter] select";
@@ -94,6 +104,7 @@ namespace KernelPanic.UI
 
         public void ShowLanguages()
         {
+            ClosePackageEquipWindow();
             _mode = CollectionMode.Languages;
             CurrentTitle = "$ ls ~/collection/languages";
             CurrentHint = "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [enter] select";
@@ -103,6 +114,7 @@ namespace KernelPanic.UI
 
         public void ShowPackages()
         {
+            ClosePackageEquipWindow();
             _mode = CollectionMode.Packages;
             _pendingScrapPackageId = null;
             CurrentTitle = "$ ls ~/packages";
@@ -113,9 +125,16 @@ namespace KernelPanic.UI
 
         public bool BackFromSubview()
         {
+            if (_packageEquipOverlay != null && !_packageEquipOverlay.ClassListContains("hidden"))
+            {
+                ClosePackageEquipWindow();
+                return true;
+            }
+
             if (_mode == CollectionMode.UnitDetail)
             {
                 _packagePickerSlot = null;
+                _packageSlotNotice = null;
                 if (_unitDetailReturnsToOverview)
                 {
                     ShowUnits();
@@ -201,8 +220,7 @@ namespace KernelPanic.UI
                         break;
                     case UnitDetailTab.Packages:
                         _packagePickerSlot ??= PackageSlot.Kernel;
-                        RenderUnitDetail(unit);
-                        ViewChanged?.Invoke();
+                        OpenPackageEquipWindow(unit, _packagePickerSlot.Value);
                         break;
                     case UnitDetailTab.Cards:
                         OpenUnitCards(unit);
@@ -221,6 +239,7 @@ namespace KernelPanic.UI
             int count = Enum.GetValues(typeof(UnitDetailTab)).Length;
             _unitDetailTab = (UnitDetailTab)(((int)_unitDetailTab + delta + count) % count);
             _packagePickerSlot = null;
+            _packageSlotNotice = null;
             RenderUnitDetail(_units[_selectedUnitIndex]);
             ViewChanged?.Invoke();
         }
@@ -778,6 +797,7 @@ namespace KernelPanic.UI
             {
                 _unitDetailTab = UnitDetailTab.Overview;
                 _packagePickerSlot = null;
+                _packageSlotNotice = null;
             }
 
             _unitDetailReturnsToOverview = returnToOverview;
@@ -872,6 +892,7 @@ namespace KernelPanic.UI
             {
                 _unitDetailTab = tab;
                 _packagePickerSlot = null;
+                _packageSlotNotice = null;
                 RenderUnitDetail(unit);
                 ViewChanged?.Invoke();
             })
@@ -944,27 +965,22 @@ namespace KernelPanic.UI
             Label title = new("packages");
             title.AddToClassList("detail-section-title");
             target.Add(title);
-            SaveData saveData = _getSaveData?.Invoke();
-            int cache = Math.Max(0, saveData?.cacheBalance ?? 0);
-            int bandwidth = Math.Max(0, saveData?.bandwidthBalance ?? 0);
             _packagePickerSlot ??= PackageSlot.Kernel;
 
             VisualElement layout = new();
-            layout.AddToClassList("packages-master-detail");
+            layout.AddToClassList("packages-summary-layout");
 
             VisualElement slots = new();
             slots.AddToClassList("packages-slot-list");
-            slots.Add(BuildDetailLine("wallet", $"Cache={cache} Bandwidth={bandwidth}"));
             AddPackageSlotSummaryRow(slots, unit, PackageSlot.Kernel);
             AddPackageSlotSummaryRow(slots, unit, PackageSlot.Runtime);
             AddPackageSlotSummaryRow(slots, unit, PackageSlot.Daemon);
             layout.Add(slots);
 
-            VisualElement detail = new();
-            detail.AddToClassList("packages-detail-panel");
-            AddSelectedPackageSlotActions(detail, unit, _packagePickerSlot.Value, cache, bandwidth);
-            AddPackagePicker(detail, unit, _packagePickerSlot.Value);
-            layout.Add(detail);
+            VisualElement impact = new();
+            impact.AddToClassList("packages-impact-panel");
+            AddPackageStatImpactPanel(impact, unit);
+            layout.Add(impact);
             target.Add(layout);
         }
 
@@ -978,9 +994,20 @@ namespace KernelPanic.UI
             row.RegisterCallback<ClickEvent>(_ =>
             {
                 _packagePickerSlot = slot;
-                RenderUnitDetail(unit);
-                ViewChanged?.Invoke();
+                _packageSlotNotice = null;
+                OpenPackageEquipWindow(unit, slot);
             });
+            row.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+                {
+                    _packagePickerSlot = slot;
+                    _packageSlotNotice = null;
+                    OpenPackageEquipWindow(unit, slot);
+                    evt.StopPropagation();
+                }
+            });
+            row.focusable = true;
 
             Label slotLabel = new(slot.ToString().ToUpperInvariant());
             slotLabel.AddToClassList("package-slot-label");
@@ -1011,7 +1038,98 @@ namespace KernelPanic.UI
             Label effect = new(equipped == null ? string.Empty : OneLineEffect(equipped, owned?.UpgradeLevel ?? 0, unit.Id));
             effect.AddToClassList("package-slot-effect");
             row.Add(effect);
+
+            Label action = new("[enter] equip");
+            action.AddToClassList("package-slot-action");
+            row.Add(action);
             target.Add(row);
+        }
+
+        private void AddPackageStatImpactPanel(VisualElement target, DistroDefinition unit)
+        {
+            Label title = new("stat impact");
+            title.AddToClassList("detail-section-title");
+            target.Add(title);
+
+            IReadOnlyList<PackageInstance> packages = _packageLoadout.GetEquippedPackageInstances(unit.Id);
+            PackageStatImpact impact = RunManager.CalculatePackageStatImpact(unit, packages);
+            target.Add(BuildStatImpactLine("Uptime", impact.BaseUptime, impact.FinalUptime, impact.UptimeBonus, impact.UptimeSources));
+            target.Add(BuildStatImpactLine("RAM", impact.BaseRam, impact.FinalRam, impact.RamBonus, impact.RamSources));
+            target.Add(BuildStatImpactLine("Cycles", impact.BaseCycles, impact.FinalCycles, impact.CyclesBonus, impact.CyclesSources));
+
+            VisualElement active = new();
+            active.AddToClassList("packages-active-effects");
+            Label activeTitle = new("active effects");
+            activeTitle.AddToClassList("detail-section-title");
+            active.Add(activeTitle);
+
+            int count = 0;
+            AddActivePackageEffect(active, unit, PackageSlot.Kernel, ref count);
+            AddActivePackageEffect(active, unit, PackageSlot.Runtime, ref count);
+            AddActivePackageEffect(active, unit, PackageSlot.Daemon, ref count);
+            if (count == 0)
+            {
+                Label empty = new("none");
+                empty.AddToClassList("collection-detail-muted");
+                active.Add(empty);
+            }
+
+            target.Add(active);
+        }
+
+        private VisualElement BuildStatImpactLine(string label, int before, int after, int delta, IReadOnlyList<string> sources)
+        {
+            VisualElement row = new();
+            row.AddToClassList("package-stat-line");
+            Label key = new(label);
+            key.AddToClassList("package-stat-key");
+            Label values = new($"{before} -> {after}");
+            values.AddToClassList("package-stat-value");
+            Label bonus = new(delta > 0 ? $"(+{delta}{FormatSources(sources)})" : string.Empty);
+            bonus.AddToClassList("package-stat-bonus");
+            row.Add(key);
+            row.Add(values);
+            row.Add(bonus);
+            return row;
+        }
+
+        private void AddActivePackageEffect(VisualElement target, DistroDefinition unit, PackageSlot slot, ref int count)
+        {
+            PackageDefinition package = _packageLoadout.GetEquippedPackage(unit.Id, slot);
+            OwnedPackageInstance owned = package == null ? null : _playerCollection.GetOwnedPackage(package.Id);
+            if (package == null || owned == null)
+            {
+                return;
+            }
+
+            PackageEffectData effect = package.EffectFor(unit.Id);
+            if (package.Slot == PackageSlot.Kernel && IsStatPackageEffect(effect.Kind))
+            {
+                return;
+            }
+
+            string summary = OneLineEffect(package, owned.UpgradeLevel, unit.Id);
+            if (string.IsNullOrWhiteSpace(summary))
+            {
+                return;
+            }
+
+            Label line = new($"{PackageName(package)}: {summary}");
+            line.AddToClassList("package-active-effect");
+            target.Add(line);
+            count++;
+        }
+
+        private static bool IsStatPackageEffect(PackageEffectKind kind)
+        {
+            return kind == PackageEffectKind.MaxUptime
+                || kind == PackageEffectKind.MaxRam
+                || kind == PackageEffectKind.MaxCycles;
+        }
+
+        private static string FormatSources(IReadOnlyList<string> sources)
+        {
+            return sources == null || sources.Count == 0 ? string.Empty : $", {string.Join(", ", sources)}";
         }
 
         private void AddSelectedPackageSlotActions(VisualElement target, DistroDefinition unit, PackageSlot slot, int cache, int bandwidth)
@@ -1021,6 +1139,13 @@ namespace KernelPanic.UI
             Label title = new($"{slot.ToString().ToLowerInvariant()} actions");
             title.AddToClassList("detail-section-title");
             target.Add(title);
+            if (!string.IsNullOrWhiteSpace(_packageSlotNotice))
+            {
+                Label notice = new(_packageSlotNotice);
+                notice.AddToClassList("package-notice");
+                notice.AddToClassList("package-slot-notice");
+                target.Add(notice);
+            }
 
             if (owned == null || equipped == null)
             {
@@ -1030,7 +1155,6 @@ namespace KernelPanic.UI
             }
 
             target.Add(BuildDetailLine("level", $"Lv {owned.UpgradeLevel}/{PackageTuning.MaxPackageLevel}"));
-            target.Add(BuildDetailLine("current", FormatPackageEffect(equipped, owned.UpgradeLevel, unit.Id)));
 
             int nextLevel = owned.UpgradeLevel + 1;
             bool maxLevel = owned.UpgradeLevel >= PackageTuning.MaxPackageLevel;
@@ -1038,10 +1162,10 @@ namespace KernelPanic.UI
             int bandwidthCost = maxLevel ? 0 : PackageTuning.GetUpgradeBandwidthCost(nextLevel, equipped.Rarity);
             bool canUpgrade = !maxLevel && cache >= cacheCost && bandwidth >= bandwidthCost && _tryUpgradePackage != null;
             string upgradeState = maxLevel ? "max level" : cache < cacheCost ? "insufficient cache" : bandwidth < bandwidthCost ? "insufficient bandwidth" : "ready";
-            string nextPreview = maxLevel
-                ? "max level reached"
-                : $"{FormatPackageEffect(equipped, owned.UpgradeLevel, unit.Id)} -> {FormatPackageEffect(equipped, nextLevel, unit.Id)}";
-            target.Add(BuildDetailLine("next", nextPreview));
+            string currentEffect = FormatPackageEffect(equipped, owned.UpgradeLevel, unit.Id);
+            string nextPreview = maxLevel ? "max level reached" : $"{currentEffect} -> {FormatPackageEffect(equipped, nextLevel, unit.Id)}";
+            target.Add(BuildPackagePreviewLine("current", currentEffect));
+            target.Add(BuildPackagePreviewLine("next", nextPreview));
             target.Add(BuildCompactUpgradeCommand($"> make upgrade  (Cache {cacheCost} / Bandwidth {bandwidthCost})", upgradeState, canUpgrade, () => UpgradePackage(owned)));
         }
 
@@ -1061,8 +1185,10 @@ namespace KernelPanic.UI
                 }
 
                 bool isEquipped = equipped != null && string.Equals(equipped.Id, package.Id, StringComparison.OrdinalIgnoreCase);
+                int packageLevel = _playerCollection.GetOwnedPackage(package.Id)?.UpgradeLevel ?? 0;
                 VisualElement row = new();
                 row.AddToClassList("package-row");
+                row.AddToClassList("package-picker-row");
                 row.EnableInClassList("equipped", isEquipped);
                 row.EnableInClassList($"rarity-{package.Rarity}", true);
                 row.RegisterCallback<ClickEvent>(_ => TogglePackage(unit, slot, package, isEquipped));
@@ -1073,33 +1199,25 @@ namespace KernelPanic.UI
                 marker.AddToClassList("package-marker");
                 Label name = new(PackageName(package));
                 name.AddToClassList("package-name");
-                Label meta = new($"{package.Rarity}* / {package.Slot}");
+                Label effect = new(OneLineEffect(package, packageLevel, unit.Id));
+                effect.AddToClassList("package-picker-effect");
+                Label meta = new(package.IsIntendedFor(unit.Id) ? $"{package.Rarity}* on" : $"{package.Rarity}*");
                 meta.AddToClassList("package-meta");
                 summary.Add(marker);
                 summary.Add(name);
+                summary.Add(effect);
                 summary.Add(meta);
                 row.Add(summary);
-
-                Label description = new(package.Description);
-                description.AddToClassList("package-description");
-                row.Add(description);
-
-                if (package.IsIntendedFor(unit.Id))
-                {
-                    Label intended = new("on-distro");
-                    intended.AddToClassList("package-notice");
-                    row.Add(intended);
-                }
 
                 target.Add(row);
             }
         }
 
-        private void TogglePackage(DistroDefinition unit, PackageSlot slot, PackageDefinition package, bool isEquipped)
+        private bool TogglePackage(DistroDefinition unit, PackageSlot slot, PackageDefinition package, bool isEquipped)
         {
             if (unit == null || package == null || _packageLoadout == null)
             {
-                return;
+                return false;
             }
 
             PackageLoadoutFailureReason reason;
@@ -1109,14 +1227,240 @@ namespace KernelPanic.UI
 
             if (changed)
             {
+                _packageSlotNotice = null;
                 _packageLoadoutChanged?.Invoke();
             }
 
-            RenderUnitDetail(unit);
             if (!changed)
             {
-                _detail.Add(BuildDetailLine("package", FormatPackageFailure(reason)));
+                _packageSlotNotice = FormatPackageFailure(reason);
             }
+
+            RenderUnitDetail(unit);
+            return changed;
+        }
+
+        private void EnsurePackageEquipOverlay()
+        {
+            if (_root == null || _packageEquipOverlay != null)
+            {
+                return;
+            }
+
+            _packageEquipOverlay = new VisualElement();
+            _packageEquipOverlay.AddToClassList("modal-overlay");
+            _packageEquipOverlay.AddToClassList("package-equip-overlay");
+            _packageEquipOverlay.AddToClassList("hidden");
+            _packageEquipDialog = new VisualElement();
+            _packageEquipDialog.AddToClassList("package-equip-dialog");
+            _packageEquipOverlay.Add(_packageEquipDialog);
+            _root.Add(_packageEquipOverlay);
+        }
+
+        private void OpenPackageEquipWindow(DistroDefinition unit, PackageSlot slot)
+        {
+            if (unit == null)
+            {
+                return;
+            }
+
+            EnsurePackageEquipOverlay();
+            _equipWindowUnit = unit;
+            _equipWindowSlot = slot;
+            _packageSlotNotice = null;
+            RenderPackageEquipWindow();
+            _packageEquipOverlay.RemoveFromClassList("hidden");
+            _packageEquipOverlay.AddToClassList("modal-open");
+        }
+
+        private void ClosePackageEquipWindow()
+        {
+            _packageEquipOverlay?.RemoveFromClassList("modal-open");
+            _packageEquipOverlay?.AddToClassList("hidden");
+            _equipWindowUnit = null;
+            _packageSlotNotice = null;
+        }
+
+        private void RenderPackageEquipWindow()
+        {
+            if (_packageEquipDialog == null || _equipWindowUnit == null)
+            {
+                return;
+            }
+
+            _packageEquipDialog.Clear();
+            PackageDefinition equipped = _packageLoadout.GetEquippedPackage(_equipWindowUnit.Id, _equipWindowSlot);
+
+            VisualElement header = new();
+            header.AddToClassList("package-equip-header");
+            Label title = new($"equip: {_equipWindowSlot.ToString().ToLowerInvariant()} - {DistroPresentation.DisplayName(_equipWindowUnit)}");
+            title.AddToClassList("collection-detail-name");
+            title.style.color = new StyleColor(_equipWindowUnit.AccentColor);
+            header.Add(title);
+            Button close = new(ClosePackageEquipWindow) { text = "x", focusable = false };
+            close.AddToClassList("modal-close-button");
+            header.Add(close);
+            _packageEquipDialog.Add(header);
+
+            if (!string.IsNullOrWhiteSpace(_packageSlotNotice))
+            {
+                Label notice = new(_packageSlotNotice);
+                notice.AddToClassList("package-notice");
+                _packageEquipDialog.Add(notice);
+            }
+
+            string equippedName = equipped == null ? "empty" : PackageName(equipped);
+            _packageEquipDialog.Add(BuildDetailLine("current", equippedName));
+            if (equipped != null)
+            {
+                _packageEquipDialog.Add(BuildCompactUpgradeCommand("> unlink current", "unequip", true, () => UnequipPackageFromWindow(_equipWindowUnit, _equipWindowSlot)));
+            }
+
+            ScrollView list = new(ScrollViewMode.Vertical);
+            list.AddToClassList("package-equip-list");
+            int count = 0;
+            for (int i = 0; i < _playerCollection.OwnedPackageInstances.Count; i++)
+            {
+                OwnedPackageInstance owned = _playerCollection.OwnedPackageInstances[i];
+                PackageDefinition package = owned?.Definition;
+                if (package == null || package.Slot != _equipWindowSlot)
+                {
+                    continue;
+                }
+
+                list.Add(BuildEquipWindowPackageRow(owned, equipped));
+                count++;
+            }
+
+            if (count == 0)
+            {
+                Label empty = new($"no owned {_equipWindowSlot.ToString().ToLowerInvariant()} packages");
+                empty.AddToClassList("package-empty");
+                list.Add(empty);
+            }
+
+            _packageEquipDialog.Add(list);
+            _packageEquipDialog.Add(BuildCompactUpgradeCommand("> cancel", "back", true, ClosePackageEquipWindow));
+        }
+
+        private VisualElement BuildEquipWindowPackageRow(OwnedPackageInstance owned, PackageDefinition equipped)
+        {
+            PackageDefinition package = owned.Definition;
+            bool isEquippedHere = equipped != null && string.Equals(equipped.Id, package.Id, StringComparison.OrdinalIgnoreCase);
+            VisualElement row = new();
+            row.AddToClassList("package-row");
+            row.AddToClassList("package-equip-row");
+            row.EnableInClassList("equipped", isEquippedHere);
+            row.EnableInClassList($"rarity-{package.Rarity}", true);
+            row.EnableInClassList("on-distro", package.IsIntendedFor(_equipWindowUnit.Id));
+            row.RegisterCallback<ClickEvent>(_ => EquipPackageFromWindow(_equipWindowUnit, _equipWindowSlot, package, isEquippedHere));
+
+            VisualElement summary = new();
+            summary.AddToClassList("package-summary");
+            Label marker = new(isEquippedHere ? "[x]" : "[ ]");
+            marker.AddToClassList("package-marker");
+            Label name = new(PackageName(package));
+            name.AddToClassList("package-name");
+            Label meta = new($"{RarityPresentation.ForStars(package.Rarity).Badge}  Lv {owned.UpgradeLevel}/{PackageTuning.MaxPackageLevel}");
+            meta.AddToClassList("package-meta");
+            summary.Add(marker);
+            summary.Add(name);
+            summary.Add(meta);
+            row.Add(summary);
+
+            Label effect = new(FormatPackageEffect(package, owned.UpgradeLevel, _equipWindowUnit.Id));
+            effect.AddToClassList("package-description");
+            row.Add(effect);
+
+            VisualElement tags = new();
+            tags.AddToClassList("package-equip-tags");
+            string equippedOn = FindEquippedDistroName(package.Id);
+            if (!string.IsNullOrWhiteSpace(equippedOn))
+            {
+                Label equippedTag = new($"equipped on {equippedOn}");
+                equippedTag.AddToClassList("package-notice");
+                tags.Add(equippedTag);
+            }
+
+            if (package.IsIntendedFor(_equipWindowUnit.Id))
+            {
+                Label intended = new("on-distro");
+                intended.AddToClassList("package-notice");
+                tags.Add(intended);
+            }
+
+            if (tags.childCount > 0)
+            {
+                row.Add(tags);
+            }
+
+            return row;
+        }
+
+        private void EquipPackageFromWindow(DistroDefinition unit, PackageSlot slot, PackageDefinition package, bool isEquipped)
+        {
+            if (isEquipped)
+            {
+                UnequipPackageFromWindow(unit, slot);
+                return;
+            }
+
+            if (EquipOrSwapPackage(unit, slot, package))
+            {
+                ClosePackageEquipWindow();
+                RenderUnitDetail(unit);
+                ViewChanged?.Invoke();
+                return;
+            }
+
+            RenderPackageEquipWindow();
+        }
+
+        private bool EquipOrSwapPackage(DistroDefinition unit, PackageSlot slot, PackageDefinition package)
+        {
+            if (unit == null || package == null || _packageLoadout == null)
+            {
+                return false;
+            }
+
+            PackageDefinition currentlyEquipped = _packageLoadout.GetEquippedPackage(unit.Id, slot);
+            if (currentlyEquipped != null && !string.Equals(currentlyEquipped.Id, package.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!_packageLoadout.TryUnequip(unit.Id, slot, out PackageLoadoutFailureReason unequipReason))
+                {
+                    _packageSlotNotice = FormatPackageFailure(unequipReason);
+                    return false;
+                }
+            }
+
+            if (!_packageLoadout.TryEquip(unit.Id, slot, package.Id, out PackageLoadoutFailureReason equipReason))
+            {
+                _packageSlotNotice = FormatPackageFailure(equipReason);
+                return false;
+            }
+
+            _packageSlotNotice = null;
+            _packageLoadoutChanged?.Invoke();
+            return true;
+        }
+
+        private void UnequipPackageFromWindow(DistroDefinition unit, PackageSlot slot)
+        {
+            PackageDefinition equipped = _packageLoadout.GetEquippedPackage(unit.Id, slot);
+            if (equipped == null)
+            {
+                return;
+            }
+
+            if (TogglePackage(unit, slot, equipped, true))
+            {
+                ClosePackageEquipWindow();
+                RenderUnitDetail(unit);
+                ViewChanged?.Invoke();
+                return;
+            }
+
+            RenderPackageEquipWindow();
         }
 
         private void AddVersionUpgradePanel(VisualElement target, DistroDefinition unit)
@@ -1406,6 +1750,21 @@ namespace KernelPanic.UI
             return row;
         }
 
+        private static VisualElement BuildPackagePreviewLine(string key, string value)
+        {
+            VisualElement row = new();
+            row.AddToClassList("package-preview-line");
+
+            Label keyLabel = new(key);
+            keyLabel.AddToClassList("package-preview-key");
+            Label valueLabel = new(value);
+            valueLabel.AddToClassList("package-preview-value");
+
+            row.Add(keyLabel);
+            row.Add(valueLabel);
+            return row;
+        }
+
         private VisualElement BuildSubviewCommand(string command, string description, bool enabled, Action action, string disabledDescription)
         {
             VisualElement row = new();
@@ -1688,7 +2047,7 @@ namespace KernelPanic.UI
             {
                 PackageLoadoutFailureReason.WrongSlot => "wrong slot",
                 PackageLoadoutFailureReason.NotOwned => "package not owned",
-                PackageLoadoutFailureReason.SlotOccupied => "slot occupied",
+                PackageLoadoutFailureReason.SlotOccupied => "slot occupied: unequip current package first",
                 PackageLoadoutFailureReason.NotEquipped => "package not equipped",
                 _ => "package change failed"
             };

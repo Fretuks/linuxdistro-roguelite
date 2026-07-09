@@ -12,7 +12,9 @@
   <component name="ChangeListManager">
     <list default="true" id="4222a6b8-add3-4f43-9c42-fd6bb5a76169" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/CollectionScreenController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/CollectionScreenController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/UI/MainMenu.uss" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/UI/MainMenu.uss" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,7 +65,10 @@
     <setting file="file://$PROJECT_DIR$/Assets/Data/Packages/CinnamonPackage.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Packages/Make.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Packages/SELinuxPackage.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Packages/Sshd.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Packages/Syslog.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Packages/TimeshiftPackage.asset" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Data/Packages/Vim.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Packages/Wget.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Passives/AptUpdate.asset" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Data/Passives/BleedingEdge.asset" root0="FORCE_HIGHLIGHTING" />
@@ -85,23 +90,23 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0000000091420684" />
-      <entry key="MS500" value="1.0441151946756255" />
-      <entry key="S2" value="2.6382509587349663" />
-      <entry key="S5" value="6.4101924935144785" />
-      <entry key="S10" value="10.713628057461193" />
-      <entry key="S30" value="17.176849076864066" />
-      <entry key="S60" value="19.771607581824814" />
-      <entry key="M2" value="21.29576182445417" />
-      <entry key="M5" value="22.295494182618757" />
-      <entry key="M10" value="22.81448190885531" />
-      <entry key="M15" value="24.09566128719646" />
-      <entry key="M30" value="34.68797233141319" />
-      <entry key="H1" value="97.44073884169883" />
-      <entry key="H2" value="364.5207442228668" />
-      <entry key="H4" value="873.7732173113925" />
-      <entry key="D1" value="2984.8513999759525" />
-      <entry key="W1" value="4680.673363994208" />
+      <entry key="MS100" value="1.303475344688572" />
+      <entry key="MS500" value="5.3926656022419355" />
+      <entry key="S2" value="20.294425547037598" />
+      <entry key="S5" value="46.02472779650448" />
+      <entry key="S10" value="75.10224826080193" />
+      <entry key="S30" value="116.756386597024" />
+      <entry key="S60" value="132.70480982869236" />
+      <entry key="M2" value="141.9955165492664" />
+      <entry key="M5" value="157.16923502238322" />
+      <entry key="M10" value="192.65306177401038" />
+      <entry key="M15" value="222.3537750260655" />
+      <entry key="M30" value="272.70669556712824" />
+      <entry key="H1" value="314.3552276126616" />
+      <entry key="H2" value="408.28563599020407" />
+      <entry key="H4" value="741.98755653759" />
+      <entry key="D1" value="2977.3514394521176" />
+      <entry key="W1" value="4961.511940764881" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -111,35 +116,35 @@
       <entry key="S10" value="0.0" />
       <entry key="S30" value="0.0" />
       <entry key="S60" value="0.0" />
-      <entry key="M2" value="1.8064028449327028E-281" />
-      <entry key="M5" value="5.0434282114119077E-113" />
-      <entry key="M10" value="7.101709802161887E-57" />
-      <entry key="M15" value="3.6946668261839877E-38" />
-      <entry key="M30" value="1.922152233062087E-19" />
-      <entry key="H1" value="4.3885451429904854E-10" />
-      <entry key="H2" value="2.2075675211666528E-5" />
-      <entry key="H4" value="0.0064228401094546346" />
-      <entry key="D1" value="1.2824600455938682" />
-      <entry key="W1" value="3.3954284700737616" />
+      <entry key="M2" value="3.0E-323" />
+      <entry key="M5" value="9.244545133631687E-130" />
+      <entry key="M10" value="3.0404843583929786E-65" />
+      <entry key="M15" value="9.74156013306164E-44" />
+      <entry key="M30" value="3.121148251945742E-22" />
+      <entry key="H1" value="1.7684137325623194E-11" />
+      <entry key="H2" value="4.431447925314597E-6" />
+      <entry key="H4" value="0.0028776829122893056" />
+      <entry key="D1" value="1.1218371428837055" />
+      <entry key="W1" value="3.3311376701614477" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="3.677094450878252E-7" />
-      <entry key="MS500" value="0.09520385707309299" />
-      <entry key="S2" value="2.109440495603316" />
-      <entry key="S5" value="6.132967162270056" />
-      <entry key="S10" value="10.54895965976181" />
-      <entry key="S30" value="17.11109977886081" />
-      <entry key="S60" value="19.73679418591952" />
-      <entry key="M2" value="21.277810332230633" />
-      <entry key="M5" value="22.28817422032284" />
-      <entry key="M10" value="22.810795720477756" />
-      <entry key="M15" value="24.093188404100633" />
-      <entry key="M30" value="34.68668997617844" />
-      <entry key="H1" value="97.43998942892169" />
-      <entry key="H2" value="364.5201803453728" />
-      <entry key="H4" value="873.7791451545606" />
-      <entry key="D1" value="2986.1335377085343" />
-      <entry key="W1" value="4684.068708897457" />
+      <entry key="MS100" value="1.2566545459762934" />
+      <entry key="MS500" value="5.351173370423456" />
+      <entry key="S2" value="20.255413709804333" />
+      <entry key="S5" value="45.988601609033005" />
+      <entry key="S10" value="75.07245405372439" />
+      <entry key="S30" value="116.74083732450484" />
+      <entry key="S60" value="132.69595850502105" />
+      <entry key="M2" value="141.99077691444745" />
+      <entry key="M5" value="157.16712437698786" />
+      <entry key="M10" value="192.65174658978927" />
+      <entry key="M15" value="222.35275187576812" />
+      <entry key="M30" value="272.7060572994754" />
+      <entry key="H1" value="314.3548323813724" />
+      <entry key="H2" value="408.2853250098047" />
+      <entry key="H4" value="741.9901088328525" />
+      <entry key="D1" value="2978.472976582466" />
+      <entry key="W1" value="4964.842993847027" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -231,7 +236,7 @@
       <workItem from="1783410502976" duration="23430000" />
       <workItem from="1783507489679" duration="5909000" />
       <workItem from="1783519887449" duration="6425000" />
-      <workItem from="1783578446731" duration="5754000" />
+      <workItem from="1783578446731" duration="14988000" />
     </task>
     <task id="LOCAL-00001" summary="implement main screen">
       <option name="closed" value="true" />
@@ -433,7 +438,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783585107215</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="restructure packages (it looks shit)">
+      <option name="closed" value="true" />
+      <created>1783585689781</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1783585689781</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -473,7 +486,8 @@
     <MESSAGE value="Implement Java and Rust cards alongside some smaller changes" />
     <MESSAGE value="make small changes to design. Implement crits." />
     <MESSAGE value="Implement many UX improvements, packages and their assets and a UI overhaul in collection" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implement many UX improvements, packages and their assets and a UI overhaul in collection" />
+    <MESSAGE value="restructure packages (it looks shit)" />
+    <option name="LAST_COMMIT_MESSAGE" value="restructure packages (it looks shit)" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

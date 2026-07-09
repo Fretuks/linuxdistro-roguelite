@@ -191,35 +191,50 @@ namespace KernelPanic.Run
             return Mathf.Max(1, (CurrentConfig?.Distro?.BaseCyclesPerTurn ?? 1) + maxCyclesBonus + packageMaxCyclesBonus);
         }
 
-        private void ApplyKernelPackageBonuses(RunConfig config)
+        public static PackageStatImpact CalculatePackageStatImpact(DistroDefinition distro, IReadOnlyList<PackageInstance> packages)
         {
-            if (config?.EquippedPackages == null)
+            PackageStatImpact impact = new(
+                Mathf.Max(1, distro == null ? 1 : distro.BaseUptime),
+                Mathf.Max(1, distro == null ? 1 : distro.BaseRam),
+                Mathf.Max(1, distro == null ? 1 : distro.BaseCyclesPerTurn));
+            if (packages == null)
             {
-                return;
+                return impact;
             }
 
-            for (int i = 0; i < config.EquippedPackages.Count; i++)
+            for (int i = 0; i < packages.Count; i++)
             {
-                PackageInstance package = config.EquippedPackages[i];
+                PackageInstance package = packages[i];
                 if (package?.Definition == null || package.Definition.Slot != PackageSlot.Kernel)
                 {
                     continue;
                 }
 
-                PackageEffectData effect = package.EffectFor(config.Distro?.Id);
+                PackageEffectData effect = package.EffectFor(distro?.Id);
+                int amount = Mathf.Max(0, effect.Amount);
                 switch (effect.Kind)
                 {
                     case PackageEffectKind.MaxUptime:
-                        packageMaxUptimeBonus += Mathf.Max(0, effect.Amount);
+                        impact.AddUptime(amount, package.Definition);
                         break;
                     case PackageEffectKind.MaxCycles:
-                        packageMaxCyclesBonus += Mathf.Max(0, effect.Amount);
+                        impact.AddCycles(amount, package.Definition);
                         break;
                     case PackageEffectKind.MaxRam:
-                        packageRamBonus += Mathf.Max(0, effect.Amount);
+                        impact.AddRam(amount, package.Definition);
                         break;
                 }
             }
+
+            return impact;
+        }
+
+        private void ApplyKernelPackageBonuses(RunConfig config)
+        {
+            PackageStatImpact impact = CalculatePackageStatImpact(config?.Distro, config?.EquippedPackages);
+            packageMaxUptimeBonus = impact.UptimeBonus;
+            packageMaxCyclesBonus = impact.CyclesBonus;
+            packageRamBonus = impact.RamBonus;
         }
 
         public bool TrySettleRunRewards(out int bandwidth, out int entropy)
@@ -504,6 +519,81 @@ namespace KernelPanic.Run
                     return true;
                 default:
                     return false;
+            }
+        }
+    }
+
+    public struct PackageStatImpact
+    {
+        private readonly List<string> uptimeSources;
+        private readonly List<string> ramSources;
+        private readonly List<string> cyclesSources;
+
+        public PackageStatImpact(int baseUptime, int baseRam, int baseCycles)
+        {
+            BaseUptime = baseUptime;
+            BaseRam = baseRam;
+            BaseCycles = baseCycles;
+            UptimeBonus = 0;
+            RamBonus = 0;
+            CyclesBonus = 0;
+            uptimeSources = new List<string>();
+            ramSources = new List<string>();
+            cyclesSources = new List<string>();
+        }
+
+        public int BaseUptime { get; }
+        public int BaseRam { get; }
+        public int BaseCycles { get; }
+        public int UptimeBonus { get; private set; }
+        public int RamBonus { get; private set; }
+        public int CyclesBonus { get; private set; }
+        public int FinalUptime => Mathf.Max(1, BaseUptime + UptimeBonus);
+        public int FinalRam => Mathf.Max(1, BaseRam + RamBonus);
+        public int FinalCycles => Mathf.Max(1, BaseCycles + CyclesBonus);
+        public IReadOnlyList<string> UptimeSources => uptimeSources;
+        public IReadOnlyList<string> RamSources => ramSources;
+        public IReadOnlyList<string> CyclesSources => cyclesSources;
+
+        public void AddUptime(int amount, PackageDefinition source)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            UptimeBonus += amount;
+            AddSource(source, uptimeSources);
+        }
+
+        public void AddRam(int amount, PackageDefinition source)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            RamBonus += amount;
+            AddSource(source, ramSources);
+        }
+
+        public void AddCycles(int amount, PackageDefinition source)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            CyclesBonus += amount;
+            AddSource(source, cyclesSources);
+        }
+
+        private static void AddSource(PackageDefinition source, List<string> sources)
+        {
+            string name = source == null ? null : string.IsNullOrWhiteSpace(source.DisplayName) ? source.Id : source.DisplayName;
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                sources.Add(name);
             }
         }
     }
