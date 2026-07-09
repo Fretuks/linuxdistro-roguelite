@@ -45,6 +45,9 @@ namespace KernelPanic.UI
         private int _selectedCardIndex;
         private string _emptyCardMessage = "no cards installed";
         private string _pendingScrapPackageId;
+        private IReadOnlyList<OwnedPackageInstance> _packageInventory = Array.Empty<OwnedPackageInstance>();
+        private int _selectedPackageInventoryIndex;
+        private PackageSlot? _packageInventoryFilter;
 
         public event Action ViewChanged;
 
@@ -98,6 +101,16 @@ namespace KernelPanic.UI
             ViewChanged?.Invoke();
         }
 
+        public void ShowPackages()
+        {
+            _mode = CollectionMode.Packages;
+            _pendingScrapPackageId = null;
+            CurrentTitle = "$ ls ~/packages";
+            CurrentHint = "[esc] back   [left/right] tabs   [tab] tabs   [arrows] navigate   [click] upgrade/scrap";
+            RenderPackages();
+            ViewChanged?.Invoke();
+        }
+
         public bool BackFromSubview()
         {
             if (_mode == CollectionMode.UnitDetail)
@@ -144,6 +157,12 @@ namespace KernelPanic.UI
             if (_mode == CollectionMode.Languages)
             {
                 SelectLanguage(_selectedLanguageIndex + delta);
+                return;
+            }
+
+            if (_mode == CollectionMode.Packages)
+            {
+                SelectPackageInventory(_selectedPackageInventoryIndex + delta);
                 return;
             }
 
@@ -307,6 +326,268 @@ namespace KernelPanic.UI
             }
 
             SelectLanguage(_selectedLanguageIndex);
+        }
+
+        private void RenderPackages()
+        {
+            if (_list == null || _detail == null)
+            {
+                return;
+            }
+
+            _rows.Clear();
+            _list.Clear();
+            _detail.Clear();
+            _list.RemoveFromClassList("hidden");
+            _detailScroll?.RemoveFromClassList("collection-detail-full");
+            if (_detailScroll != null)
+            {
+                _detailScroll.verticalScrollerVisibility = ScrollerVisibility.Auto;
+            }
+
+            SaveData saveData = _getSaveData?.Invoke();
+            int cache = Math.Max(0, saveData?.cacheBalance ?? 0);
+            int bandwidth = Math.Max(0, saveData?.bandwidthBalance ?? 0);
+
+            VisualElement filterBar = new();
+            filterBar.AddToClassList("collection-actions");
+            AddPackageFilterButton(filterBar, null, "all");
+            AddPackageFilterButton(filterBar, PackageSlot.Kernel, "kernel");
+            AddPackageFilterButton(filterBar, PackageSlot.Runtime, "runtime");
+            AddPackageFilterButton(filterBar, PackageSlot.Daemon, "daemon");
+            _list.Add(filterBar);
+            _list.Add(BuildDetailLine("wallet", $"Cache={cache} Bandwidth={bandwidth}"));
+
+            List<OwnedPackageInstance> packages = BuildSortedOwnedPackages(_packageInventoryFilter);
+            _packageInventory = packages;
+
+            if (packages.Count == 0)
+            {
+                _detail.Add(new Label("no packages owned") { name = "CollectionEmptyTitle" });
+                _detail.Add(new Label("pull packages via gacha, or check a different slot filter") { name = "CollectionEmptyHint" });
+                return;
+            }
+
+            _selectedPackageInventoryIndex = Mathf.Clamp(_selectedPackageInventoryIndex, 0, packages.Count - 1);
+            PackageSlot? lastSlot = null;
+            for (int i = 0; i < packages.Count; i++)
+            {
+                int index = i;
+                OwnedPackageInstance owned = packages[i];
+                if (!_packageInventoryFilter.HasValue && owned.Definition.Slot != lastSlot)
+                {
+                    lastSlot = owned.Definition.Slot;
+                    Label header = new(lastSlot.Value.ToString().ToUpperInvariant());
+                    header.AddToClassList("detail-section-title");
+                    _list.Add(header);
+                }
+
+                VisualElement row = BuildPackageInventoryRow(owned, cache, bandwidth);
+                row.RegisterCallback<PointerEnterEvent>(_ => SelectPackageInventory(index));
+                row.RegisterCallback<ClickEvent>(_ => SelectPackageInventory(index));
+                _list.Add(row);
+                _rows.Add(row);
+            }
+
+            SelectPackageInventory(_selectedPackageInventoryIndex);
+        }
+
+        private void AddPackageFilterButton(VisualElement target, PackageSlot? slot, string label)
+        {
+            Button button = new(() =>
+            {
+                _packageInventoryFilter = slot;
+                _selectedPackageInventoryIndex = 0;
+                RenderPackages();
+                ViewChanged?.Invoke();
+            })
+            {
+                text = label,
+                focusable = false
+            };
+            button.AddToClassList("collection-tab");
+            button.EnableInClassList("selected", _packageInventoryFilter == slot);
+            target.Add(button);
+        }
+
+        private List<OwnedPackageInstance> BuildSortedOwnedPackages(PackageSlot? filter)
+        {
+            List<OwnedPackageInstance> packages = new();
+            if (_playerCollection == null)
+            {
+                return packages;
+            }
+
+            for (int i = 0; i < _playerCollection.OwnedPackageInstances.Count; i++)
+            {
+                OwnedPackageInstance owned = _playerCollection.OwnedPackageInstances[i];
+                if (owned?.Definition == null || (filter.HasValue && owned.Definition.Slot != filter.Value))
+                {
+                    continue;
+                }
+
+                packages.Add(owned);
+            }
+
+            packages.Sort((a, b) =>
+            {
+                int slotCompare = ((int)a.Definition.Slot).CompareTo((int)b.Definition.Slot);
+                if (slotCompare != 0)
+                {
+                    return slotCompare;
+                }
+
+                int rarityCompare = b.Definition.Rarity.CompareTo(a.Definition.Rarity);
+                return rarityCompare != 0 ? rarityCompare : string.Compare(PackageName(a.Definition), PackageName(b.Definition), StringComparison.OrdinalIgnoreCase);
+            });
+
+            return packages;
+        }
+
+        private VisualElement BuildPackageInventoryRow(OwnedPackageInstance owned, int cache, int bandwidth)
+        {
+            PackageDefinition package = owned.Definition;
+            VisualElement row = new();
+            row.AddToClassList("collection-row");
+            row.AddToClassList("package-slot-row");
+
+            Label name = new(PackageName(package));
+            name.AddToClassList("package-slot-name");
+            name.style.color = new StyleColor(RarityPresentation.ForStars(package.Rarity).Color);
+            row.Add(name);
+
+            Label slot = new(package.Slot.ToString().ToUpperInvariant());
+            slot.AddToClassList("package-slot-label");
+            row.Add(slot);
+
+            RarityStyle rarity = RarityPresentation.ForStars(package.Rarity);
+            Label rarityLabel = new(rarity.Badge);
+            rarityLabel.AddToClassList("package-slot-rarity");
+            rarityLabel.AddToClassList(rarity.ClassName);
+            row.Add(rarityLabel);
+
+            Label level = new($"Lv {owned.UpgradeLevel}/{PackageTuning.MaxPackageLevel}");
+            level.AddToClassList("package-slot-level");
+            row.Add(level);
+
+            Label effect = new(OneLineEffect(package, owned.UpgradeLevel, null));
+            effect.AddToClassList("package-slot-effect");
+            row.Add(effect);
+
+            string equippedOn = FindEquippedDistroName(package.Id);
+            if (equippedOn != null)
+            {
+                Label tag = new($"@ {equippedOn}");
+                tag.AddToClassList("package-notice");
+                row.Add(tag);
+            }
+
+            if (CanAffordNextUpgrade(owned, cache, bandwidth))
+            {
+                Label hint = new("upgrade");
+                hint.AddToClassList("unit-overview-upgrade");
+                row.Add(hint);
+            }
+
+            return row;
+        }
+
+        private static bool CanAffordNextUpgrade(OwnedPackageInstance owned, int cache, int bandwidth)
+        {
+            if (owned.UpgradeLevel >= PackageTuning.MaxPackageLevel)
+            {
+                return false;
+            }
+
+            int nextLevel = owned.UpgradeLevel + 1;
+            int rarity = owned.Definition.Rarity;
+            return cache >= PackageTuning.GetUpgradeCacheCost(nextLevel, rarity) && bandwidth >= PackageTuning.GetUpgradeBandwidthCost(nextLevel, rarity);
+        }
+
+        private string FindEquippedDistroName(string packageId)
+        {
+            if (_packageLoadout == null || string.IsNullOrWhiteSpace(packageId))
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _units.Count; i++)
+            {
+                DistroDefinition unit = _units[i];
+                if (unit == null)
+                {
+                    continue;
+                }
+
+                foreach (KeyValuePair<PackageSlot, string> equipped in _packageLoadout.GetEquippedPackageIds(unit.Id))
+                {
+                    if (string.Equals(equipped.Value, packageId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return DistroPresentation.DisplayName(unit);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private void SelectPackageInventory(int index)
+        {
+            if (_packageInventory.Count == 0)
+            {
+                return;
+            }
+
+            _selectedPackageInventoryIndex = Mathf.Clamp(index, 0, _packageInventory.Count - 1);
+            ApplySelection(_selectedPackageInventoryIndex);
+            RenderPackageInventoryDetail(_packageInventory[_selectedPackageInventoryIndex]);
+        }
+
+        private void RenderPackageInventoryDetail(OwnedPackageInstance owned)
+        {
+            _detail.Clear();
+            if (owned?.Definition == null)
+            {
+                _detail.Add(new Label("no packages owned") { name = "CollectionEmptyTitle" });
+                return;
+            }
+
+            PackageDefinition package = owned.Definition;
+            SaveData saveData = _getSaveData?.Invoke();
+            int cache = Math.Max(0, saveData?.cacheBalance ?? 0);
+            int bandwidth = Math.Max(0, saveData?.bandwidthBalance ?? 0);
+
+            Label name = new(PackageName(package));
+            name.AddToClassList("collection-detail-name");
+            name.style.color = new StyleColor(RarityPresentation.ForStars(package.Rarity).Color);
+            _detail.Add(name);
+
+            _detail.Add(BuildDetailLine("wallet", $"Cache={cache} Bandwidth={bandwidth}"));
+            _detail.Add(BuildDetailLine("slot", package.Slot.ToString()));
+            _detail.Add(BuildDetailLine("rarity", RarityPresentation.ForStars(package.Rarity).Stars));
+            _detail.Add(BuildDetailLine("level", $"Lv {owned.UpgradeLevel}/{PackageTuning.MaxPackageLevel}"));
+            _detail.Add(BuildDetailLine("equipped", FindEquippedDistroName(package.Id) ?? "not equipped"));
+            _detail.Add(BuildDetailLine("current", FormatPackageEffect(package, owned.UpgradeLevel, null)));
+
+            int nextLevel = owned.UpgradeLevel + 1;
+            bool maxLevel = owned.UpgradeLevel >= PackageTuning.MaxPackageLevel;
+            int upgradeCacheCost = maxLevel ? 0 : PackageTuning.GetUpgradeCacheCost(nextLevel, package.Rarity);
+            int upgradeBandwidthCost = maxLevel ? 0 : PackageTuning.GetUpgradeBandwidthCost(nextLevel, package.Rarity);
+            bool canUpgrade = !maxLevel && cache >= upgradeCacheCost && bandwidth >= upgradeBandwidthCost && _tryUpgradePackage != null;
+            string upgradeState = maxLevel ? "max level" : cache < upgradeCacheCost ? "insufficient cache" : bandwidth < upgradeBandwidthCost ? "insufficient bandwidth" : "ready";
+            string nextPreview = maxLevel
+                ? "max level reached"
+                : $"{FormatPackageEffect(package, owned.UpgradeLevel, null)} -> {FormatPackageEffect(package, nextLevel, null)}";
+            _detail.Add(BuildDetailLine("next", nextPreview));
+            _detail.Add(BuildCompactUpgradeCommand($"> make upgrade  (Cache {upgradeCacheCost} / Bandwidth {upgradeBandwidthCost})", upgradeState, canUpgrade, () => UpgradePackage(owned)));
+
+            bool equipped = _packageLoadout != null && _packageLoadout.IsEquipped(package.Id);
+            int scrapCache = PackageTuning.GetCacheForRarity(package.Rarity) + PackageTuning.GetRefundedInvestedCache(owned.UpgradeLevel, package.Rarity);
+            int scrapBandwidth = PackageTuning.GetRefundedInvestedBandwidth(owned.UpgradeLevel, package.Rarity);
+            bool confirming = string.Equals(_pendingScrapPackageId, package.Id, StringComparison.OrdinalIgnoreCase);
+            string scrapCommand = confirming ? $"> rm --purge --yes  (+{scrapCache} cache/+{scrapBandwidth} bandwidth)" : $"> rm --purge  (+{scrapCache} cache)";
+            string scrapState = equipped ? "equipped: unequip first" : confirming ? "confirm permanent scrap" : "requires confirm";
+            _detail.Add(BuildCompactUpgradeCommand(scrapCommand, scrapState, !equipped && _tryScrapPackage != null, () => ScrapPackage(owned)));
         }
 
         private VisualElement BuildUnitOverviewRow(DistroDefinition unit)
@@ -814,82 +1095,6 @@ namespace KernelPanic.UI
             }
         }
 
-        private void AddPackageLoadoutPanel(VisualElement target, DistroDefinition unit)
-        {
-            if (unit == null || _packageLoadout == null || _playerCollection == null)
-            {
-                return;
-            }
-
-            Label title = new("meta packages (persistent)");
-            title.AddToClassList("detail-section-title");
-            target.Add(title);
-            target.Add(BuildDetailLine("scope", "package slots persist across every run; card loadout is run-only"));
-
-            AddPackageSlot(target, unit, PackageSlot.Kernel);
-            AddPackageSlot(target, unit, PackageSlot.Runtime);
-            AddPackageSlot(target, unit, PackageSlot.Daemon);
-        }
-
-        private void AddPackageSlot(VisualElement target, DistroDefinition unit, PackageSlot slot)
-        {
-            VisualElement slotBlock = new();
-            slotBlock.AddToClassList("package-slot-block");
-            PackageDefinition equipped = _packageLoadout.GetEquippedPackage(unit.Id, slot);
-            string equippedName = equipped == null ? "empty" : PackageName(equipped);
-            slotBlock.Add(BuildDetailLine(slot.ToString().ToLowerInvariant(), equippedName));
-            if (equipped != null)
-            {
-                Label effect = new(equipped.Description);
-                effect.AddToClassList("package-description");
-                slotBlock.Add(effect);
-            }
-
-            for (int i = 0; i < _playerCollection.OwnedPackages.Count; i++)
-            {
-                PackageDefinition package = _playerCollection.OwnedPackages[i];
-                if (package == null || package.Slot != slot)
-                {
-                    continue;
-                }
-
-                bool isEquipped = equipped != null && string.Equals(equipped.Id, package.Id, StringComparison.OrdinalIgnoreCase);
-                VisualElement row = new();
-                row.AddToClassList("package-row");
-                row.EnableInClassList("equipped", isEquipped);
-                row.EnableInClassList($"rarity-{package.Rarity}", true);
-                row.RegisterCallback<ClickEvent>(_ => TogglePackage(unit, slot, package, isEquipped));
-
-                VisualElement summary = new();
-                summary.AddToClassList("package-summary");
-                Label marker = new(isEquipped ? "[x]" : "[ ]");
-                marker.AddToClassList("package-marker");
-                Label name = new(PackageName(package));
-                name.AddToClassList("package-name");
-                Label meta = new($"{package.Rarity}* / {package.Slot}");
-                meta.AddToClassList("package-meta");
-                summary.Add(marker);
-                summary.Add(name);
-                summary.Add(meta);
-                row.Add(summary);
-
-                Label description = new(package.Description);
-                description.AddToClassList("package-description");
-                row.Add(description);
-
-                if (package.IsIntendedFor(unit.Id))
-                {
-                    Label intended = new("on-distro");
-                    intended.AddToClassList("package-notice");
-                    row.Add(intended);
-                }
-
-                slotBlock.Add(row);
-            }
-
-            target.Add(slotBlock);
-        }
-
         private void TogglePackage(DistroDefinition unit, PackageSlot slot, PackageDefinition package, bool isEquipped)
         {
             if (unit == null || package == null || _packageLoadout == null)
@@ -989,72 +1194,11 @@ namespace KernelPanic.UI
             }
         }
 
-        private void AddPackageInventoryPanel(VisualElement target)
-        {
-            if (_playerCollection == null)
-            {
-                return;
-            }
-
-            SaveData saveData = _getSaveData?.Invoke();
-            int cache = Math.Max(0, saveData?.cacheBalance ?? 0);
-            int bandwidth = Math.Max(0, saveData?.bandwidthBalance ?? 0);
-            Label title = new("package inventory");
-            title.AddToClassList("detail-section-title");
-            target.Add(title);
-            target.Add(BuildDetailLine("wallet", $"Cache={cache} Bandwidth={bandwidth}"));
-            target.Add(BuildDetailLine("scrap", "permanent; equipped packages are protected, unequip first"));
-
-            for (int i = 0; i < _playerCollection.OwnedPackageInstances.Count; i++)
-            {
-                OwnedPackageInstance owned = _playerCollection.OwnedPackageInstances[i];
-                PackageDefinition package = owned?.Definition;
-                if (package == null)
-                {
-                    continue;
-                }
-
-                VisualElement row = new();
-                row.AddToClassList("package-row");
-                row.EnableInClassList($"rarity-{package.Rarity}", true);
-
-                VisualElement summary = new();
-                summary.AddToClassList("package-summary");
-                Label name = new(PackageName(package));
-                name.AddToClassList("package-name");
-                Label meta = new($"{package.Rarity}* / {package.Slot} / Lv {owned.UpgradeLevel}/{PackageTuning.MaxPackageLevel}");
-                meta.AddToClassList("package-meta");
-                summary.Add(name);
-                summary.Add(meta);
-                row.Add(summary);
-
-                Label description = new(FormatPackageEffect(package, owned.UpgradeLevel, null));
-                description.AddToClassList("package-description");
-                row.Add(description);
-
-                int nextLevel = owned.UpgradeLevel + 1;
-                bool maxLevel = owned.UpgradeLevel >= PackageTuning.MaxPackageLevel;
-                int cacheCost = maxLevel ? 0 : PackageTuning.GetUpgradeCacheCost(nextLevel, package.Rarity);
-                int bandwidthCost = maxLevel ? 0 : PackageTuning.GetUpgradeBandwidthCost(nextLevel, package.Rarity);
-                bool canUpgrade = !maxLevel && cache >= cacheCost && bandwidth >= bandwidthCost && _tryUpgradePackage != null;
-                string upgradeState = maxLevel ? "max level" : cache < cacheCost ? "insufficient cache" : bandwidth < bandwidthCost ? "insufficient bandwidth" : "ready";
-                row.Add(BuildCompactUpgradeCommand($"> make upgrade  ({cacheCost} cache/{bandwidthCost} bandwidth)", upgradeState, canUpgrade, () => UpgradePackage(owned)));
-
-                bool equipped = _packageLoadout != null && _packageLoadout.IsEquipped(package.Id);
-                int scrapCache = PackageTuning.GetCacheForRarity(package.Rarity) + PackageTuning.GetRefundedInvestedCache(owned.UpgradeLevel, package.Rarity);
-                int scrapBandwidth = PackageTuning.GetRefundedInvestedBandwidth(owned.UpgradeLevel, package.Rarity);
-                bool confirming = string.Equals(_pendingScrapPackageId, package.Id, StringComparison.OrdinalIgnoreCase);
-                string scrapCommand = confirming ? $"> rm --purge --yes  (+{scrapCache} cache/+{scrapBandwidth} bandwidth)" : $"> rm --purge  (+{scrapCache} cache)";
-                string scrapState = equipped ? "equipped: unequip first" : confirming ? "confirm permanent scrap" : "requires confirm";
-                row.Add(BuildCompactUpgradeCommand(scrapCommand, scrapState, !equipped && _tryScrapPackage != null, () => ScrapPackage(owned)));
-                target.Add(row);
-            }
-        }
-
         private void UpgradePackage(OwnedPackageInstance package)
         {
+            bool inventoryMode = _mode == CollectionMode.Packages;
             PackageUpgradeResult result = _tryUpgradePackage == null ? new PackageUpgradeResult(false, PackageUpgradeFailureReason.NotOwned, 0, 0, 0) : _tryUpgradePackage(package);
-            RenderUnitDetail(_units[_selectedUnitIndex]);
+            RefreshAfterPackageAction(inventoryMode);
             if (!result.Success)
             {
                 _detail.Add(BuildDetailLine("package upgrade", FormatPackageUpgradeFailure(result.FailureReason)));
@@ -1068,19 +1212,38 @@ namespace KernelPanic.UI
                 return;
             }
 
+            bool inventoryMode = _mode == CollectionMode.Packages;
             if (!string.Equals(_pendingScrapPackageId, package.PackageId, StringComparison.OrdinalIgnoreCase))
             {
                 _pendingScrapPackageId = package.PackageId;
-                RenderUnitDetail(_units[_selectedUnitIndex]);
+                RefreshAfterPackageAction(inventoryMode);
                 return;
             }
 
             PackageScrapResult result = _tryScrapPackage == null ? new PackageScrapResult(false, PackageScrapFailureReason.NotOwned, 0, 0) : _tryScrapPackage(package);
             _pendingScrapPackageId = null;
-            RenderUnitDetail(_units[_selectedUnitIndex]);
+            RefreshAfterPackageAction(inventoryMode);
             if (!result.Success)
             {
                 _detail.Add(BuildDetailLine("package scrap", FormatPackageScrapFailure(result.FailureReason)));
+            }
+        }
+
+        // Wired upgrade/scrap callbacks (MainMenuController) may call RefreshUnits() internally,
+        // which forces CollectionMode.Units and re-renders. Restore the caller's actual view so
+        // the Packages inventory screen (and its keyboard navigation) don't get bumped to Units.
+        private void RefreshAfterPackageAction(bool inventoryMode)
+        {
+            if (inventoryMode)
+            {
+                _mode = CollectionMode.Packages;
+                RenderPackages();
+                return;
+            }
+
+            if (_units.Count > 0)
+            {
+                RenderUnitDetail(_units[_selectedUnitIndex]);
             }
         }
 
@@ -1579,6 +1742,7 @@ namespace KernelPanic.UI
         {
             Units,
             Languages,
+            Packages,
             UnitDetail,
             CardSubview
         }

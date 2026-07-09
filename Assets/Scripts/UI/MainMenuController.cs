@@ -140,6 +140,7 @@ namespace KernelPanic.UI
         private Button _rootCreditExchangeCloseButton;
         private Button _collectionUnitsButton;
         private Button _collectionLanguagesButton;
+        private Button _collectionPackagesButton;
         private readonly ScreenFrameController _runSetupFrame = new();
         private readonly ScreenFrameController _collectionFrame = new();
         private readonly ScreenFrameController _gachaFrame = new();
@@ -156,7 +157,7 @@ namespace KernelPanic.UI
         private int _selectedCommandIndex;
         private int _selectedPackageIndex;
         private string _runSetupNotice;
-        private bool _collectionShowingLanguages;
+        private CollectionTopTab _collectionTab;
         private float _bootIntroElapsed;
         private int _bootIntroCharacterCount;
         private bool _cursorVisible;
@@ -293,6 +294,7 @@ namespace KernelPanic.UI
             _rootCreditExchangeCloseButton = _root.Q<Button>("RootCreditExchangeCloseButton");
             _collectionUnitsButton = _root.Q<Button>("CollectionUnitsButton");
             _collectionLanguagesButton = _root.Q<Button>("CollectionLanguagesButton");
+            _collectionPackagesButton = _root.Q<Button>("CollectionPackagesButton");
         }
 
         private void LoadSharedStyles()
@@ -415,6 +417,7 @@ namespace KernelPanic.UI
             collectionScreen.ViewChanged += SyncCollectionFrame;
             _collectionUnitsButton.RegisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
             _collectionLanguagesButton.RegisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
+            _collectionPackagesButton.RegisterCallback<ClickEvent>(HandleCollectionPackagesTabClicked);
         }
 
         private void UnregisterCallbacks()
@@ -484,6 +487,7 @@ namespace KernelPanic.UI
             collectionScreen.ViewChanged -= SyncCollectionFrame;
             _collectionUnitsButton.UnregisterCallback<ClickEvent>(HandleCollectionUnitsTabClicked);
             _collectionLanguagesButton.UnregisterCallback<ClickEvent>(HandleCollectionLanguagesTabClicked);
+            _collectionPackagesButton.UnregisterCallback<ClickEvent>(HandleCollectionPackagesTabClicked);
         }
 
         private void HandleRootCreditsToEntropyClicked()
@@ -652,9 +656,18 @@ namespace KernelPanic.UI
             evt.StopPropagation();
         }
 
+        private void HandleCollectionPackagesTabClicked(ClickEvent evt)
+        {
+            ShowCollectionPackages();
+            evt.StopPropagation();
+        }
+
         private void LoadMetaState()
         {
             _saveData = _saveService.Load();
+            // Snapshot before the next EnsureLists() call below, which re-runs NormalizeOwnedPackages
+            // and would otherwise clear this (no new duplicates survive a second normalization pass).
+            List<CollapsedPackageDuplicate> collapsedPackageDuplicates = new(_saveData.collapsedPackageDuplicates);
             _saveData.EnsureLists();
             _wallet.SetBalance(_saveData.entropyBalance);
 
@@ -678,6 +691,7 @@ namespace KernelPanic.UI
                 }
             }
 
+            MigrateCollapsedPackageDuplicatesToCache(collapsedPackageDuplicates);
             LoadPackageLoadoutsFromSave();
 
             for (int i = 0; i < _saveData.bannerPoolIds.Count; i++)
@@ -702,6 +716,18 @@ namespace KernelPanic.UI
             }
 
             SaveCurrentState();
+        }
+
+        private void MigrateCollapsedPackageDuplicatesToCache(List<CollapsedPackageDuplicate> collapsedPackageDuplicates)
+        {
+            foreach (CollapsedPackageDuplicate duplicate in collapsedPackageDuplicates)
+            {
+                PackageDefinition package = packageDatabase == null ? null : packageDatabase.FindById(duplicate.Id);
+                int rarity = package == null ? 1 : package.Rarity;
+                int cache = PackageTuning.GetCacheForRarity(rarity) * duplicate.ExtraCount;
+                _saveData.cacheBalance += cache;
+                Debug.Log($"Migrated {duplicate.ExtraCount} duplicate save copies of package '{duplicate.Id}' into +{cache} Cache (packages are unique-per-type; kept the highest-level instance).");
+            }
         }
 
         private void AddAllFourStarDistrosToBeginnerBannerPool()
@@ -769,9 +795,8 @@ namespace KernelPanic.UI
                 return;
             }
 
-            _collectionShowingLanguages = false;
-            _collectionUnitsButton.EnableInClassList(SelectedClassName, true);
-            _collectionLanguagesButton.EnableInClassList(SelectedClassName, false);
+            _collectionTab = CollectionTopTab.Units;
+            ApplyCollectionTabButtons();
             collectionScreen.RefreshUnits(_playerCollection.OwnedUnits);
             collectionScreen.ShowUnitDetail(unit, false);
             SyncCollectionFrame();
@@ -1917,31 +1942,49 @@ namespace KernelPanic.UI
 
         private void ShowCollectionUnits()
         {
-            _collectionShowingLanguages = false;
-            _collectionUnitsButton.EnableInClassList(SelectedClassName, true);
-            _collectionLanguagesButton.EnableInClassList(SelectedClassName, false);
+            _collectionTab = CollectionTopTab.Units;
+            ApplyCollectionTabButtons();
             collectionScreen.RefreshUnits(_playerCollection.OwnedUnits);
             SyncCollectionFrame();
         }
 
         private void ShowCollectionLanguages()
         {
-            _collectionShowingLanguages = true;
-            _collectionUnitsButton.EnableInClassList(SelectedClassName, false);
-            _collectionLanguagesButton.EnableInClassList(SelectedClassName, true);
+            _collectionTab = CollectionTopTab.Languages;
+            ApplyCollectionTabButtons();
             collectionScreen.ShowLanguages();
             SyncCollectionFrame();
         }
 
+        private void ShowCollectionPackages()
+        {
+            _collectionTab = CollectionTopTab.Packages;
+            ApplyCollectionTabButtons();
+            collectionScreen.ShowPackages();
+            SyncCollectionFrame();
+        }
+
+        private void ApplyCollectionTabButtons()
+        {
+            _collectionUnitsButton.EnableInClassList(SelectedClassName, _collectionTab == CollectionTopTab.Units);
+            _collectionLanguagesButton.EnableInClassList(SelectedClassName, _collectionTab == CollectionTopTab.Languages);
+            _collectionPackagesButton.EnableInClassList(SelectedClassName, _collectionTab == CollectionTopTab.Packages);
+        }
+
         private void ToggleCollectionTab()
         {
-            if (_collectionShowingLanguages)
+            switch (_collectionTab)
             {
-                ShowCollectionUnits();
-                return;
+                case CollectionTopTab.Units:
+                    ShowCollectionLanguages();
+                    return;
+                case CollectionTopTab.Languages:
+                    ShowCollectionPackages();
+                    return;
+                default:
+                    ShowCollectionUnits();
+                    return;
             }
-
-            ShowCollectionLanguages();
         }
 
         private void SyncCollectionFrame()
@@ -2032,6 +2075,13 @@ namespace KernelPanic.UI
             RunSetup,
             Gacha,
             Settings
+        }
+
+        private enum CollectionTopTab
+        {
+            Units,
+            Languages,
+            Packages
         }
 
         private sealed class CommandMenuEntry

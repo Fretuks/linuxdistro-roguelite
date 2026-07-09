@@ -127,6 +127,9 @@ namespace KernelPanic.Meta
         public string DisplayName { get; }
         public GachaRewardType RewardType { get; }
         public PullOutcomeKind OutcomeKind { get; }
+
+        // Holds distro dupe merges, or (when RewardType is Package) the Cache a duplicate package
+        // pull was auto-scrapped for. See StatusText for which unit applies.
         public int MergesAwarded { get; }
         public IReadOnlyList<Language> LanguagesUnlocked { get; }
         public bool Guaranteed { get; }
@@ -139,11 +142,12 @@ namespace KernelPanic.Meta
         {
             get
             {
+                string dupeUnit = RewardType == GachaRewardType.Package ? "cache" : "merges";
                 return OutcomeKind switch
                 {
                     PullOutcomeKind.Granted => "NEW",
-                    PullOutcomeKind.Dupe => $"→ {MergesAwarded} merges",
-                    PullOutcomeKind.DupeOverflow => $"→ {MergesAwarded} merges",
+                    PullOutcomeKind.Dupe => $"→ {MergesAwarded} {dupeUnit}",
+                    PullOutcomeKind.DupeOverflow => $"→ {MergesAwarded} {dupeUnit}",
                     _ => Guaranteed ? "guaranteed" : PityTriggered ? "pity" : string.Empty
                 };
             }

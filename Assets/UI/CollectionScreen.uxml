@@ -8,6 +8,7 @@
                 <ui:VisualElement class="collection-actions">
                     <ui:Button name="CollectionUnitsButton" text="units" focusable="false" class="collection-tab" />
                     <ui:Button name="CollectionLanguagesButton" text="languages" focusable="false" class="collection-tab" />
+                    <ui:Button name="CollectionPackagesButton" text="packages" focusable="false" class="collection-tab" />
                 </ui:VisualElement>
                 <ui:VisualElement name="CollectionContent" class="collection-shell">
                     <ui:ScrollView name="CollectionList" class="collection-list" />
