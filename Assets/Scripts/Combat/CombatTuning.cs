@@ -12,7 +12,7 @@ namespace KernelPanic.Combat
 
         public const int BaseEnemyUptimeMin = 5;
         public const int BaseEnemyUptimeMax = 10;
-        public const int EnemyUptimeGrowthPerWave = 2;
+        public const int EnemyUptimeGrowthPerWave = 1;
 
         public const int BaseEnemyAttack = 3;
         public const int EnemyAttackGrowthEveryWaves = 2;

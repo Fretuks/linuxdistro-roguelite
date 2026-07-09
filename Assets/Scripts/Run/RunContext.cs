@@ -12,9 +12,9 @@ namespace KernelPanic.Run
     /// </summary>
     public static class RunContext
     {
-        private static PendingRun pendingRun;
+        private static PendingRun _pendingRun;
 
-        public static bool HasPendingRun => pendingRun != null;
+        public static bool HasPendingRun => _pendingRun != null;
 
         public static void Set(DistroDefinition distro, IReadOnlyList<CardDefinition> equippedCards, Language primaryLanguage, Language secondaryLanguage)
         {
@@ -28,44 +28,44 @@ namespace KernelPanic.Run
 
         public static void Set(DistroDefinition distro, IReadOnlyList<CardDefinition> equippedCards, IReadOnlyList<PackageDefinition> equippedPackages, Language primaryLanguage, Language secondaryLanguage, int distroVersion)
         {
-            pendingRun = new PendingRun(distro, equippedCards, ToInstances(equippedPackages), primaryLanguage, secondaryLanguage, Environment.TickCount, distroVersion);
+            _pendingRun = new PendingRun(distro, equippedCards, ToInstances(equippedPackages), primaryLanguage, secondaryLanguage, Environment.TickCount, distroVersion);
         }
 
         public static void Set(DistroDefinition distro, IReadOnlyList<CardDefinition> equippedCards, IReadOnlyList<PackageInstance> equippedPackages, Language primaryLanguage, Language secondaryLanguage, int distroVersion)
         {
-            pendingRun = new PendingRun(distro, equippedCards, equippedPackages, primaryLanguage, secondaryLanguage, Environment.TickCount, distroVersion);
+            _pendingRun = new PendingRun(distro, equippedCards, equippedPackages, primaryLanguage, secondaryLanguage, Environment.TickCount, distroVersion);
         }
 
         public static bool TryCreateRunConfig(LanguageDeckDatabase languageDeckDatabase, out RunConfig config)
         {
-            if (pendingRun == null || pendingRun.Distro == null)
+            if (_pendingRun == null || _pendingRun.Distro == null)
             {
                 config = null;
                 return false;
             }
 
-            config = pendingRun.CreateRunConfig(languageDeckDatabase);
-            pendingRun = null;
+            config = _pendingRun.CreateRunConfig(languageDeckDatabase);
+            _pendingRun = null;
             return true;
         }
 
         private sealed class PendingRun
         {
-            private readonly DistroDefinition distro;
-            private readonly List<CardDefinition> equippedCards = new();
-            private readonly List<PackageInstance> equippedPackages = new();
-            private readonly Language primaryLanguage;
-            private readonly Language secondaryLanguage;
-            private readonly int runSeed;
-            private readonly int distroVersion;
+            private readonly DistroDefinition _distro;
+            private readonly List<CardDefinition> _equippedCards = new();
+            private readonly List<PackageInstance> _equippedPackages = new();
+            private readonly Language _primaryLanguage;
+            private readonly Language _secondaryLanguage;
+            private readonly int _runSeed;
+            private readonly int _distroVersion;
 
             public PendingRun(DistroDefinition distro, IReadOnlyList<CardDefinition> cards, IReadOnlyList<PackageInstance> packages, Language primaryLanguage, Language secondaryLanguage, int runSeed, int distroVersion)
             {
-                this.distro = distro;
-                this.primaryLanguage = primaryLanguage;
-                this.secondaryLanguage = secondaryLanguage;
-                this.runSeed = runSeed;
-                this.distroVersion = distroVersion;
+                this._distro = distro;
+                this._primaryLanguage = primaryLanguage;
+                this._secondaryLanguage = secondaryLanguage;
+                this._runSeed = runSeed;
+                this._distroVersion = distroVersion;
 
                 if (cards == null)
                 {
@@ -76,7 +76,7 @@ namespace KernelPanic.Run
                 {
                     if (cards[i] != null && !cards[i].IsRunOnly)
                     {
-                        equippedCards.Add(cards[i]);
+                        _equippedCards.Add(cards[i]);
                     }
                 }
 
@@ -89,19 +89,19 @@ namespace KernelPanic.Run
                 {
                     if (packages[i]?.Definition != null)
                     {
-                        equippedPackages.Add(packages[i]);
+                        _equippedPackages.Add(packages[i]);
                     }
                 }
             }
 
-            public DistroDefinition Distro => distro;
+            public DistroDefinition Distro => _distro;
 
             public RunConfig CreateRunConfig(LanguageDeckDatabase languageDeckDatabase)
             {
-                List<CardDefinition> startingDeck = new(equippedCards);
-                AddLanguageDeck(languageDeckDatabase, primaryLanguage, startingDeck);
-                AddLanguageDeck(languageDeckDatabase, secondaryLanguage, startingDeck);
-                return new RunConfig(distro, primaryLanguage, secondaryLanguage, startingDeck, equippedPackages, runSeed, distroVersion);
+                List<CardDefinition> startingDeck = new(_equippedCards);
+                AddLanguageDeck(languageDeckDatabase, _primaryLanguage, startingDeck);
+                AddLanguageDeck(languageDeckDatabase, _secondaryLanguage, startingDeck);
+                return new RunConfig(_distro, _primaryLanguage, _secondaryLanguage, startingDeck, _equippedPackages, _runSeed, _distroVersion);
             }
 
             private static void AddLanguageDeck(LanguageDeckDatabase languageDeckDatabase, Language language, List<CardDefinition> target)

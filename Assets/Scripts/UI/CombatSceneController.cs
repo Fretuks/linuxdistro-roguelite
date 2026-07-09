@@ -12,7 +12,7 @@ namespace KernelPanic.UI
 {
     /// <summary>
     /// Runtime-built GameScene combat UI. Intent icons use a compact terminal vocabulary:
-    /// ! attack/status attack, # defend, + buff, * special.
+    /// ! attack/status attack, # defend, + buff, * special, ? hidden, ~ reviving, : split, @ countdown.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     [RequireComponent(typeof(RunManager))]
@@ -29,56 +29,56 @@ namespace KernelPanic.UI
         [SerializeField] private CardDatabase cardDatabase;
         [SerializeField] private LanguageDeckDatabase languageDeckDatabase;
 
-        private UIDocument document;
-        private RunManager runManager;
-        private CombatManager combatManager;
-        private SaveService saveService;
-        private VisualElement root;
-        private VisualElement statusBar;
-        private Label waveLabel;
-        private Label phaseLabel;
-        private Label entropyLabel;
-        private Label bitsLabel;
-        private Label bandwidthLabel;
-        private Label rootCreditsLabel;
-        private Label seedLabel;
-        private VisualElement playerPanel;
-        private VisualElement interpreterStrip;
-        private VisualElement lazyStackPile;
-        private VisualElement tokenArea;
-        private VisualElement enemyRow;
-        private VisualElement handRow;
-        private VisualElement turnResourceGrid;
-        private Label logLabel;
-        private VisualElement feedbackLayer;
-        private VisualElement damageVignette;
-        private VisualElement overlay;
-        private Color distroAccent;
-        private readonly Dictionary<CombatantState, VisualElement> combatantElements = new();
-        private readonly Dictionary<CardInstance, VisualElement> handCardElements = new();
-        private readonly Dictionary<CardInstance, VisualElement> queueChipElements = new();
-        private readonly Dictionary<CardInstance, VisualElement> stackChipElements = new();
-        private readonly Dictionary<CombatantState, int> previousUptime = new();
-        private readonly Dictionary<CombatantState, int> previousShield = new();
-        private readonly Dictionary<VisualElement, int> feedbackBeatVersions = new();
-        private readonly HashSet<CardInstance> knownHandCards = new();
-        private int queueCascadeIndex;
-        private int feedbackCascadeIndex;
-        private int feedbackBeatVersion;
+        private UIDocument _document;
+        private RunManager _runManager;
+        private CombatManager _combatManager;
+        private SaveService _saveService;
+        private VisualElement _root;
+        private VisualElement _statusBar;
+        private Label _waveLabel;
+        private Label _phaseLabel;
+        private Label _entropyLabel;
+        private Label _bitsLabel;
+        private Label _bandwidthLabel;
+        private Label _rootCreditsLabel;
+        private Label _seedLabel;
+        private VisualElement _playerPanel;
+        private VisualElement _interpreterStrip;
+        private VisualElement _lazyStackPile;
+        private VisualElement _tokenArea;
+        private VisualElement _enemyRow;
+        private VisualElement _handRow;
+        private VisualElement _turnResourceGrid;
+        private Label _logLabel;
+        private VisualElement _feedbackLayer;
+        private VisualElement _damageVignette;
+        private VisualElement _overlay;
+        private Color _distroAccent;
+        private readonly Dictionary<CombatantState, VisualElement> _combatantElements = new();
+        private readonly Dictionary<CardInstance, VisualElement> _handCardElements = new();
+        private readonly Dictionary<CardInstance, VisualElement> _queueChipElements = new();
+        private readonly Dictionary<CardInstance, VisualElement> _stackChipElements = new();
+        private readonly Dictionary<CombatantState, int> _previousUptime = new();
+        private readonly Dictionary<CombatantState, int> _previousShield = new();
+        private readonly Dictionary<VisualElement, int> _feedbackBeatVersions = new();
+        private readonly HashSet<CardInstance> _knownHandCards = new();
+        private int _queueCascadeIndex;
+        private int _feedbackCascadeIndex;
+        private int _feedbackBeatVersion;
 
         private void Awake()
         {
-            document = GetComponent<UIDocument>();
-            runManager = GetComponent<RunManager>();
-            combatManager = GetComponent<CombatManager>();
-            saveService = new SaveService();
-            root = document.rootVisualElement;
+            _document = GetComponent<UIDocument>();
+            _runManager = GetComponent<RunManager>();
+            _combatManager = GetComponent<CombatManager>();
+            _saveService = new SaveService();
+            _root = _document.rootVisualElement;
             LoadStyles();
             ApplyTerminalFont();
             BuildLayout();
 
-            root.AddToClassList("scene-fade-hidden");
-            root.schedule.Execute(() => root.RemoveFromClassList("scene-fade-hidden")).StartingIn(0);
+            _root.AddToClassList("scene-fade-hidden");
+            _root.schedule.Execute(() => _root.RemoveFromClassList("scene-fade-hidden")).StartingIn(0);
         }
 
         private void ApplyTerminalFont()
@@ -86,16 +86,16 @@ namespace KernelPanic.UI
             var font = TerminalFontResolver.Resolve(null);
             if (font != null)
             {
-                root.style.unityFontDefinition = new StyleFontDefinition(font);
+                _root.style.unityFontDefinition = new StyleFontDefinition(font);
             }
         }
 
         private void OnEnable()
         {
-            root?.EnableInClassList("reduced-motion", UIPreferences.ReducedMotion);
-            combatManager.StateChanged += Refresh;
-            combatManager.CombatLog += HandleCombatLog;
-            runManager.RepositoryChanged += Refresh;
+            _root?.EnableInClassList("reduced-motion", UIPreferences.ReducedMotion);
+            _combatManager.StateChanged += Refresh;
+            _combatManager.CombatLog += HandleCombatLog;
+            _runManager.RepositoryChanged += Refresh;
             GameEvents.CardPlayed += HandleCardPlayed;
             GameEvents.CardResolved += HandleCardResolved;
             GameEvents.PhaseChanged += HandlePhaseChanged;
@@ -116,9 +116,9 @@ namespace KernelPanic.UI
                 return;
             }
 
-            distroAccent = config.Distro == null ? Color.white : config.Distro.AccentColor;
-            combatManager.SetGeneratedCardPool(BuildGeneratedCardPool());
-            runManager.StartRun(config);
+            _distroAccent = config.Distro == null ? Color.white : config.Distro.AccentColor;
+            _combatManager.SetGeneratedCardPool(BuildGeneratedCardPool());
+            _runManager.StartRun(config);
             Refresh();
         }
 
@@ -143,9 +143,9 @@ namespace KernelPanic.UI
         private void OnDisable()
         {
             SettleRunRewardsIfNeeded();
-            combatManager.StateChanged -= Refresh;
-            combatManager.CombatLog -= HandleCombatLog;
-            runManager.RepositoryChanged -= Refresh;
+            _combatManager.StateChanged -= Refresh;
+            _combatManager.CombatLog -= HandleCombatLog;
+            _runManager.RepositoryChanged -= Refresh;
             GameEvents.CardPlayed -= HandleCardPlayed;
             GameEvents.CardResolved -= HandleCardResolved;
             GameEvents.PhaseChanged -= HandlePhaseChanged;
@@ -222,11 +222,11 @@ namespace KernelPanic.UI
 
         private void HandleMissingRunConfig()
         {
-            root.Clear();
-            root.AddToClassList("combat-root");
+            _root.Clear();
+            _root.AddToClassList("combat-root");
             Label error = new("combat bootstrap failed: no RunContext and no editor fallback data");
             error.AddToClassList("overlay-line");
-            root.Add(error);
+            _root.Add(error);
             Debug.LogError("GameScene could not start: no RunContext and no Ubuntu editor fallback data.");
         }
 
@@ -235,91 +235,91 @@ namespace KernelPanic.UI
             StyleSheet rarityStyleSheet = Resources.Load<StyleSheet>(SharedRarityStyleResourcePath);
             if (rarityStyleSheet != null)
             {
-                root.styleSheets.Add(rarityStyleSheet);
+                _root.styleSheets.Add(rarityStyleSheet);
             }
 
             StyleSheet styleSheet = Resources.Load<StyleSheet>(StyleResourcePath);
             if (styleSheet != null)
             {
-                root.styleSheets.Add(styleSheet);
+                _root.styleSheets.Add(styleSheet);
             }
 
             StyleSheet scrollbarStyleSheet = Resources.Load<StyleSheet>(SharedScrollbarStyleResourcePath);
             if (scrollbarStyleSheet != null)
             {
-                root.styleSheets.Add(scrollbarStyleSheet);
+                _root.styleSheets.Add(scrollbarStyleSheet);
             }
         }
 
         private void BuildLayout()
         {
-            root.Clear();
-            root.AddToClassList("combat-root");
-            root.style.flexGrow = 1;
+            _root.Clear();
+            _root.AddToClassList("combat-root");
+            _root.style.flexGrow = 1;
 
-            statusBar = BuildStatusBar();
-            root.Add(statusBar);
+            _statusBar = BuildStatusBar();
+            _root.Add(_statusBar);
 
             VisualElement main = new();
             main.AddToClassList("main-layout");
-            root.Add(main);
+            _root.Add(main);
 
-            playerPanel = CreatePanel("player", "htop process monitor", 242);
-            main.Add(playerPanel);
+            _playerPanel = CreatePanel("player", "htop process monitor", 242);
+            main.Add(_playerPanel);
 
             VisualElement fieldPanel = CreatePanel("field", "resolution tracks", 0);
             fieldPanel.AddToClassList("field-panel");
             main.Add(fieldPanel);
-            interpreterStrip = AddTrackZone(fieldPanel, "interpreter queue", "FIFO queued scripts", "track-zone-queue");
-            lazyStackPile = AddTrackZone(fieldPanel, "lazy stack", "LIFO delayed work", "track-zone-stack");
-            tokenArea = AddTrackZone(fieldPanel, "goroutines", "token lane", "track-zone-token");
+            _interpreterStrip = AddTrackZone(fieldPanel, "interpreter queue", "FIFO queued scripts", "track-zone-queue");
+            _lazyStackPile = AddTrackZone(fieldPanel, "lazy stack", "LIFO delayed work", "track-zone-stack");
+            _tokenArea = AddTrackZone(fieldPanel, "goroutines", "token lane", "track-zone-token");
 
             VisualElement enemiesPanel = CreatePanel("enemy processes", "intent telemetry", 438);
             main.Add(enemiesPanel);
-            enemyRow = new();
-            enemyRow.AddToClassList("enemy-row");
-            enemiesPanel.Add(enemyRow);
+            _enemyRow = new();
+            _enemyRow.AddToClassList("enemy-row");
+            enemiesPanel.Add(_enemyRow);
 
             VisualElement bottom = new();
             bottom.AddToClassList("bottom-layout");
-            root.Add(bottom);
+            _root.Add(bottom);
 
             VisualElement handPanel = CreatePanel("hand", "executable cards", 0);
             handPanel.AddToClassList("hand-panel");
             bottom.Add(handPanel);
-            handRow = new();
-            handRow.AddToClassList("hand-row");
-            handPanel.Add(handRow);
+            _handRow = new();
+            _handRow.AddToClassList("hand-row");
+            handPanel.Add(_handRow);
 
             VisualElement commandPanel = CreatePanel("turn", "command", 240);
             commandPanel.AddToClassList("turn-panel");
             bottom.Add(commandPanel);
-            turnResourceGrid = new();
-            turnResourceGrid.AddToClassList("turn-resource-grid");
-            commandPanel.Add(turnResourceGrid);
+            _turnResourceGrid = new();
+            _turnResourceGrid.AddToClassList("turn-resource-grid");
+            commandPanel.Add(_turnResourceGrid);
 
-            Button endTurn = new(() => combatManager.EndPlayerTurn()) { text = "> end-turn" };
+            Button endTurn = new(() => _combatManager.EndPlayerTurn()) { text = "> end-turn" };
             endTurn.AddToClassList("primary-action");
             commandPanel.Add(endTurn);
 
-            logLabel = new();
-            logLabel.AddToClassList("log-line");
-            commandPanel.Add(logLabel);
+            _logLabel = new();
+            _logLabel.AddToClassList("log-line");
+            commandPanel.Add(_logLabel);
 
-            feedbackLayer = new();
-            feedbackLayer.AddToClassList("feedback-layer");
-            feedbackLayer.pickingMode = PickingMode.Ignore;
-            root.Add(feedbackLayer);
+            _feedbackLayer = new();
+            _feedbackLayer.AddToClassList("feedback-layer");
+            _feedbackLayer.pickingMode = PickingMode.Ignore;
+            _root.Add(_feedbackLayer);
 
-            damageVignette = new();
-            damageVignette.AddToClassList("damage-vignette");
-            damageVignette.pickingMode = PickingMode.Ignore;
-            root.Add(damageVignette);
+            _damageVignette = new();
+            _damageVignette.AddToClassList("damage-vignette");
+            _damageVignette.pickingMode = PickingMode.Ignore;
+            _root.Add(_damageVignette);
 
-            overlay = new();
-            overlay.AddToClassList("overlay");
-            overlay.style.display = DisplayStyle.None;
-            root.Add(overlay);
+            _overlay = new();
+            _overlay.AddToClassList("overlay");
+            _overlay.style.display = DisplayStyle.None;
+            _root.Add(_overlay);
         }
 
         private VisualElement BuildStatusBar()
@@ -327,20 +327,20 @@ namespace KernelPanic.UI
             VisualElement bar = new();
             bar.AddToClassList("combat-status-bar");
 
-            waveLabel = AddStatusReadout(bar, "wave", "--", false);
-            phaseLabel = AddStatusReadout(bar, "phase", "--", true);
-            bitsLabel = AddStatusReadout(bar, "Bits", "0", false);
-            entropyLabel = AddStatusReadout(bar, "Entropy", "0", false);
-            bandwidthLabel = AddStatusReadout(bar, "Bandwidth", "0", false);
-            rootCreditsLabel = AddStatusReadout(bar, "Root Credits", "0", false);
+            _waveLabel = AddStatusReadout(bar, "wave", "--", false);
+            _phaseLabel = AddStatusReadout(bar, "phase", "--", true);
+            _bitsLabel = AddStatusReadout(bar, "Bits", "0", false);
+            _entropyLabel = AddStatusReadout(bar, "Entropy", "0", false);
+            _bandwidthLabel = AddStatusReadout(bar, "Bandwidth", "0", false);
+            _rootCreditsLabel = AddStatusReadout(bar, "Root Credits", "0", false);
 
             VisualElement spacer = new();
             spacer.AddToClassList("status-spacer");
             bar.Add(spacer);
 
-            seedLabel = new("--");
-            seedLabel.AddToClassList("seed-value");
-            bar.Add(seedLabel);
+            _seedLabel = new("--");
+            _seedLabel.AddToClassList("seed-value");
+            bar.Add(_seedLabel);
             return bar;
         }
 
@@ -383,7 +383,7 @@ namespace KernelPanic.UI
 
         private void Refresh()
         {
-            if (combatManager.PlayerState == null)
+            if (_combatManager.PlayerState == null)
             {
                 return;
             }
@@ -399,65 +399,65 @@ namespace KernelPanic.UI
 
         private void RefreshStatus()
         {
-            SaveData data = saveService.Load();
-            RunConfig config = runManager.CurrentConfig;
-            waveLabel.text = runManager.CurrentWaveNumber.ToString();
-            phaseLabel.text = PhaseText(combatManager.CurrentPhase);
-            bitsLabel.text = runManager.Bits.ToString();
-            entropyLabel.text = FormatWalletWithAccrual(data.entropyBalance, runManager.AccruedEntropy);
-            bandwidthLabel.text = FormatWalletWithAccrual(data.bandwidthBalance, runManager.AccruedBandwidth);
-            rootCreditsLabel.text = data.rootCredits.ToString();
-            seedLabel.text = $"seed {config?.RunSeed ?? 0}";
+            SaveData data = _saveService.Load();
+            RunConfig config = _runManager.CurrentConfig;
+            _waveLabel.text = _runManager.CurrentWaveNumber.ToString();
+            _phaseLabel.text = PhaseText(_combatManager.CurrentPhase);
+            _bitsLabel.text = _runManager.Bits.ToString();
+            _entropyLabel.text = FormatWalletWithAccrual(data.entropyBalance, _runManager.AccruedEntropy);
+            _bandwidthLabel.text = FormatWalletWithAccrual(data.bandwidthBalance, _runManager.AccruedBandwidth);
+            _rootCreditsLabel.text = data.rootCredits.ToString();
+            _seedLabel.text = $"seed {config?.RunSeed ?? 0}";
         }
 
         private void RefreshPlayer()
         {
-            playerPanel.Clear();
-            combatantElements.Remove(combatManager.PlayerState);
-            combatantElements[combatManager.PlayerState] = playerPanel;
-            playerPanel.Add(PanelHeader(DisplayName(runManager.CurrentConfig.Distro), "htop"));
-            ApplyAccent(playerPanel);
+            _playerPanel.Clear();
+            _combatantElements.Remove(_combatManager.PlayerState);
+            _combatantElements[_combatManager.PlayerState] = _playerPanel;
+            _playerPanel.Add(PanelHeader(DisplayName(_runManager.CurrentConfig.Distro), "htop"));
+            ApplyAccent(_playerPanel);
 
-            CombatantState state = combatManager.PlayerState;
-            DetectBeneficialResourceFeedback(state, playerPanel);
-            ApplyStatusStateClasses(playerPanel, state);
-            playerPanel.Add(MeterBlock("uptime", state.CurrentUptime, state.MaxUptime, MeterTone.Uptime));
-            playerPanel.Add(MeterBlock("shield", state.Shield, Mathf.Max(1, state.Shield), state.Shield > 0 ? MeterTone.Beneficial : MeterTone.Muted));
-            playerPanel.Add(CycleBlock(state.Cycles, state.MaxCycles));
+            CombatantState state = _combatManager.PlayerState;
+            DetectBeneficialResourceFeedback(state, _playerPanel);
+            ApplyStatusStateClasses(_playerPanel, state);
+            _playerPanel.Add(MeterBlock("uptime", state.CurrentUptime, state.MaxUptime, MeterTone.Uptime));
+            _playerPanel.Add(MeterBlock("shield", state.Shield, Mathf.Max(1, state.Shield), state.Shield > 0 ? MeterTone.Beneficial : MeterTone.Muted));
+            _playerPanel.Add(CycleBlock(state.Cycles, state.MaxCycles));
 
-            Label ram = new($"ram hand cap {combatManager.HandController.UsedRam}/{combatManager.HandController.RamCapacity}");
+            Label ram = new($"ram hand cap {_combatManager.HandController.UsedRam}/{_combatManager.HandController.RamCapacity}");
             ram.AddToClassList("ram-note");
-            playerPanel.Add(ram);
-            playerPanel.Add(StatusBlock(state, true));
+            _playerPanel.Add(ram);
+            _playerPanel.Add(StatusBlock(state, true));
         }
 
         private void RefreshTracks()
         {
-            queueChipElements.Clear();
-            stackChipElements.Clear();
-            FillCardStrip(interpreterStrip, combatManager.InterpreterQueue.Cards, "queue empty");
-            FillCardStrip(lazyStackPile, combatManager.LazyStack.Cards, "stack empty");
-            tokenArea.Clear();
-            tokenArea.Add(EmptyState("no goroutines or tokens"));
+            _queueChipElements.Clear();
+            _stackChipElements.Clear();
+            FillCardStrip(_interpreterStrip, _combatManager.InterpreterQueue.Cards, "queue empty");
+            FillCardStrip(_lazyStackPile, _combatManager.LazyStack.Cards, "stack empty");
+            _tokenArea.Clear();
+            _tokenArea.Add(EmptyState("no goroutines or tokens"));
         }
 
         private void RefreshEnemies()
         {
-            enemyRow.Clear();
-            combatantElements.Clear();
-            if (combatManager.PlayerState != null)
+            _enemyRow.Clear();
+            _combatantElements.Clear();
+            if (_combatManager.PlayerState != null)
             {
-                combatantElements[combatManager.PlayerState] = playerPanel;
+                _combatantElements[_combatManager.PlayerState] = _playerPanel;
             }
 
-            for (int i = 0; i < combatManager.Enemies.Count; i++)
+            for (int i = 0; i < _combatManager.Enemies.Count; i++)
             {
                 int index = i;
-                EnemyInstance enemy = combatManager.Enemies[i];
-                Button card = new(() => combatManager.SelectEnemy(index));
+                EnemyInstance enemy = _combatManager.Enemies[i];
+                Button card = new(() => _combatManager.SelectEnemy(index));
                 card.text = string.Empty;
                 card.AddToClassList("enemy-card");
-                bool highlighted = combatManager.PendingTargetCard != null || combatManager.SelectedEnemyIndex == index;
+                bool highlighted = _combatManager.PendingTargetCard != null || _combatManager.SelectedEnemyIndex == index;
                 if (highlighted)
                 {
                     card.AddToClassList("enemy-card-targeted");
@@ -466,7 +466,14 @@ namespace KernelPanic.UI
                 Label name = new(enemy.Name);
                 name.AddToClassList("enemy-name");
                 card.Add(name);
-                combatantElements[enemy.State] = card;
+                if (enemy.HasPendingMarker)
+                {
+                    Label marker = new(enemy.PendingRevive ? "~ reviving" : "~ revived once");
+                    marker.AddToClassList("status-label");
+                    card.Add(marker);
+                }
+
+                _combatantElements[enemy.State] = card;
                 DetectBeneficialResourceFeedback(enemy.State, card);
                 ApplyStatusStateClasses(card, enemy.State);
                 card.Add(MeterBlock("uptime", enemy.CurrentUptime, enemy.MaxUptime, MeterTone.Uptime));
@@ -478,107 +485,107 @@ namespace KernelPanic.UI
                 }
 
                 card.Add(StatusPipRow(enemy.State));
-                card.Add(IntentPanel(enemy.CurrentIntent));
-                enemyRow.Add(card);
+                card.Add(IntentPanel(enemy.DisplayIntent));
+                _enemyRow.Add(card);
             }
         }
 
         private void RefreshHand()
         {
-            handRow.Clear();
-            handCardElements.Clear();
+            _handRow.Clear();
+            _handCardElements.Clear();
             HashSet<CardInstance> currentHandCards = new();
-            IReadOnlyList<CardInstance> hand = combatManager.HandController.Cards;
+            IReadOnlyList<CardInstance> hand = _combatManager.HandController.Cards;
             for (int i = 0; i < hand.Count; i++)
             {
                 CardInstance card = hand[i];
                 currentHandCards.Add(card);
                 VisualElement face = CardFace(card);
-                handCardElements[card] = face;
-                if (!knownHandCards.Contains(card))
+                _handCardElements[card] = face;
+                if (!_knownHandCards.Contains(card))
                 {
                     PlayElementBeat(face, "hand-card-drawn", 260);
                 }
 
-                handRow.Add(face);
+                _handRow.Add(face);
             }
 
-            knownHandCards.Clear();
+            _knownHandCards.Clear();
             foreach (CardInstance card in currentHandCards)
             {
-                knownHandCards.Add(card);
+                _knownHandCards.Add(card);
             }
         }
 
         private void RefreshTurnPanel()
         {
-            turnResourceGrid.Clear();
-            CombatantState state = combatManager.PlayerState;
-            IReadOnlyList<CardInstance> hand = combatManager.HandController.Cards;
-            turnResourceGrid.Add(TurnStat("cycles", $"{state.Cycles}/{state.MaxCycles}"));
-            turnResourceGrid.Add(TurnStat("hand", $"{combatManager.HandController.UsedRam}/{combatManager.HandController.RamCapacity}"));
-            turnResourceGrid.Add(TurnStat("draw", combatManager.DeckController.DrawPile.Count.ToString()));
-            turnResourceGrid.Add(TurnStat("discard", combatManager.DeckController.DiscardPile.Count.ToString()));
-            turnResourceGrid.Add(TurnStat("exhaust", combatManager.DeckController.ExhaustPile.Count.ToString()));
+            _turnResourceGrid.Clear();
+            CombatantState state = _combatManager.PlayerState;
+            IReadOnlyList<CardInstance> hand = _combatManager.HandController.Cards;
+            _turnResourceGrid.Add(TurnStat("cycles", $"{state.Cycles}/{state.MaxCycles}"));
+            _turnResourceGrid.Add(TurnStat("hand", $"{_combatManager.HandController.UsedRam}/{_combatManager.HandController.RamCapacity}"));
+            _turnResourceGrid.Add(TurnStat("draw", _combatManager.DeckController.DrawPile.Count.ToString()));
+            _turnResourceGrid.Add(TurnStat("discard", _combatManager.DeckController.DiscardPile.Count.ToString()));
+            _turnResourceGrid.Add(TurnStat("exhaust", _combatManager.DeckController.ExhaustPile.Count.ToString()));
         }
 
         private void RefreshOverlay()
         {
-            if (overlay == null)
+            if (_overlay == null)
             {
                 return;
             }
 
-            overlay.Clear();
-            if (combatManager.RunLost)
+            _overlay.Clear();
+            if (_combatManager.RunLost)
             {
                 SettleRunRewardsIfNeeded();
-                overlay.style.display = DisplayStyle.Flex;
-                overlay.Add(OverlayTitle("kernel panic"));
-                overlay.Add(OverlayLine("fatal: player uptime reached 0"));
-                overlay.Add(OverlayLine($"wave {runManager.CurrentWaveNumber} reached  seed {runManager.CurrentConfig?.RunSeed ?? 0}"));
-                overlay.Add(OverlayLine($"waves cleared: {runManager.WavesCleared}"));
-                overlay.Add(OverlayLine($"+{runManager.AccruedBandwidth} bandwidth"));
-                overlay.Add(OverlayLine($"+{runManager.AccruedEntropy} entropy"));
-                Button returnButton = new(() => SceneLoader.LoadMainMenu(root)) { text = "> return to menu" };
+                _overlay.style.display = DisplayStyle.Flex;
+                _overlay.Add(OverlayTitle("kernel panic"));
+                _overlay.Add(OverlayLine("fatal: player uptime reached 0"));
+                _overlay.Add(OverlayLine($"wave {_runManager.CurrentWaveNumber} reached  seed {_runManager.CurrentConfig?.RunSeed ?? 0}"));
+                _overlay.Add(OverlayLine($"waves cleared: {_runManager.WavesCleared}"));
+                _overlay.Add(OverlayLine($"+{_runManager.AccruedBandwidth} bandwidth"));
+                _overlay.Add(OverlayLine($"+{_runManager.AccruedEntropy} entropy"));
+                Button returnButton = new(() => SceneLoader.LoadMainMenu(_root)) { text = "> return to menu" };
                 returnButton.AddToClassList("primary-action");
-                overlay.Add(returnButton);
+                _overlay.Add(returnButton);
                 return;
             }
 
-            if (combatManager.AwaitingWaveContinue)
+            if (_combatManager.AwaitingWaveContinue)
             {
-                if (!runManager.RepositoryVisitActive)
+                if (!_runManager.RepositoryVisitActive)
                 {
-                    runManager.GenerateRepositoryOffers(cardDatabase, languageDeckDatabase);
+                    _runManager.GenerateRepositoryOffers(cardDatabase, languageDeckDatabase);
                     return;
                 }
 
-                overlay.style.display = DisplayStyle.Flex;
-                overlay.Add(BuildRepositoryView());
+                _overlay.style.display = DisplayStyle.Flex;
+                _overlay.Add(BuildRepositoryView());
                 return;
             }
 
-            overlay.style.display = DisplayStyle.None;
+            _overlay.style.display = DisplayStyle.None;
         }
 
         private void SettleRunRewardsIfNeeded()
         {
-            if (runManager == null || saveService == null)
+            if (_runManager == null || _saveService == null)
             {
                 return;
             }
 
-            if (!runManager.TrySettleRunRewards(out int bandwidth, out int entropy))
+            if (!_runManager.TrySettleRunRewards(out int bandwidth, out int entropy))
             {
                 return;
             }
 
-            SaveData data = saveService.Load();
+            SaveData data = _saveService.Load();
             data.bandwidthBalance = Math.Max(0, data.bandwidthBalance) + bandwidth;
             data.entropyBalance = Math.Max(0, data.entropyBalance) + entropy;
-            data.RecordRunStats(runManager.CurrentConfig?.Distro?.Id, runManager.CurrentWaveNumber);
-            saveService.Save(data);
+            data.RecordRunStats(_runManager.CurrentConfig?.Distro?.Id, _runManager.CurrentWaveNumber);
+            _saveService.Save(data);
         }
 
         private VisualElement BuildRepositoryView()
@@ -592,15 +599,15 @@ namespace KernelPanic.UI
 
             VisualElement offers = new();
             offers.AddToClassList("repository-offers");
-            if (runManager.RepositoryOffers.Count == 0)
+            if (_runManager.RepositoryOffers.Count == 0)
             {
                 offers.Add(EmptyState("repository clean: no offers left this visit"));
             }
             else
             {
-                for (int i = 0; i < runManager.RepositoryOffers.Count; i++)
+                for (int i = 0; i < _runManager.RepositoryOffers.Count; i++)
                 {
-                    offers.Add(RepositoryOfferTile(runManager.RepositoryOffers[i]));
+                    offers.Add(RepositoryOfferTile(_runManager.RepositoryOffers[i]));
                 }
             }
 
@@ -610,23 +617,23 @@ namespace KernelPanic.UI
 
             VisualElement footer = new();
             footer.AddToClassList("repository-footer");
-            Button reroll = new(() => runManager.RerollRepositoryOffers(cardDatabase, languageDeckDatabase))
+            Button reroll = new(() => _runManager.RerollRepositoryOffers(cardDatabase, languageDeckDatabase))
             {
-                text = $"apt update - reroll  ({runManager.RerollCost} bits)"
+                text = $"apt update - reroll  ({_runManager.RerollCost} bits)"
             };
             reroll.AddToClassList("primary-action");
             reroll.AddToClassList("repository-footer-action");
-            reroll.EnableInClassList("repo-unaffordable", runManager.Bits < runManager.RerollCost);
-            reroll.SetEnabled(runManager.Bits >= runManager.RerollCost);
+            reroll.EnableInClassList("repo-unaffordable", _runManager.Bits < _runManager.RerollCost);
+            reroll.SetEnabled(_runManager.Bits >= _runManager.RerollCost);
             footer.Add(reroll);
 
-            Button leave = new(() => combatManager.ContinueToNextWave()) { text = "> boot next-wave" };
+            Button leave = new(() => _combatManager.ContinueToNextWave()) { text = "> boot next-wave" };
             leave.AddToClassList("primary-action");
             leave.AddToClassList("repository-leave-action");
             VisualElement leaveBlock = new();
             leaveBlock.AddToClassList("repository-leave-block");
             leaveBlock.Add(leave);
-            Label banked = new($"{runManager.Bits} bits banked");
+            Label banked = new($"{_runManager.Bits} bits banked");
             banked.AddToClassList("repository-banked-hint");
             leaveBlock.Add(banked);
             footer.Add(leaveBlock);
@@ -641,9 +648,9 @@ namespace KernelPanic.UI
 
             VisualElement copy = new();
             copy.AddToClassList("repository-header-copy");
-            Label title = new($"repository :: wave {runManager.CurrentWaveNumber - 1} cleared");
+            Label title = new($"repository :: wave {_runManager.CurrentWaveNumber - 1} cleared");
             title.AddToClassList("overlay-title");
-            Label subtitle = new($"$ apt browse    {runManager.RepositoryOffers.Count}/{CombatTuning.ShopSize} offers");
+            Label subtitle = new($"$ apt browse    {_runManager.RepositoryOffers.Count}/{CombatTuning.ShopSize} offers");
             subtitle.AddToClassList("overlay-line");
             copy.Add(title);
             copy.Add(subtitle);
@@ -652,7 +659,7 @@ namespace KernelPanic.UI
             wallet.AddToClassList("repository-wallet");
             Label walletLabel = new("bits wallet");
             walletLabel.AddToClassList("status-label");
-            Label walletValue = new($"◆ {runManager.Bits}");
+            Label walletValue = new($"◆ {_runManager.Bits}");
             walletValue.AddToClassList("repository-wallet-value");
             wallet.Add(walletLabel);
             wallet.Add(walletValue);
@@ -667,7 +674,7 @@ namespace KernelPanic.UI
             VisualElement tile = new();
             tile.AddToClassList("repository-tile");
             tile.AddToClassList(OfferTileClass(offer.Kind));
-            bool unavailable = offer.Sold || runManager.Bits < offer.Price;
+            bool unavailable = offer.Sold || _runManager.Bits < offer.Price;
             tile.EnableInClassList("repo-unaffordable", unavailable);
             tile.EnableInClassList("repo-sold", offer.Sold);
 
@@ -688,12 +695,12 @@ namespace KernelPanic.UI
             };
             tile.Add(content);
 
-            Button buy = new(() => runManager.BuyOffer(offer, combatManager.PlayerState))
+            Button buy = new(() => _runManager.BuyOffer(offer, _combatManager.PlayerState))
             {
                 text = offer.Sold ? "installed" : OfferCommandText(offer)
             };
             buy.AddToClassList("repository-action");
-            buy.SetEnabled(!offer.Sold && runManager.Bits >= offer.Price);
+            buy.SetEnabled(!offer.Sold && _runManager.Bits >= offer.Price);
             tile.Add(buy);
             return tile;
         }
@@ -784,16 +791,16 @@ namespace KernelPanic.UI
 
             VisualElement rows = new();
             rows.AddToClassList("repository-remove-list");
-            for (int i = 0; i < runManager.RunDeck.Count; i++)
+            for (int i = 0; i < _runManager.RunDeck.Count; i++)
             {
-                CardInstance card = runManager.RunDeck[i];
-                Button remove = new(() => runManager.RemoveCard(card))
+                CardInstance card = _runManager.RunDeck[i];
+                Button remove = new(() => _runManager.RemoveCard(card))
                 {
                     text = $"apt remove {DisplayName(card.Definition)}"
                 };
                 remove.AddToClassList("repo-remove-button");
-                remove.EnableInClassList("repo-unaffordable", runManager.Bits < CombatTuning.RemoveCardCost || runManager.RunDeck.Count <= 1);
-                remove.SetEnabled(runManager.Bits >= CombatTuning.RemoveCardCost && runManager.RunDeck.Count > 1);
+                remove.EnableInClassList("repo-unaffordable", _runManager.Bits < CombatTuning.RemoveCardCost || _runManager.RunDeck.Count <= 1);
+                remove.SetEnabled(_runManager.Bits >= CombatTuning.RemoveCardCost && _runManager.RunDeck.Count > 1);
                 rows.Add(remove);
             }
 
@@ -806,12 +813,12 @@ namespace KernelPanic.UI
             Button button = new(() => PlayCardWithFeedback(card));
             button.text = string.Empty;
             button.AddToClassList("hand-card");
-            if (combatManager.PendingTargetCard == card)
+            if (_combatManager.PendingTargetCard == card)
             {
                 button.AddToClassList("hand-card-selected");
             }
 
-            if (GetDisplayCardCost(card) > combatManager.PlayerState.Cycles)
+            if (GetDisplayCardCost(card) > _combatManager.PlayerState.Cycles)
             {
                 button.AddToClassList("hand-card-unaffordable");
             }
@@ -867,7 +874,7 @@ namespace KernelPanic.UI
 
             Label label = new("intent");
             label.AddToClassList("intent-label");
-            Label value = new($"{IntentIcon(intent.Kind)} {intent.ValueText}");
+            Label value = new($"{IntentIcon(intent)} {intent.ValueText}");
             value.AddToClassList("intent-value");
             value.AddToClassList(className);
             Label detail = new(IntentText(intent));
@@ -995,13 +1002,13 @@ namespace KernelPanic.UI
             for (int i = 0; i < cards.Count; i++)
             {
                 VisualElement chip = CardChip(cards[i]);
-                if (target == interpreterStrip)
+                if (target == _interpreterStrip)
                 {
-                    queueChipElements[cards[i]] = chip;
+                    _queueChipElements[cards[i]] = chip;
                 }
-                else if (target == lazyStackPile)
+                else if (target == _lazyStackPile)
                 {
-                    stackChipElements[cards[i]] = chip;
+                    _stackChipElements[cards[i]] = chip;
                 }
 
                 target.Add(chip);
@@ -1010,20 +1017,20 @@ namespace KernelPanic.UI
 
         private bool PlayCardWithFeedback(CardInstance card)
         {
-            int cyclesBefore = combatManager.PlayerState == null ? 0 : combatManager.PlayerState.Cycles;
-            bool played = combatManager.PlayCard(card);
+            int cyclesBefore = _combatManager.PlayerState == null ? 0 : _combatManager.PlayerState.Cycles;
+            bool played = _combatManager.PlayCard(card);
             if (played)
             {
-                int spent = Mathf.Max(0, cyclesBefore - (combatManager.PlayerState == null ? cyclesBefore : combatManager.PlayerState.Cycles));
+                int spent = Mathf.Max(0, cyclesBefore - (_combatManager.PlayerState == null ? cyclesBefore : _combatManager.PlayerState.Cycles));
                 if (spent > 0)
                 {
-                    PlayElementBeat(turnResourceGrid, "cycles-spent-beat", 220);
+                    PlayElementBeat(_turnResourceGrid, "cycles-spent-beat", 220);
                 }
 
                 return true;
             }
 
-            if (combatManager.PendingTargetCard != card && handCardElements.TryGetValue(card, out VisualElement face))
+            if (_combatManager.PendingTargetCard != card && _handCardElements.TryGetValue(card, out VisualElement face))
             {
                 PlayElementBeat(face, "feedback-denied", 220);
             }
@@ -1038,11 +1045,11 @@ namespace KernelPanic.UI
                 return;
             }
 
-            VisualElement source = handCardElements.TryGetValue(payload.Card, out VisualElement cardElement) ? cardElement : null;
+            VisualElement source = _handCardElements.TryGetValue(payload.Card, out VisualElement cardElement) ? cardElement : null;
             VisualElement destination = payload.Track switch
             {
-                ResolutionTrack.InterpreterQueue => interpreterStrip,
-                ResolutionTrack.LazyStack => lazyStackPile,
+                ResolutionTrack.InterpreterQueue => _interpreterStrip,
+                ResolutionTrack.LazyStack => _lazyStackPile,
                 _ => FirstTargetElement(payload.Card)
             };
 
@@ -1058,22 +1065,22 @@ namespace KernelPanic.UI
 
             if (payload.Track == ResolutionTrack.InterpreterQueue)
             {
-                int delay = UIPreferences.ReducedMotion ? 0 : Mathf.Min(queueCascadeIndex * 120, 600);
-                queueCascadeIndex++;
+                int delay = UIPreferences.ReducedMotion ? 0 : Mathf.Min(_queueCascadeIndex * 120, 600);
+                _queueCascadeIndex++;
                 ScheduleFeedback(() =>
                 {
-                    VisualElement chip = queueChipElements.TryGetValue(payload.Card, out VisualElement queuedChip) ? queuedChip : interpreterStrip;
+                    VisualElement chip = _queueChipElements.TryGetValue(payload.Card, out VisualElement queuedChip) ? queuedChip : _interpreterStrip;
                     PlayElementBeat(chip, "queue-chip-resolve", 260);
-                    FlyCardGhost(payload.Card, chip, turnResourceGrid, "feedback-card-discard");
+                    FlyCardGhost(payload.Card, chip, _turnResourceGrid, "feedback-card-discard");
                 }, delay);
                 return;
             }
 
             if (payload.Track == ResolutionTrack.LazyStack)
             {
-                VisualElement chip = stackChipElements.TryGetValue(payload.Card, out VisualElement stackChip) ? stackChip : lazyStackPile;
+                VisualElement chip = _stackChipElements.TryGetValue(payload.Card, out VisualElement stackChip) ? stackChip : _lazyStackPile;
                 PlayElementBeat(chip, "stack-chip-resolve", 320);
-                FlyCardGhost(payload.Card, chip, turnResourceGrid, "feedback-card-discard");
+                FlyCardGhost(payload.Card, chip, _turnResourceGrid, "feedback-card-discard");
             }
         }
 
@@ -1081,16 +1088,16 @@ namespace KernelPanic.UI
         {
             if (payload.NextPhase == TurnPhase.Interpret)
             {
-                queueCascadeIndex = 0;
+                _queueCascadeIndex = 0;
             }
 
-            feedbackCascadeIndex = 0;
-            ScheduleFeedback(() => PlayElementBeat(phaseLabel, "phase-pulse", 260), 0);
+            _feedbackCascadeIndex = 0;
+            ScheduleFeedback(() => PlayElementBeat(_phaseLabel, "phase-pulse", 260), 0);
         }
 
         private void HandleDamageDealt(DamageDealtEvent payload)
         {
-            bool isPlayer = payload.Target == combatManager.PlayerState;
+            bool isPlayer = payload.Target == _combatManager.PlayerState;
             VisualElement target = CombatantElement(payload.Target);
             ScheduleCombatBeat(beatIndex =>
             {
@@ -1122,7 +1129,7 @@ namespace KernelPanic.UI
             {
                 SpawnFloatingText(target, "killed", "float-kill float-large", 0);
                 SpawnDeathGhost(targetBounds);
-                if (target != enemyRow)
+                if (target != _enemyRow)
                 {
                     PlayElementBeat(target, "feedback-killed", 420);
                 }
@@ -1168,37 +1175,37 @@ namespace KernelPanic.UI
                 return;
             }
 
-            if (previousUptime.TryGetValue(state, out int oldUptime) && state.CurrentUptime > oldUptime)
+            if (_previousUptime.TryGetValue(state, out int oldUptime) && state.CurrentUptime > oldUptime)
             {
                 SpawnFloatingText(element, $"+{state.CurrentUptime - oldUptime}", "float-heal");
                 PlayElementBeat(element, "feedback-boost", 220);
             }
 
-            if (previousShield.TryGetValue(state, out int oldShield) && state.Shield > oldShield)
+            if (_previousShield.TryGetValue(state, out int oldShield) && state.Shield > oldShield)
             {
                 SpawnFloatingText(element, $"+{state.Shield - oldShield} shield", "float-heal");
                 PlayElementBeat(element, "feedback-block", 220);
             }
 
-            previousUptime[state] = state.CurrentUptime;
-            previousShield[state] = state.Shield;
+            _previousUptime[state] = state.CurrentUptime;
+            _previousShield[state] = state.Shield;
         }
 
         private VisualElement CombatantElement(CombatantState state)
         {
-            if (state != null && combatantElements.TryGetValue(state, out VisualElement element))
+            if (state != null && _combatantElements.TryGetValue(state, out VisualElement element))
             {
                 return element;
             }
 
-            return state == combatManager.PlayerState ? playerPanel : enemyRow;
+            return state == _combatManager.PlayerState ? _playerPanel : _enemyRow;
         }
 
         private VisualElement FirstTargetElement(CardInstance card)
         {
             if (card?.TargetSnapshot == null)
             {
-                return enemyRow;
+                return _enemyRow;
             }
 
             for (int i = 0; i < card.TargetSnapshot.Count; i++)
@@ -1210,7 +1217,7 @@ namespace KernelPanic.UI
                 }
             }
 
-            return enemyRow;
+            return _enemyRow;
         }
 
         private void PlayElementBeat(VisualElement element, string className, int durationMs)
@@ -1220,12 +1227,12 @@ namespace KernelPanic.UI
                 return;
             }
 
-            int version = ++feedbackBeatVersion;
-            feedbackBeatVersions[element] = version;
+            int version = ++_feedbackBeatVersion;
+            _feedbackBeatVersions[element] = version;
             RemoveFeedbackBeatClasses(element);
             ScheduleFeedback(() =>
             {
-                if (!feedbackBeatVersions.TryGetValue(element, out int currentVersion) || currentVersion != version)
+                if (!_feedbackBeatVersions.TryGetValue(element, out int currentVersion) || currentVersion != version)
                 {
                     return;
                 }
@@ -1233,26 +1240,26 @@ namespace KernelPanic.UI
                 element.AddToClassList(className);
                 ScheduleFeedback(() =>
                 {
-                    if (!feedbackBeatVersions.TryGetValue(element, out int removeVersion) || removeVersion != version)
+                    if (!_feedbackBeatVersions.TryGetValue(element, out int removeVersion) || removeVersion != version)
                     {
                         return;
                     }
 
                     element.RemoveFromClassList(className);
-                    feedbackBeatVersions.Remove(element);
+                    _feedbackBeatVersions.Remove(element);
                 }, UIPreferences.ReducedMotion ? 80 : durationMs);
             }, 0);
         }
 
         private void SpawnFloatingText(VisualElement anchor, string text, string className, int cascadeOffset = 0)
         {
-            if (feedbackLayer == null || anchor == null)
+            if (_feedbackLayer == null || anchor == null)
             {
                 return;
             }
 
             Rect anchorRect = anchor.worldBound;
-            Rect rootRect = root.worldBound;
+            Rect rootRect = _root.worldBound;
             Label label = new(text);
             label.AddToClassList("float-number");
             if (!string.IsNullOrWhiteSpace(className))
@@ -1271,7 +1278,7 @@ namespace KernelPanic.UI
             float offsetY = ((cascadeOffset % 3) * 5f);
             label.style.left = anchorRect.center.x - rootRect.x - 30f + offsetX;
             label.style.top = anchorRect.center.y - rootRect.y - 16f + offsetY;
-            feedbackLayer.Add(label);
+            _feedbackLayer.Add(label);
 
             if (UIPreferences.ReducedMotion)
             {
@@ -1290,13 +1297,13 @@ namespace KernelPanic.UI
 
         private void SpawnImpactMarker(VisualElement anchor, bool critical, bool mitigated, int cascadeOffset)
         {
-            if (feedbackLayer == null || anchor == null)
+            if (_feedbackLayer == null || anchor == null)
             {
                 return;
             }
 
             Rect anchorRect = anchor.worldBound;
-            Rect rootRect = root.worldBound;
+            Rect rootRect = _root.worldBound;
             Label marker = new(critical ? "crit" : mitigated ? "clang" : "hit");
             marker.AddToClassList("impact-marker");
             marker.AddToClassList(critical ? "impact-marker-crit" : mitigated ? "impact-marker-clang" : "impact-marker-hit");
@@ -1304,7 +1311,7 @@ namespace KernelPanic.UI
             float lane = (cascadeOffset % 4) * 18f;
             marker.style.left = anchorRect.xMax - rootRect.x - 54f;
             marker.style.top = anchorRect.y - rootRect.y + 8f + lane;
-            feedbackLayer.Add(marker);
+            _feedbackLayer.Add(marker);
 
             if (UIPreferences.ReducedMotion)
             {
@@ -1322,12 +1329,12 @@ namespace KernelPanic.UI
 
         private void FlyCardGhost(CardInstance card, VisualElement source, VisualElement destination, string className)
         {
-            if (feedbackLayer == null || card == null)
+            if (_feedbackLayer == null || card == null)
             {
                 return;
             }
 
-            Rect rootRect = root.worldBound;
+            Rect rootRect = _root.worldBound;
             Rect sourceRect = source == null ? new Rect(rootRect.center.x - 70f, rootRect.center.y - 50f, 140f, 110f) : source.worldBound;
             Rect destinationRect = destination == null ? sourceRect : destination.worldBound;
 
@@ -1339,7 +1346,7 @@ namespace KernelPanic.UI
             ghost.style.top = sourceRect.y - rootRect.y;
             ghost.style.width = Mathf.Max(110f, sourceRect.width);
             ghost.style.height = Mathf.Max(94f, sourceRect.height);
-            feedbackLayer.Add(ghost);
+            _feedbackLayer.Add(ghost);
 
             if (UIPreferences.ReducedMotion)
             {
@@ -1359,12 +1366,12 @@ namespace KernelPanic.UI
 
         private void SpawnDeathGhost(Rect sourceRect)
         {
-            if (feedbackLayer == null || sourceRect.width <= 0f || sourceRect.height <= 0f)
+            if (_feedbackLayer == null || sourceRect.width <= 0f || sourceRect.height <= 0f)
             {
                 return;
             }
 
-            Rect rootRect = root.worldBound;
+            Rect rootRect = _root.worldBound;
             float ghostWidth = Mathf.Min(sourceRect.width, 156f);
             float ghostHeight = Mathf.Min(sourceRect.height, 132f);
             VisualElement ghost = new();
@@ -1374,7 +1381,7 @@ namespace KernelPanic.UI
             ghost.style.top = sourceRect.center.y - rootRect.y - (ghostHeight * 0.5f);
             ghost.style.width = ghostWidth;
             ghost.style.height = ghostHeight;
-            feedbackLayer.Add(ghost);
+            _feedbackLayer.Add(ghost);
 
             if (UIPreferences.ReducedMotion)
             {
@@ -1392,12 +1399,12 @@ namespace KernelPanic.UI
 
         private void FlashDamageVignette(bool critical)
         {
-            if (damageVignette == null)
+            if (_damageVignette == null)
             {
                 return;
             }
 
-            PlayElementBeat(damageVignette, critical ? "damage-vignette-crit" : "damage-vignette-on", UIPreferences.ReducedMotion ? 120 : critical ? 320 : 240);
+            PlayElementBeat(_damageVignette, critical ? "damage-vignette-crit" : "damage-vignette-on", UIPreferences.ReducedMotion ? 120 : critical ? 320 : 240);
         }
 
         private static void RemoveFeedbackBeatClasses(VisualElement element)
@@ -1433,19 +1440,19 @@ namespace KernelPanic.UI
                 return;
             }
 
-            int beatIndex = feedbackCascadeIndex++;
+            int beatIndex = _feedbackCascadeIndex++;
             int delay = UIPreferences.ReducedMotion ? 0 : Mathf.Min(beatIndex * 120, 840);
             ScheduleFeedback(() => action(beatIndex), delay + (UIPreferences.ReducedMotion ? 0 : holdMs));
         }
 
         private void ScheduleFeedback(Action action, int delayMs)
         {
-            if (action == null || root == null)
+            if (action == null || _root == null)
             {
                 return;
             }
 
-            root.schedule.Execute(action).StartingIn(Mathf.Max(0, delayMs));
+            _root.schedule.Execute(action).StartingIn(Mathf.Max(0, delayMs));
         }
 
         private static void ApplyStatusStateClasses(VisualElement element, CombatantState state)
@@ -1491,9 +1498,9 @@ namespace KernelPanic.UI
 
         private void HandleCombatLog(string message)
         {
-            if (logLabel != null)
+            if (_logLabel != null)
             {
-                logLabel.text = message ?? string.Empty;
+                _logLabel.text = message ?? string.Empty;
             }
         }
 
@@ -1520,7 +1527,7 @@ namespace KernelPanic.UI
 
         private int GetDisplayCardCost(CardInstance card)
         {
-            return combatManager == null ? CombatManager.GetCardCost(card) : combatManager.GetEffectiveCardCost(card);
+            return _combatManager == null ? CombatManager.GetCardCost(card) : _combatManager.GetEffectiveCardCost(card);
         }
 
         private static VisualElement CreatePanel(string title, string subtitle, float width)
@@ -1552,7 +1559,7 @@ namespace KernelPanic.UI
 
         private void ApplyAccent(VisualElement element)
         {
-            element.style.borderTopColor = distroAccent;
+            element.style.borderTopColor = _distroAccent;
         }
 
         private static VisualElement TurnStat(string labelText, string valueText)
@@ -1652,9 +1659,14 @@ namespace KernelPanic.UI
             };
         }
 
-        private static string IntentIcon(EnemyIntentKind kind)
+        private static string IntentIcon(EnemyIntent intent)
         {
-            return kind switch
+            if (!string.IsNullOrWhiteSpace(intent.IconKey))
+            {
+                return intent.IconKey;
+            }
+
+            return intent.Kind switch
             {
                 EnemyIntentKind.Attack => "!",
                 EnemyIntentKind.StatusAttack => "!",
@@ -1673,7 +1685,7 @@ namespace KernelPanic.UI
                 EnemyIntentKind.StatusAttack => $"{intent.DisplayLabel} x{intent.StatusStacks}",
                 EnemyIntentKind.Defend => "defend",
                 EnemyIntentKind.Buff => "buff",
-                EnemyIntentKind.Special => "special",
+                EnemyIntentKind.Special => intent.DisplayLabel,
                 _ => intent.DisplayLabel
             };
         }

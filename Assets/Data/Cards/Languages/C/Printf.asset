@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: lang_c_printf
   displayName: printf()
-  description: deal 4.
+  description: deal 4. 20% segfault: uptime -3.
   flavorText: debugging by yelling into the void.
   language: 0
   rarity: 0

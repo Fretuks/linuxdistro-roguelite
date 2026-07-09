@@ -28,8 +28,8 @@ namespace KernelPanic.UI
             "Courier New"
         };
 
-        private static FontAsset runtimeMonospaceFont;
-        private static bool warnedMissingFont;
+        private static FontAsset _runtimeMonospaceFont;
+        private static bool _warnedMissingFont;
 
         public static FontAsset Resolve(FontAsset configuredFont)
         {
@@ -38,25 +38,25 @@ namespace KernelPanic.UI
                 return configuredFont;
             }
 
-            if (runtimeMonospaceFont != null)
+            if (_runtimeMonospaceFont != null)
             {
-                return runtimeMonospaceFont;
+                return _runtimeMonospaceFont;
             }
 
             Font dynamicFont = Font.CreateDynamicFontFromOSFont(PreferredMonospaceFontFamilies, 16);
             if (dynamicFont == null)
             {
-                if (!warnedMissingFont)
+                if (!_warnedMissingFont)
                 {
                     Debug.LogWarning("No monospace OS font found; terminal UI will use Unity's default font.");
-                    warnedMissingFont = true;
+                    _warnedMissingFont = true;
                 }
 
                 return null;
             }
 
-            runtimeMonospaceFont = FontAsset.CreateFontAsset(dynamicFont);
-            return runtimeMonospaceFont;
+            _runtimeMonospaceFont = FontAsset.CreateFontAsset(dynamicFont);
+            return _runtimeMonospaceFont;
         }
     }
 
@@ -667,7 +667,7 @@ namespace KernelPanic.UI
             _saveData = _saveService.Load();
             // Snapshot before the next EnsureLists() call below, which re-runs NormalizeOwnedPackages
             // and would otherwise clear this (no new duplicates survive a second normalization pass).
-            List<CollapsedPackageDuplicate> collapsedPackageDuplicates = new(_saveData.collapsedPackageDuplicates);
+            List<CollapsedPackageDuplicate> collapsedPackageDuplicates = new(_saveData.CollapsedPackageDuplicates);
             _saveData.EnsureLists();
             _wallet.SetBalance(_saveData.entropyBalance);
 

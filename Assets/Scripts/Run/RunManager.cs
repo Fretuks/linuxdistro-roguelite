@@ -18,39 +18,39 @@ namespace KernelPanic.Run
         [SerializeField] private bool isRunActive;
         [SerializeField] private bool isPlayerDead;
 
-        private readonly List<CardInstance> runDeck = new();
-        private readonly List<RepositoryOffer> repositoryOffers = new();
-        private readonly HashSet<string> soldOfferKeys = new(StringComparer.OrdinalIgnoreCase);
-        private int bits;
-        private int rerollsThisVisit;
-        private int maxUptimeBonus;
-        private int maxCyclesBonus;
-        private int ramBonus;
-        private int packageMaxUptimeBonus;
-        private int packageMaxCyclesBonus;
-        private int packageRamBonus;
-        private int wavesCleared;
-        private int accruedBandwidth;
-        private int accruedEntropy;
-        private bool repositoryVisitActive;
-        private bool rewardsSettled;
+        private readonly List<CardInstance> _runDeck = new();
+        private readonly List<RepositoryOffer> _repositoryOffers = new();
+        private readonly HashSet<string> _soldOfferKeys = new(StringComparer.OrdinalIgnoreCase);
+        private int _bits;
+        private int _rerollsThisVisit;
+        private int _maxUptimeBonus;
+        private int _maxCyclesBonus;
+        private int _ramBonus;
+        private int _packageMaxUptimeBonus;
+        private int _packageMaxCyclesBonus;
+        private int _packageRamBonus;
+        private int _wavesCleared;
+        private int _accruedBandwidth;
+        private int _accruedEntropy;
+        private bool _repositoryVisitActive;
+        private bool _rewardsSettled;
 
         public int CurrentWaveNumber => currentWaveNumber;
         public bool IsRunActive => isRunActive;
         public bool IsPlayerDead => isPlayerDead;
         public RunConfig CurrentConfig { get; private set; }
-        public IReadOnlyList<CardInstance> RunDeck => runDeck;
-        public IReadOnlyList<RepositoryOffer> RepositoryOffers => repositoryOffers;
-        public bool RepositoryVisitActive => repositoryVisitActive;
-        public int Bits => bits;
-        public int RerollCost => CombatTuning.RerollBaseCost + (rerollsThisVisit * CombatTuning.RerollCostStep);
-        public int MaxUptimeBonus => maxUptimeBonus;
-        public int MaxCyclesBonus => maxCyclesBonus;
-        public int RamBonus => ramBonus;
-        public int WavesCleared => wavesCleared;
-        public int AccruedBandwidth => accruedBandwidth;
-        public int AccruedEntropy => accruedEntropy;
-        public bool RewardsSettled => rewardsSettled;
+        public IReadOnlyList<CardInstance> RunDeck => _runDeck;
+        public IReadOnlyList<RepositoryOffer> RepositoryOffers => _repositoryOffers;
+        public bool RepositoryVisitActive => _repositoryVisitActive;
+        public int Bits => _bits;
+        public int RerollCost => CombatTuning.RerollBaseCost + (_rerollsThisVisit * CombatTuning.RerollCostStep);
+        public int MaxUptimeBonus => _maxUptimeBonus;
+        public int MaxCyclesBonus => _maxCyclesBonus;
+        public int RamBonus => _ramBonus;
+        public int WavesCleared => _wavesCleared;
+        public int AccruedBandwidth => _accruedBandwidth;
+        public int AccruedEntropy => _accruedEntropy;
+        public bool RewardsSettled => _rewardsSettled;
 
         public event Action RepositoryChanged;
 
@@ -72,18 +72,18 @@ namespace KernelPanic.Run
             isRunActive = true;
             isPlayerDead = false;
             currentWaveNumber = 1;
-            bits = 0;
-            rerollsThisVisit = 0;
-            maxUptimeBonus = 0;
-            maxCyclesBonus = 0;
-            ramBonus = 0;
-            packageMaxUptimeBonus = 0;
-            packageMaxCyclesBonus = 0;
-            packageRamBonus = 0;
-            wavesCleared = 0;
-            accruedBandwidth = 0;
-            accruedEntropy = 0;
-            rewardsSettled = false;
+            _bits = 0;
+            _rerollsThisVisit = 0;
+            _maxUptimeBonus = 0;
+            _maxCyclesBonus = 0;
+            _ramBonus = 0;
+            _packageMaxUptimeBonus = 0;
+            _packageMaxCyclesBonus = 0;
+            _packageRamBonus = 0;
+            _wavesCleared = 0;
+            _accruedBandwidth = 0;
+            _accruedEntropy = 0;
+            _rewardsSettled = false;
             ApplyKernelPackageBonuses(config);
             InitializeRunDeck(config);
             StartCombat();
@@ -101,40 +101,40 @@ namespace KernelPanic.Run
                 return;
             }
 
-            bits += amount;
+            _bits += amount;
             RepositoryChanged?.Invoke();
         }
 
         public void GenerateRepositoryOffers(CardDatabase cardDatabase, LanguageDeckDatabase languageDeckDatabase)
         {
-            repositoryOffers.Clear();
-            rerollsThisVisit = 0;
-            soldOfferKeys.Clear();
+            _repositoryOffers.Clear();
+            _rerollsThisVisit = 0;
+            _soldOfferKeys.Clear();
             FillRepositoryOffers(cardDatabase, languageDeckDatabase);
-            repositoryVisitActive = true;
+            _repositoryVisitActive = true;
             RepositoryChanged?.Invoke();
         }
 
         public bool RerollRepositoryOffers(CardDatabase cardDatabase, LanguageDeckDatabase languageDeckDatabase)
         {
             int cost = RerollCost;
-            if (bits < cost)
+            if (_bits < cost)
             {
                 return false;
             }
 
-            bits -= cost;
-            rerollsThisVisit++;
-            repositoryOffers.Clear();
+            _bits -= cost;
+            _rerollsThisVisit++;
+            _repositoryOffers.Clear();
             FillRepositoryOffers(cardDatabase, languageDeckDatabase);
-            repositoryVisitActive = true;
+            _repositoryVisitActive = true;
             RepositoryChanged?.Invoke();
             return true;
         }
 
         public bool BuyOffer(RepositoryOffer offer, CombatantState playerState)
         {
-            if (offer == null || offer.Sold || bits < offer.Price)
+            if (offer == null || offer.Sold || _bits < offer.Price)
             {
                 return false;
             }
@@ -152,43 +152,43 @@ namespace KernelPanic.Run
                 return false;
             }
 
-            bits -= offer.Price;
+            _bits -= offer.Price;
             offer.MarkSold();
-            soldOfferKeys.Add(OfferKey(offer));
+            _soldOfferKeys.Add(OfferKey(offer));
             RepositoryChanged?.Invoke();
             return true;
         }
 
         public bool RemoveCard(CardInstance card)
         {
-            if (card == null || bits < CombatTuning.RemoveCardCost || runDeck.Count <= 1)
+            if (card == null || _bits < CombatTuning.RemoveCardCost || _runDeck.Count <= 1)
             {
                 return false;
             }
 
-            if (!runDeck.Remove(card))
+            if (!_runDeck.Remove(card))
             {
                 return false;
             }
 
-            bits -= CombatTuning.RemoveCardCost;
+            _bits -= CombatTuning.RemoveCardCost;
             RepositoryChanged?.Invoke();
             return true;
         }
 
         public int EffectiveMaxUptime()
         {
-            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseUptime ?? 1) + maxUptimeBonus + packageMaxUptimeBonus);
+            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseUptime ?? 1) + _maxUptimeBonus + _packageMaxUptimeBonus);
         }
 
         public int EffectiveRam()
         {
-            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseRam ?? 1) + ramBonus + packageRamBonus);
+            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseRam ?? 1) + _ramBonus + _packageRamBonus);
         }
 
         public int EffectiveMaxCycles()
         {
-            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseCyclesPerTurn ?? 1) + maxCyclesBonus + packageMaxCyclesBonus);
+            return Mathf.Max(1, (CurrentConfig?.Distro?.BaseCyclesPerTurn ?? 1) + _maxCyclesBonus + _packageMaxCyclesBonus);
         }
 
         public static PackageStatImpact CalculatePackageStatImpact(DistroDefinition distro, IReadOnlyList<PackageInstance> packages)
@@ -232,35 +232,35 @@ namespace KernelPanic.Run
         private void ApplyKernelPackageBonuses(RunConfig config)
         {
             PackageStatImpact impact = CalculatePackageStatImpact(config?.Distro, config?.EquippedPackages);
-            packageMaxUptimeBonus = impact.UptimeBonus;
-            packageMaxCyclesBonus = impact.CyclesBonus;
-            packageRamBonus = impact.RamBonus;
+            _packageMaxUptimeBonus = impact.UptimeBonus;
+            _packageMaxCyclesBonus = impact.CyclesBonus;
+            _packageRamBonus = impact.RamBonus;
         }
 
         public bool TrySettleRunRewards(out int bandwidth, out int entropy)
         {
-            bandwidth = accruedBandwidth;
-            entropy = accruedEntropy;
-            if (rewardsSettled)
+            bandwidth = _accruedBandwidth;
+            entropy = _accruedEntropy;
+            if (_rewardsSettled)
             {
                 return false;
             }
 
-            rewardsSettled = true;
+            _rewardsSettled = true;
             return bandwidth > 0 || entropy > 0;
         }
 
         private void HandleWaveCleared(WaveClearedEvent payload)
         {
             int clearedWave = Mathf.Max(1, payload.WaveNumber);
-            wavesCleared = Mathf.Max(wavesCleared, clearedWave);
-            accruedBandwidth += CalculateBandwidthReward(clearedWave);
-            accruedEntropy += CalculateEntropyReward(clearedWave);
+            _wavesCleared = Mathf.Max(_wavesCleared, clearedWave);
+            _accruedBandwidth += CalculateBandwidthReward(clearedWave);
+            _accruedEntropy += CalculateEntropyReward(clearedWave);
             currentWaveNumber = Mathf.Max(currentWaveNumber + 1, payload.WaveNumber + 1);
-            repositoryOffers.Clear();
-            rerollsThisVisit = 0;
-            soldOfferKeys.Clear();
-            repositoryVisitActive = false;
+            _repositoryOffers.Clear();
+            _rerollsThisVisit = 0;
+            _soldOfferKeys.Clear();
+            _repositoryVisitActive = false;
             GameEvents.RaiseWaveAdvanced(new WaveAdvancedEvent(currentWaveNumber));
         }
 
@@ -268,13 +268,13 @@ namespace KernelPanic.Run
         {
             isRunActive = false;
             isPlayerDead = payload.PlayerDied;
-            bits = 0;
-            repositoryOffers.Clear();
-            repositoryVisitActive = false;
-            runDeck.Clear();
-            maxUptimeBonus = 0;
-            maxCyclesBonus = 0;
-            ramBonus = 0;
+            _bits = 0;
+            _repositoryOffers.Clear();
+            _repositoryVisitActive = false;
+            _runDeck.Clear();
+            _maxUptimeBonus = 0;
+            _maxCyclesBonus = 0;
+            _ramBonus = 0;
             RepositoryChanged?.Invoke();
         }
 
@@ -291,7 +291,7 @@ namespace KernelPanic.Run
 
         private void InitializeRunDeck(RunConfig config)
         {
-            runDeck.Clear();
+            _runDeck.Clear();
             if (config?.StartingDeck == null)
             {
                 return;
@@ -302,7 +302,7 @@ namespace KernelPanic.Run
                 CardDefinition definition = config.StartingDeck[i];
                 if (definition != null && !definition.IsRunOnly)
                 {
-                    runDeck.Add(new CardInstance(definition));
+                    _runDeck.Add(new CardInstance(definition));
                 }
             }
         }
@@ -310,16 +310,16 @@ namespace KernelPanic.Run
         private void FillRepositoryOffers(CardDatabase cardDatabase, LanguageDeckDatabase languageDeckDatabase)
         {
             int guard = 0;
-            while (repositoryOffers.Count < CombatTuning.ShopSize && guard < 80)
+            while (_repositoryOffers.Count < CombatTuning.ShopSize && guard < 80)
             {
                 guard++;
                 RepositoryOffer offer = CreateRandomOffer(cardDatabase, languageDeckDatabase);
-                if (offer == null || soldOfferKeys.Contains(OfferKey(offer)) || repositoryOffers.Any(existing => IsDuplicateOffer(existing, offer)))
+                if (offer == null || _soldOfferKeys.Contains(OfferKey(offer)) || _repositoryOffers.Any(existing => IsDuplicateOffer(existing, offer)))
                 {
                     continue;
                 }
 
-                repositoryOffers.Add(offer);
+                _repositoryOffers.Add(offer);
             }
         }
 
@@ -353,7 +353,7 @@ namespace KernelPanic.Run
 
         private RepositoryOffer CreateUpgradeOffer()
         {
-            List<CardInstance> candidates = runDeck.Where(card => card != null && card.CanReceiveRepositoryUpgrade).ToList();
+            List<CardInstance> candidates = _runDeck.Where(card => card != null && card.CanReceiveRepositoryUpgrade).ToList();
             if (candidates.Count == 0)
             {
                 return CreateStatOffer();
@@ -463,7 +463,7 @@ namespace KernelPanic.Run
                 return false;
             }
 
-            runDeck.Add(new CardInstance(card));
+            _runDeck.Add(new CardInstance(card));
             return true;
         }
 
@@ -488,7 +488,7 @@ namespace KernelPanic.Run
             switch (kind)
             {
                 case RunStatUpgradeKind.MaxCycles:
-                    maxCyclesBonus += CombatTuning.StatUpgradeMaxCycles;
+                    _maxCyclesBonus += CombatTuning.StatUpgradeMaxCycles;
                     if (playerState != null)
                     {
                         playerState.MaxCycles += CombatTuning.StatUpgradeMaxCycles;
@@ -496,7 +496,7 @@ namespace KernelPanic.Run
                     }
                     return true;
                 case RunStatUpgradeKind.MaxUptime:
-                    maxUptimeBonus += CombatTuning.StatUpgradeMaxUptime;
+                    _maxUptimeBonus += CombatTuning.StatUpgradeMaxUptime;
                     if (playerState != null)
                     {
                         playerState.MaxUptime += CombatTuning.StatUpgradeMaxUptime;
@@ -511,7 +511,7 @@ namespace KernelPanic.Run
                     playerState.CurrentUptime = Mathf.Min(playerState.MaxUptime, playerState.CurrentUptime + CombatTuning.StatUpgradeHeal);
                     return true;
                 case RunStatUpgradeKind.Ram:
-                    ramBonus += CombatTuning.StatUpgradeRam;
+                    _ramBonus += CombatTuning.StatUpgradeRam;
                     if (playerState != null)
                     {
                         playerState.Ram += CombatTuning.StatUpgradeRam;
@@ -525,9 +525,9 @@ namespace KernelPanic.Run
 
     public struct PackageStatImpact
     {
-        private readonly List<string> uptimeSources;
-        private readonly List<string> ramSources;
-        private readonly List<string> cyclesSources;
+        private readonly List<string> _uptimeSources;
+        private readonly List<string> _ramSources;
+        private readonly List<string> _cyclesSources;
 
         public PackageStatImpact(int baseUptime, int baseRam, int baseCycles)
         {
@@ -537,9 +537,9 @@ namespace KernelPanic.Run
             UptimeBonus = 0;
             RamBonus = 0;
             CyclesBonus = 0;
-            uptimeSources = new List<string>();
-            ramSources = new List<string>();
-            cyclesSources = new List<string>();
+            _uptimeSources = new List<string>();
+            _ramSources = new List<string>();
+            _cyclesSources = new List<string>();
         }
 
         public int BaseUptime { get; }
@@ -551,9 +551,9 @@ namespace KernelPanic.Run
         public int FinalUptime => Mathf.Max(1, BaseUptime + UptimeBonus);
         public int FinalRam => Mathf.Max(1, BaseRam + RamBonus);
         public int FinalCycles => Mathf.Max(1, BaseCycles + CyclesBonus);
-        public IReadOnlyList<string> UptimeSources => uptimeSources;
-        public IReadOnlyList<string> RamSources => ramSources;
-        public IReadOnlyList<string> CyclesSources => cyclesSources;
+        public IReadOnlyList<string> UptimeSources => _uptimeSources;
+        public IReadOnlyList<string> RamSources => _ramSources;
+        public IReadOnlyList<string> CyclesSources => _cyclesSources;
 
         public void AddUptime(int amount, PackageDefinition source)
         {
@@ -563,7 +563,7 @@ namespace KernelPanic.Run
             }
 
             UptimeBonus += amount;
-            AddSource(source, uptimeSources);
+            AddSource(source, _uptimeSources);
         }
 
         public void AddRam(int amount, PackageDefinition source)
@@ -574,7 +574,7 @@ namespace KernelPanic.Run
             }
 
             RamBonus += amount;
-            AddSource(source, ramSources);
+            AddSource(source, _ramSources);
         }
 
         public void AddCycles(int amount, PackageDefinition source)
@@ -585,7 +585,7 @@ namespace KernelPanic.Run
             }
 
             CyclesBonus += amount;
-            AddSource(source, cyclesSources);
+            AddSource(source, _cyclesSources);
         }
 
         private static void AddSource(PackageDefinition source, List<string> sources)

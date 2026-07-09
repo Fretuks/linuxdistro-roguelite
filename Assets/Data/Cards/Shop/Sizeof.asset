@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: shop_c_sizeof
   displayName: sizeof()
-  description: deal 3 x C cards in hand.
+  description: deal 3 x C cards in hand. 20% segfault: uptime -3.
   flavorText: compile-time confidence, runtime consequences.
   language: 0
   rarity: 1

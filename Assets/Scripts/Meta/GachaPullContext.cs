@@ -10,34 +10,34 @@ namespace KernelPanic.Meta
     /// </summary>
     public static class GachaPullContext
     {
-        private static PendingGachaPull pendingPull;
-        private static CompletedGachaPull completedPull;
+        private static PendingGachaPull _pendingPull;
+        private static CompletedGachaPull _completedPull;
 
-        public static bool HasPendingPull => pendingPull != null;
-        public static bool HasCompletedPull => completedPull != null;
+        public static bool HasPendingPull => _pendingPull != null;
+        public static bool HasCompletedPull => _completedPull != null;
 
         public static void SetPending(string bannerId, int pullCount, int entropyTokenCount, DistroDatabase distroDatabase, PackageDatabase packageDatabase, string focusUnitId)
         {
-            pendingPull = new PendingGachaPull(bannerId, pullCount, entropyTokenCount, distroDatabase, packageDatabase, focusUnitId);
-            completedPull = null;
+            _pendingPull = new PendingGachaPull(bannerId, pullCount, entropyTokenCount, distroDatabase, packageDatabase, focusUnitId);
+            _completedPull = null;
         }
 
         public static bool TryConsumePending(out PendingGachaPull pull)
         {
-            pull = pendingPull;
-            pendingPull = null;
+            pull = _pendingPull;
+            _pendingPull = null;
             return pull != null;
         }
 
         public static void SetCompleted(CompletedGachaPull pull)
         {
-            completedPull = pull;
+            _completedPull = pull;
         }
 
         public static bool TryConsumeCompleted(out CompletedGachaPull pull)
         {
-            pull = completedPull;
-            completedPull = null;
+            pull = _completedPull;
+            _completedPull = null;
             return pull != null;
         }
     }

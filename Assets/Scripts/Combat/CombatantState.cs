@@ -26,7 +26,7 @@ namespace KernelPanic.Combat
         public int Cycles { get; set; }
         public int MaxCycles { get; set; }
         public bool IsDefeated { get; set; }
-        public bool forceMaxRolls { get; set; }
+        public bool ForceMaxRolls { get; set; }
         public bool IgnoreDamageMultipliers { get; set; }
         public bool AllowFlatDamageBuffs { get; set; }
         public int FlatEffectBonus { get; set; }

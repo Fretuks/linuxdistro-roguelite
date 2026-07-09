@@ -18,65 +18,65 @@ namespace KernelPanic.Combat
     {
         [SerializeField] private TurnPhase currentPhase = TurnPhase.Boot;
 
-        private readonly DeckController deckController = new();
-        private readonly InterpreterQueue interpreterQueue = new();
-        private readonly LazyStack lazyStack = new();
-        private readonly NativeTrack nativeTrack = new();
-        private readonly StatusEffectController statusEffects = new();
-        private readonly DamagePipeline damagePipeline = new();
-        private readonly List<EnemyInstance> enemies = new();
-        private readonly HashSet<string> loggedEffectTodos = new();
-        private readonly List<CardDefinition> generatedCardPool = new();
-        private readonly List<DelayedCombatEffect> delayedEffects = new();
-        private RunManager runManager;
-        private RunConfig runConfig;
-        private HandController handController;
-        private CombatantState playerState;
-        private int selectedEnemyIndex = -1;
-        private CardInstance pendingTargetCard;
-        private bool awaitingWaveContinue;
-        private bool runLost;
-        private bool skipNextAllocateDraw;
-        private bool ubuntuEmptyHandRefillUsed;
-        private int fedoraCardsDiscountedThisTurn;
-        private int fedoraCrashChance = 10;
-        private int cardsPlayedThisTurn;
-        private int cardsPlayedThisWave;
-        private int cCardsPlayedThisTurn;
-        private int turnNumberThisWave;
-        private bool packageShieldBonusTriggeredThisTurn;
-        private bool packageTimeshiftTriggeredThisWave;
-        private bool packageInterpreterQueueShieldTriggeredThisWave;
-        private bool packageNativeDamageTriggeredThisWave;
-        private int javaCardsPlayedThisCombat;
-        private int javaCardsDiscountThisTurn;
-        private int rawhideBonusCharges;
-        private int queuedRepeatCharges;
-        private int nextTurnCycleBonus;
-        private Coroutine phaseCoroutine;
+        private readonly DeckController _deckController = new();
+        private readonly InterpreterQueue _interpreterQueue = new();
+        private readonly LazyStack _lazyStack = new();
+        private readonly NativeTrack _nativeTrack = new();
+        private readonly StatusEffectController _statusEffects = new();
+        private readonly DamagePipeline _damagePipeline = new();
+        private readonly List<EnemyInstance> _enemies = new();
+        private readonly HashSet<string> _loggedEffectTodos = new();
+        private readonly List<CardDefinition> _generatedCardPool = new();
+        private readonly List<DelayedCombatEffect> _delayedEffects = new();
+        private RunManager _runManager;
+        private RunConfig _runConfig;
+        private HandController _handController;
+        private CombatantState _playerState;
+        private int _selectedEnemyIndex = -1;
+        private CardInstance _pendingTargetCard;
+        private bool _awaitingWaveContinue;
+        private bool _runLost;
+        private bool _skipNextAllocateDraw;
+        private bool _ubuntuEmptyHandRefillUsed;
+        private int _fedoraCardsDiscountedThisTurn;
+        private int _fedoraCrashChance = 10;
+        private int _cardsPlayedThisTurn;
+        private int _cardsPlayedThisWave;
+        private int _cCardsPlayedThisTurn;
+        private int _turnNumberThisWave;
+        private bool _packageShieldBonusTriggeredThisTurn;
+        private bool _packageTimeshiftTriggeredThisWave;
+        private bool _packageInterpreterQueueShieldTriggeredThisWave;
+        private bool _packageNativeDamageTriggeredThisWave;
+        private int _javaCardsPlayedThisCombat;
+        private int _javaCardsDiscountThisTurn;
+        private int _rawhideBonusCharges;
+        private int _queuedRepeatCharges;
+        private int _nextTurnCycleBonus;
+        private Coroutine _phaseCoroutine;
 
         public TurnPhase CurrentPhase => currentPhase;
-        public RunConfig RunConfig => runConfig;
-        public DeckController DeckController => deckController;
-        public HandController HandController => handController;
-        public CombatantState PlayerState => playerState;
-        public InterpreterQueue InterpreterQueue => interpreterQueue;
-        public LazyStack LazyStack => lazyStack;
-        public NativeTrack NativeTrack => nativeTrack;
-        public DamagePipeline DamagePipeline => damagePipeline;
-        public IReadOnlyList<EnemyInstance> Enemies => enemies;
-        public int SelectedEnemyIndex => selectedEnemyIndex;
-        public CardInstance PendingTargetCard => pendingTargetCard;
-        public bool AwaitingWaveContinue => awaitingWaveContinue;
-        public bool RunLost => runLost;
-        public int CurrentWaveNumber => runManager == null ? 1 : runManager.CurrentWaveNumber;
+        public RunConfig RunConfig => _runConfig;
+        public DeckController DeckController => _deckController;
+        public HandController HandController => _handController;
+        public CombatantState PlayerState => _playerState;
+        public InterpreterQueue InterpreterQueue => _interpreterQueue;
+        public LazyStack LazyStack => _lazyStack;
+        public NativeTrack NativeTrack => _nativeTrack;
+        public DamagePipeline DamagePipeline => _damagePipeline;
+        public IReadOnlyList<EnemyInstance> Enemies => _enemies;
+        public int SelectedEnemyIndex => _selectedEnemyIndex;
+        public CardInstance PendingTargetCard => _pendingTargetCard;
+        public bool AwaitingWaveContinue => _awaitingWaveContinue;
+        public bool RunLost => _runLost;
+        public int CurrentWaveNumber => _runManager == null ? 1 : _runManager.CurrentWaveNumber;
 
         public event Action StateChanged;
         public event Action<string> CombatLog;
 
         private void Awake()
         {
-            runManager = GetComponent<RunManager>();
+            _runManager = GetComponent<RunManager>();
         }
 
         private void OnEnable()
@@ -91,7 +91,7 @@ namespace KernelPanic.Combat
 
         public void StartCombat()
         {
-            if (runConfig == null)
+            if (_runConfig == null)
             {
                 Debug.LogWarning("CombatManager.StartCombat called without a RunConfig.");
                 return;
@@ -102,7 +102,7 @@ namespace KernelPanic.Combat
 
         public void StartCombat(RunConfig config)
         {
-            runConfig = config;
+            _runConfig = config;
             StartCombat();
         }
 
@@ -121,20 +121,20 @@ namespace KernelPanic.Combat
         {
             if (currentPhase == TurnPhase.Execute && !IsCombatPaused)
             {
-                pendingTargetCard = null;
-                selectedEnemyIndex = -1;
+                _pendingTargetCard = null;
+                _selectedEnemyIndex = -1;
                 SetPhase(TurnPhase.Interpret);
             }
         }
 
         public void ContinueToNextWave()
         {
-            if (!awaitingWaveContinue || runLost)
+            if (!_awaitingWaveContinue || _runLost)
             {
                 return;
             }
 
-            awaitingWaveContinue = false;
+            _awaitingWaveContinue = false;
             DecayJavaWarmupForNextWave();
             StartCoroutine(ContinueToNextWaveSequenced());
         }
@@ -152,18 +152,18 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            if (index < 0 || index >= enemies.Count)
+            if (index < 0 || index >= _enemies.Count)
             {
-                selectedEnemyIndex = -1;
+                _selectedEnemyIndex = -1;
                 StateChanged?.Invoke();
                 return;
             }
 
-            selectedEnemyIndex = index;
-            if (pendingTargetCard != null)
+            _selectedEnemyIndex = index;
+            if (_pendingTargetCard != null)
             {
-                CardInstance card = pendingTargetCard;
-                pendingTargetCard = null;
+                CardInstance card = _pendingTargetCard;
+                _pendingTargetCard = null;
                 PlayCard(card);
                 return;
             }
@@ -173,7 +173,7 @@ namespace KernelPanic.Combat
 
         public bool PlayCard(CardInstance card)
         {
-            if (currentPhase != TurnPhase.Execute || IsCombatPaused || card == null || handController == null || playerState == null)
+            if (currentPhase != TurnPhase.Execute || IsCombatPaused || card == null || _handController == null || _playerState == null)
             {
                 return false;
             }
@@ -191,46 +191,46 @@ namespace KernelPanic.Combat
                 cost = Mathf.Max(0, cost - 1);
             }
 
-            if (playerState.Cycles < cost)
+            if (_playerState.Cycles < cost)
             {
                 Log($"not enough cycles for {GetCardName(card)}");
                 return false;
             }
 
-            if (RequiresTarget(card) && selectedEnemyIndex < 0)
+            if (RequiresTarget(card) && _selectedEnemyIndex < 0)
             {
-                pendingTargetCard = card;
+                _pendingTargetCard = card;
                 Log($"select target for {GetCardName(card)}");
                 StateChanged?.Invoke();
                 return false;
             }
 
-            if (!handController.Remove(card))
+            if (!_handController.Remove(card))
             {
                 return false;
             }
 
-            playerState.Cycles -= cost;
+            _playerState.Cycles -= cost;
             ResolutionTrack track = card.Definition.ResolutionTrack;
-            card.MarkPlayedThisTurn(cardsPlayedThisTurn == 0);
-            cardsPlayedThisTurn++;
-            cardsPlayedThisWave++;
+            card.MarkPlayedThisTurn(_cardsPlayedThisTurn == 0);
+            _cardsPlayedThisTurn++;
+            _cardsPlayedThisWave++;
             if (IsDistro("arch"))
             {
-                playerState.ArchBtwStacks++;
+                _playerState.ArchBtwStacks++;
             }
 
-            playerState.HasPreviousPlayedCardLanguage = playerState.HasLastPlayedCardLanguage;
-            if (playerState.HasLastPlayedCardLanguage)
+            _playerState.HasPreviousPlayedCardLanguage = _playerState.HasLastPlayedCardLanguage;
+            if (_playerState.HasLastPlayedCardLanguage)
             {
-                playerState.PreviousPlayedCardLanguage = playerState.LastPlayedCardLanguage;
+                _playerState.PreviousPlayedCardLanguage = _playerState.LastPlayedCardLanguage;
             }
 
-            playerState.LastPlayedCardLanguage = card.Definition.Language;
-            playerState.HasLastPlayedCardLanguage = true;
+            _playerState.LastPlayedCardLanguage = card.Definition.Language;
+            _playerState.HasLastPlayedCardLanguage = true;
             if (card.Definition.Language == Language.Java)
             {
-                javaCardsPlayedThisCombat++;
+                _javaCardsPlayedThisCombat++;
             }
 
             GameEvents.RaiseCardPlayed(new CardPlayedEvent(card, track));
@@ -239,68 +239,68 @@ namespace KernelPanic.Combat
 
             if (fedoraBonus)
             {
-                fedoraCardsDiscountedThisTurn++;
-                bool rawhideChargeUsed = rawhideBonusCharges > 0;
+                _fedoraCardsDiscountedThisTurn++;
+                bool rawhideChargeUsed = _rawhideBonusCharges > 0;
                 if (rawhideChargeUsed)
                 {
-                    rawhideBonusCharges--;
+                    _rawhideBonusCharges--;
                 }
 
-                if (!IsCrashImmune(card) && RandomRoll.RollRange(1, 100, new RollContext(playerState)) <= fedoraCrashChance)
+                if (!IsCrashImmune(card) && RandomRoll.RollRange(1, 100, new RollContext(_playerState)) <= _fedoraCrashChance)
                 {
-                    fedoraCrashChance = 10;
-                    if (IsDistro("fedora") && runConfig.DistroVersion >= 4)
+                    _fedoraCrashChance = 10;
+                    if (IsDistro("fedora") && _runConfig.DistroVersion >= 4)
                     {
-                        playerState.Cycles += 1;
+                        _playerState.Cycles += 1;
                     }
 
-                    deckController.Discard(card);
-                    pendingTargetCard = null;
-                    selectedEnemyIndex = -1;
+                    _deckController.Discard(card);
+                    _pendingTargetCard = null;
+                    _selectedEnemyIndex = -1;
                     Log($"{GetCardName(card)} crashed under bleeding edge");
                     StateChanged?.Invoke();
                     return true;
                 }
 
-                fedoraCrashChance = Mathf.Min(90, fedoraCrashChance + 10);
+                _fedoraCrashChance = Mathf.Min(90, _fedoraCrashChance + 10);
                 card.MarkFedoraNonCrashBonus();
-                playerState.DamageMultiplierPercent = runConfig.DistroVersion >= 2 ? 175 : 150;
+                _playerState.DamageMultiplierPercent = _runConfig.DistroVersion >= 2 ? 175 : 150;
                 ApplyFedoraGrowth(card, rawhideChargeUsed);
             }
 
-            if (card.Definition.Language == Language.C && cCardsPlayedThisTurn == 0 && HasPackageEffect(PackageEffectKind.FirstCThisTurnDamageMultiplier, out PackageEffectData cPackageEffect))
+            if (card.Definition.Language == Language.C && _cCardsPlayedThisTurn == 0 && HasPackageEffect(PackageEffectKind.FirstCThisTurnDamageMultiplier, out PackageEffectData cPackageEffect))
             {
-                playerState.CurrentCardDamageMultiplierPercent = Mathf.Max(100, cPackageEffect.Amount);
+                _playerState.CurrentCardDamageMultiplierPercent = Mathf.Max(100, cPackageEffect.Amount);
             }
 
             switch (track)
             {
                 case ResolutionTrack.InterpreterQueue:
                     card.MarkQueued();
-                    interpreterQueue.Enqueue(card);
+                    _interpreterQueue.Enqueue(card);
                     break;
                 case ResolutionTrack.LazyStack:
-                    lazyStack.Enqueue(card);
+                    _lazyStack.Enqueue(card);
                     break;
                 default:
                     ExecuteCardEffects(card, ResolveTargets(card));
                     ResolveCardRiders(card);
-                    deckController.Discard(card);
+                    _deckController.Discard(card);
                     GameEvents.RaiseCardResolved(new CardResolvedEvent(card, ResolutionTrack.Native));
-                    selectedEnemyIndex = -1;
+                    _selectedEnemyIndex = -1;
                     break;
             }
 
-            playerState.DamageMultiplierPercent = 100;
-            playerState.CurrentCardDamageMultiplierPercent = 100;
+            _playerState.DamageMultiplierPercent = 100;
+            _playerState.CurrentCardDamageMultiplierPercent = 100;
             if (card.Definition.Language == Language.C)
             {
-                cCardsPlayedThisTurn++;
+                _cCardsPlayedThisTurn++;
             }
 
             ApplyPackageCardPlayedEffects(card);
 
-            pendingTargetCard = null;
+            _pendingTargetCard = null;
             TryApplyUbuntuEmptyHandRefill();
             StateChanged?.Invoke();
             return true;
@@ -321,7 +321,7 @@ namespace KernelPanic.Combat
             int cost = GetCardCost(card);
             if (card?.Definition != null && card.Definition.Language == Language.Java)
             {
-                cost -= javaCardsPlayedThisCombat + javaCardsDiscountThisTurn;
+                cost -= _javaCardsPlayedThisCombat + _javaCardsDiscountThisTurn;
             }
 
             cost = ApplyPackageCostRules(card, cost);
@@ -337,7 +337,7 @@ namespace KernelPanic.Combat
         {
             string cardId = card?.Definition == null ? string.Empty : card.Definition.Id;
             string key = $"{cardId}:{message}";
-            if (loggedEffectTodos.Add(key))
+            if (_loggedEffectTodos.Add(key))
             {
                 Log(message);
             }
@@ -353,12 +353,12 @@ namespace KernelPanic.Combat
 
         public void AddNextTurnCycleBonus(int amount)
         {
-            nextTurnCycleBonus += Mathf.Max(0, amount);
+            _nextTurnCycleBonus += Mathf.Max(0, amount);
         }
 
         public void AddQueuedRepeatCharges(int amount)
         {
-            queuedRepeatCharges += Mathf.Max(0, amount);
+            _queuedRepeatCharges += Mathf.Max(0, amount);
             if (amount > 0)
             {
                 ReportEffectResult($"next {amount} queued card(s) resolve twice");
@@ -373,34 +373,34 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            javaCardsDiscountThisTurn += safeAmount;
+            _javaCardsDiscountThisTurn += safeAmount;
             ReportEffectResult($"Java cards cost -{safeAmount} this turn");
         }
 
         public int ConsumeQueuedResolutionCount(CardInstance card)
         {
-            if (queuedRepeatCharges <= 0 || card == null)
+            if (_queuedRepeatCharges <= 0 || card == null)
             {
                 return 1;
             }
 
-            queuedRepeatCharges--;
+            _queuedRepeatCharges--;
             return 2;
         }
 
         public void GrantRawhideBonus(int charges)
         {
-            rawhideBonusCharges += Mathf.Max(0, charges);
+            _rawhideBonusCharges += Mathf.Max(0, charges);
         }
 
         public void AddIncomingAttackHalfCharges(int charges)
         {
-            if (playerState == null)
+            if (_playerState == null)
             {
                 return;
             }
 
-            playerState.IncomingAttackHalfCharges += Mathf.Max(0, charges);
+            _playerState.IncomingAttackHalfCharges += Mathf.Max(0, charges);
             ReportEffectResult($"next {charges} enemy attack(s) halved");
         }
 
@@ -416,13 +416,13 @@ namespace KernelPanic.Combat
 
         public void ScheduleUpdateManagerRepeat(int damageAmount)
         {
-            delayedEffects.Add(DelayedCombatEffect.UpdateManagerRepeat(damageAmount, 2));
+            _delayedEffects.Add(DelayedCombatEffect.UpdateManagerRepeat(damageAmount, 2));
             ReportEffectResult("update manager scheduled repeat");
         }
 
         public void ScheduleTimeshiftRestore(int uptime)
         {
-            delayedEffects.Add(DelayedCombatEffect.TimeshiftRestore(uptime, 2));
+            _delayedEffects.Add(DelayedCombatEffect.TimeshiftRestore(uptime, 2));
             ReportEffectResult($"timeshift snapshot recorded {uptime} uptime");
         }
 
@@ -434,7 +434,7 @@ namespace KernelPanic.Combat
                 return false;
             }
 
-            IReadOnlyList<CardDefinition> source = generatedCardPool.Count > 0 ? generatedCardPool : runConfig?.StartingDeck;
+            IReadOnlyList<CardDefinition> source = _generatedCardPool.Count > 0 ? _generatedCardPool : _runConfig?.StartingDeck;
             if (source == null)
             {
                 return false;
@@ -455,7 +455,7 @@ namespace KernelPanic.Combat
 
         public void SetGeneratedCardPool(IEnumerable<CardDefinition> cardPool)
         {
-            generatedCardPool.Clear();
+            _generatedCardPool.Clear();
             if (cardPool == null)
             {
                 return;
@@ -465,7 +465,7 @@ namespace KernelPanic.Combat
             {
                 if (card != null)
                 {
-                    generatedCardPool.Add(card);
+                    _generatedCardPool.Add(card);
                 }
             }
         }
@@ -476,7 +476,7 @@ namespace KernelPanic.Combat
 
             List<CardDefinition> pool = new();
             HashSet<string> seenIds = new();
-            IReadOnlyList<CardDefinition> source = generatedCardPool.Count > 0 ? generatedCardPool : runConfig?.StartingDeck;
+            IReadOnlyList<CardDefinition> source = _generatedCardPool.Count > 0 ? _generatedCardPool : _runConfig?.StartingDeck;
             if (source == null)
             {
                 return false;
@@ -501,7 +501,7 @@ namespace KernelPanic.Combat
                 return false;
             }
 
-            int index = RandomRoll.RollRange(0, pool.Count - 1, new RollContext(playerState));
+            int index = RandomRoll.RollRange(0, pool.Count - 1, new RollContext(_playerState));
             CardDefinition selected = pool[index];
             generatedCard = new CardInstance(selected)
             {
@@ -531,12 +531,12 @@ namespace KernelPanic.Combat
             currentPhase = nextPhase;
             GameEvents.RaisePhaseChanged(new PhaseChangedEvent(previousPhase, nextPhase));
 
-            if (phaseCoroutine != null)
+            if (_phaseCoroutine != null)
             {
-                StopCoroutine(phaseCoroutine);
+                StopCoroutine(_phaseCoroutine);
             }
 
-            phaseCoroutine = StartCoroutine(EnterPhase(nextPhase));
+            _phaseCoroutine = StartCoroutine(EnterPhase(nextPhase));
         }
 
         private static TurnPhase GetNextPhase(TurnPhase phase)
@@ -593,72 +593,72 @@ namespace KernelPanic.Combat
 
         private IEnumerator BootCombatSequenced()
         {
-            runLost = false;
-            awaitingWaveContinue = false;
-            loggedEffectTodos.Clear();
-            ubuntuEmptyHandRefillUsed = false;
-            fedoraCrashChance = 10;
-            fedoraCardsDiscountedThisTurn = 0;
-            cardsPlayedThisTurn = 0;
-            cardsPlayedThisWave = 0;
-            cCardsPlayedThisTurn = 0;
-            turnNumberThisWave = 0;
-            packageShieldBonusTriggeredThisTurn = false;
-            packageTimeshiftTriggeredThisWave = false;
-            packageInterpreterQueueShieldTriggeredThisWave = false;
-            packageNativeDamageTriggeredThisWave = false;
-            javaCardsPlayedThisCombat = 0;
-            javaCardsDiscountThisTurn = 0;
-            rawhideBonusCharges = 0;
-            queuedRepeatCharges = 0;
-            nextTurnCycleBonus = 0;
-            delayedEffects.Clear();
-            RandomRoll.Seed(runConfig.RunSeed);
-            playerState = new CombatantState(runManager.EffectiveMaxUptime(), runManager.EffectiveRam(), runManager.EffectiveMaxCycles());
-            ApplyVersionState(playerState);
-            ApplyPackageState(playerState);
+            _runLost = false;
+            _awaitingWaveContinue = false;
+            _loggedEffectTodos.Clear();
+            _ubuntuEmptyHandRefillUsed = false;
+            _fedoraCrashChance = 10;
+            _fedoraCardsDiscountedThisTurn = 0;
+            _cardsPlayedThisTurn = 0;
+            _cardsPlayedThisWave = 0;
+            _cCardsPlayedThisTurn = 0;
+            _turnNumberThisWave = 0;
+            _packageShieldBonusTriggeredThisTurn = false;
+            _packageTimeshiftTriggeredThisWave = false;
+            _packageInterpreterQueueShieldTriggeredThisWave = false;
+            _packageNativeDamageTriggeredThisWave = false;
+            _javaCardsPlayedThisCombat = 0;
+            _javaCardsDiscountThisTurn = 0;
+            _rawhideBonusCharges = 0;
+            _queuedRepeatCharges = 0;
+            _nextTurnCycleBonus = 0;
+            _delayedEffects.Clear();
+            RandomRoll.Seed(_runConfig.RunSeed);
+            _playerState = new CombatantState(_runManager.EffectiveMaxUptime(), _runManager.EffectiveRam(), _runManager.EffectiveMaxCycles());
+            ApplyVersionState(_playerState);
+            ApplyPackageState(_playerState);
             yield return StartWaveSequenced(preservePlayerUptime: false);
-            Log($"booted {runConfig.Distro.DisplayName} with {runManager.RunDeck.Count} cards");
+            Log($"booted {_runConfig.Distro.DisplayName} with {_runManager.RunDeck.Count} cards");
             StateChanged?.Invoke();
         }
 
         private IEnumerator StartWaveSequenced(bool preservePlayerUptime)
         {
-            int carriedUptime = playerState == null ? 0 : playerState.CurrentUptime;
-            if (!preservePlayerUptime || playerState == null)
+            int carriedUptime = _playerState == null ? 0 : _playerState.CurrentUptime;
+            if (!preservePlayerUptime || _playerState == null)
             {
-                playerState = new CombatantState(runManager.EffectiveMaxUptime(), runManager.EffectiveRam(), runManager.EffectiveMaxCycles());
-                ApplyVersionState(playerState);
-                ApplyPackageState(playerState);
+                _playerState = new CombatantState(_runManager.EffectiveMaxUptime(), _runManager.EffectiveRam(), _runManager.EffectiveMaxCycles());
+                ApplyVersionState(_playerState);
+                ApplyPackageState(_playerState);
             }
             else
             {
-                playerState.MaxUptime = runManager.EffectiveMaxUptime();
-                playerState.CurrentUptime = Mathf.Clamp(carriedUptime, 1, playerState.MaxUptime);
-                playerState.Ram = runManager.EffectiveRam();
-                playerState.MaxCycles = runManager.EffectiveMaxCycles();
-                playerState.Cycles = 0;
-                playerState.Shield = 0;
-                playerState.IncomingAttackHalfCharges = 0;
-                playerState.IsDefeated = false;
-                playerState.MutableStatuses.Clear();
-                ApplyVersionState(playerState);
-                ApplyPackageState(playerState);
+                _playerState.MaxUptime = _runManager.EffectiveMaxUptime();
+                _playerState.CurrentUptime = Mathf.Clamp(carriedUptime, 1, _playerState.MaxUptime);
+                _playerState.Ram = _runManager.EffectiveRam();
+                _playerState.MaxCycles = _runManager.EffectiveMaxCycles();
+                _playerState.Cycles = 0;
+                _playerState.Shield = 0;
+                _playerState.IncomingAttackHalfCharges = 0;
+                _playerState.IsDefeated = false;
+                _playerState.MutableStatuses.Clear();
+                ApplyVersionState(_playerState);
+                ApplyPackageState(_playerState);
             }
 
-            handController = new HandController(playerState.Ram);
-            selectedEnemyIndex = -1;
-            pendingTargetCard = null;
-            cardsPlayedThisWave = 0;
-            turnNumberThisWave = 0;
-            packageShieldBonusTriggeredThisTurn = false;
-            packageTimeshiftTriggeredThisWave = false;
+            _handController = new HandController(_playerState.Ram);
+            _selectedEnemyIndex = -1;
+            _pendingTargetCard = null;
+            _cardsPlayedThisWave = 0;
+            _turnNumberThisWave = 0;
+            _packageShieldBonusTriggeredThisTurn = false;
+            _packageTimeshiftTriggeredThisWave = false;
             ResetArchWaveState();
 
             List<CardInstance> startingCards = new();
-            for (int i = 0; i < runManager.RunDeck.Count; i++)
+            for (int i = 0; i < _runManager.RunDeck.Count; i++)
             {
-                CardInstance card = runManager.RunDeck[i];
+                CardInstance card = _runManager.RunDeck[i];
                 if (card != null)
                 {
                     card.ResetCombatState();
@@ -666,15 +666,15 @@ namespace KernelPanic.Combat
                 }
             }
 
-            deckController.Initialize(startingCards);
-            interpreterQueue.Clear();
-            enemies.Clear();
+            _deckController.Initialize(startingCards);
+            _interpreterQueue.Clear();
+            _enemies.Clear();
             SpawnStructuralEnemies();
             PickEnemyIntents();
             StateChanged?.Invoke();
             yield return DrawOpeningHandSequenced();
             ApplyPackageWaveStartEffects();
-            skipNextAllocateDraw = true;
+            _skipNextAllocateDraw = true;
         }
 
         private IEnumerator AllocateTurnSequenced()
@@ -684,21 +684,22 @@ namespace KernelPanic.Combat
                 yield break;
             }
 
-            playerState.Cycles = playerState.MaxCycles;
-            fedoraCardsDiscountedThisTurn = 0;
-            cardsPlayedThisTurn = 0;
-            cCardsPlayedThisTurn = 0;
-            turnNumberThisWave++;
-            packageShieldBonusTriggeredThisTurn = false;
-            javaCardsDiscountThisTurn = 0;
+            RevivePendingEnemies();
+            _playerState.Cycles = _playerState.MaxCycles;
+            _fedoraCardsDiscountedThisTurn = 0;
+            _cardsPlayedThisTurn = 0;
+            _cCardsPlayedThisTurn = 0;
+            _turnNumberThisWave++;
+            _packageShieldBonusTriggeredThisTurn = false;
+            _javaCardsDiscountThisTurn = 0;
             ApplyPackageTurnStartEffects();
-            if (nextTurnCycleBonus > 0)
+            if (_nextTurnCycleBonus > 0)
             {
-                playerState.Cycles += nextTurnCycleBonus;
-                Log($"deferred cycle grant: +{nextTurnCycleBonus}");
-                nextTurnCycleBonus = 0;
+                _playerState.Cycles += _nextTurnCycleBonus;
+                Log($"deferred cycle grant: +{_nextTurnCycleBonus}");
+                _nextTurnCycleBonus = 0;
             }
-            statusEffects.Tick(playerState, StatusTickTiming.StartOfTurn, playerState, damagePipeline);
+            _statusEffects.Tick(_playerState, StatusTickTiming.StartOfTurn, _playerState, _damagePipeline);
             StateChanged?.Invoke();
             if (CheckLoss())
             {
@@ -707,9 +708,9 @@ namespace KernelPanic.Combat
 
             TryApplyUbuntuAptUpdate();
 
-            if (skipNextAllocateDraw)
+            if (_skipNextAllocateDraw)
             {
-                skipNextAllocateDraw = false;
+                _skipNextAllocateDraw = false;
             }
             else
             {
@@ -721,7 +722,7 @@ namespace KernelPanic.Combat
 
         private IEnumerator InterpretQueueSequenced()
         {
-            while (interpreterQueue.TryDequeue(out CardInstance card))
+            while (_interpreterQueue.TryDequeue(out CardInstance card))
             {
                 LogPlayIntent(card);
                 int resolutionCount = ConsumeQueuedResolutionCount(card);
@@ -735,7 +736,7 @@ namespace KernelPanic.Combat
                 }
 
                 ResolveCardRiders(card);
-                deckController.Discard(card);
+                _deckController.Discard(card);
                 GameEvents.RaiseCardResolved(new CardResolvedEvent(card, ResolutionTrack.InterpreterQueue));
                 StateChanged?.Invoke();
                 if (CheckWinOrLoss())
@@ -752,15 +753,16 @@ namespace KernelPanic.Combat
 
         private IEnumerator ProcessEnemiesSequenced()
         {
-            for (int i = 0; i < enemies.Count; i++)
+            int enemyCountAtPhaseStart = _enemies.Count;
+            for (int i = 0; i < enemyCountAtPhaseStart && i < _enemies.Count; i++)
             {
-                EnemyInstance enemy = enemies[i];
+                EnemyInstance enemy = _enemies[i];
                 if (enemy.State.IsDefeated)
                 {
                     continue;
                 }
 
-                statusEffects.Tick(enemy.State, StatusTickTiming.StartOfTurn, playerState, damagePipeline);
+                _statusEffects.Tick(enemy.State, StatusTickTiming.StartOfTurn, _playerState, _damagePipeline);
                 RemoveDefeatedEnemies();
                 if (CheckWinOrLoss())
                 {
@@ -772,12 +774,13 @@ namespace KernelPanic.Combat
                     continue;
                 }
 
-                Log($"{enemy.Name} executes {enemy.CurrentIntent.DisplayText}");
+                Log($"{enemy.Name} executes {enemy.DisplayIntent.DisplayText}");
                 GameEvents.RaiseEnemyWouldAct(new EnemyWouldActEvent(enemy));
                 StateChanged?.Invoke();
                 yield return Wait(CombatTuning.EnemyTelegraphDelaySeconds);
 
-                ExecuteEnemyIntent(enemy);
+                ExecuteEnemyIntent(enemy, i);
+                enemy.MarkTurnSurvived();
                 GameEvents.RaiseEnemyActed(new EnemyActedEvent(enemy, enemy.CurrentIntent));
                 StateChanged?.Invoke();
                 if (CheckLoss())
@@ -789,14 +792,15 @@ namespace KernelPanic.Combat
             }
 
             PickEnemyIntents();
+            ResetEnemyTurnLethalMarkers();
             StateChanged?.Invoke();
         }
 
         private void GarbageCollect()
         {
-            selectedEnemyIndex = -1;
-            pendingTargetCard = null;
-            statusEffects.Tick(playerState, StatusTickTiming.EndOfTurn, playerState, damagePipeline);
+            _selectedEnemyIndex = -1;
+            _pendingTargetCard = null;
+            _statusEffects.Tick(_playerState, StatusTickTiming.EndOfTurn, _playerState, _damagePipeline);
             if (CheckLoss())
             {
                 return;
@@ -816,16 +820,16 @@ namespace KernelPanic.Combat
 
         private IEnumerator DrawOpeningHandSequenced()
         {
-            int openingDraw = Mathf.Min(CombatTuning.OpeningHandSize, playerState.Ram);
+            int openingDraw = Mathf.Min(CombatTuning.OpeningHandSize, _playerState.Ram);
             yield return DrawCardsToHandSequenced(openingDraw, "opening hand");
         }
 
         private IEnumerator DrawForTurnSequenced()
         {
             int requested = CombatTuning.DrawPerTurn;
-            if (CombatTuning.MinimumHandFloor > 0 && handController.Cards.Count < CombatTuning.MinimumHandFloor && deckController.AvailableToDrawCount > 0)
+            if (CombatTuning.MinimumHandFloor > 0 && _handController.Cards.Count < CombatTuning.MinimumHandFloor && _deckController.AvailableToDrawCount > 0)
             {
-                requested = Mathf.Max(requested, CombatTuning.MinimumHandFloor - handController.Cards.Count);
+                requested = Mathf.Max(requested, CombatTuning.MinimumHandFloor - _handController.Cards.Count);
             }
 
             yield return DrawCardsToHandSequenced(requested, "turn draw");
@@ -833,23 +837,23 @@ namespace KernelPanic.Combat
 
         private IEnumerator DrawCardsToHandSequenced(int requestedCount, string label)
         {
-            if (handController == null || playerState == null || requestedCount <= 0)
+            if (_handController == null || _playerState == null || requestedCount <= 0)
             {
                 yield break;
             }
 
-            int room = handController.RemainingRam;
+            int room = _handController.RemainingRam;
             if (room <= 0)
             {
                 Log($"{label}: hand full");
                 yield break;
             }
 
-            IReadOnlyList<CardInstance> drawn = deckController.Draw(requestedCount);
+            IReadOnlyList<CardInstance> drawn = _deckController.Draw(requestedCount);
             int added = 0;
             for (int i = 0; i < drawn.Count; i++)
             {
-                if (handController.Add(drawn[i]))
+                if (_handController.Add(drawn[i]))
                 {
                     added++;
                     StateChanged?.Invoke();
@@ -857,11 +861,11 @@ namespace KernelPanic.Combat
                 }
                 else
                 {
-                    deckController.AddToDrawPile(drawn[i], shuffle: false);
+                    _deckController.AddToDrawPile(drawn[i], shuffle: false);
                 }
             }
 
-            if (added == 0 && deckController.AvailableToDrawCount == 0)
+            if (added == 0 && _deckController.AvailableToDrawCount == 0)
             {
                 Log($"{label}: no cards to draw");
             }
@@ -877,73 +881,73 @@ namespace KernelPanic.Combat
 
         private void TryApplyUbuntuAptUpdate()
         {
-            if (!IsDistro("ubuntu") || handController == null || playerState == null || handController.RemainingRam <= 0)
+            if (!IsDistro("ubuntu") || _handController == null || _playerState == null || _handController.RemainingRam <= 0)
             {
                 return;
             }
 
-            int lookCount = runConfig.DistroVersion >= 2 ? 3 : 2;
-            if (!deckController.TryDrawCheapestFromTop(lookCount, out CardInstance card))
+            int lookCount = _runConfig.DistroVersion >= 2 ? 3 : 2;
+            if (!_deckController.TryDrawCheapestFromTop(lookCount, out CardInstance card))
             {
                 return;
             }
 
-            if (runConfig.DistroVersion >= 4)
+            if (_runConfig.DistroVersion >= 4)
             {
                 card.TemporaryCostDelta -= 1;
             }
 
-            if (handController.Add(card))
+            if (_handController.Add(card))
             {
                 Log($"apt update: staged {GetCardName(card)} from top {lookCount}");
             }
             else
             {
-                deckController.AddToDrawPile(card, shuffle: false);
+                _deckController.AddToDrawPile(card, shuffle: false);
             }
         }
 
         private void TryApplyUbuntuEmptyHandRefill()
         {
-            if (!IsDistro("ubuntu") || runConfig.DistroVersion < 5 || ubuntuEmptyHandRefillUsed || handController == null || handController.Cards.Count > 0)
+            if (!IsDistro("ubuntu") || _runConfig.DistroVersion < 5 || _ubuntuEmptyHandRefillUsed || _handController == null || _handController.Cards.Count > 0)
             {
                 return;
             }
 
-            ubuntuEmptyHandRefillUsed = true;
-            StartCoroutine(DrawCardsToHandSequenced(playerState.Ram, "ubuntu 24.04 refill"));
+            _ubuntuEmptyHandRefillUsed = true;
+            StartCoroutine(DrawCardsToHandSequenced(_playerState.Ram, "ubuntu 24.04 refill"));
         }
 
         private bool CanApplyFedoraBonus()
         {
-            return CanApplyFedoraPassiveBonus() || rawhideBonusCharges > 0;
+            return CanApplyFedoraPassiveBonus() || _rawhideBonusCharges > 0;
         }
 
         private void DecayJavaWarmupForNextWave()
         {
-            if (javaCardsPlayedThisCombat <= 0)
+            if (_javaCardsPlayedThisCombat <= 0)
             {
                 return;
             }
 
-            javaCardsPlayedThisCombat = Mathf.Max(0, javaCardsPlayedThisCombat - 1);
-            Log($"Java JIT cooled: discount now -{javaCardsPlayedThisCombat}");
+            _javaCardsPlayedThisCombat = Mathf.Max(0, _javaCardsPlayedThisCombat - 1);
+            Log($"Java JIT cooled: discount now -{_javaCardsPlayedThisCombat}");
         }
 
         private bool CanApplyFedoraPassiveBonus()
         {
-            if (!IsDistro("fedora") || playerState == null)
+            if (!IsDistro("fedora") || _playerState == null)
             {
                 return false;
             }
 
-            int limit = runConfig.DistroVersion >= 5 || HasOnDistroPackageEffect(PackageEffectKind.DnfFedoraPassive, out PackageEffectData dnfEffect) && dnfEffect.EnableFedoraSecondCardPassive ? 2 : 1;
-            return fedoraCardsDiscountedThisTurn < limit;
+            int limit = _runConfig.DistroVersion >= 5 || HasOnDistroPackageEffect(PackageEffectKind.DnfFedoraPassive, out PackageEffectData dnfEffect) && dnfEffect.EnableFedoraSecondCardPassive ? 2 : 1;
+            return _fedoraCardsDiscountedThisTurn < limit;
         }
 
         private void ApplyFedoraGrowth(CardInstance card, bool rawhideChargeUsed)
         {
-            if (!IsDistro("fedora") || runConfig.DistroVersion < 3 || card == null || !card.WasFirstCardThisTurn)
+            if (!IsDistro("fedora") || _runConfig.DistroVersion < 3 || card == null || !card.WasFirstCardThisTurn)
             {
                 return;
             }
@@ -962,14 +966,14 @@ namespace KernelPanic.Combat
                 return cost;
             }
 
-            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            IReadOnlyList<PackageInstance> packages = _runConfig?.EquippedPackages;
             if (packages == null)
             {
                 return cost;
             }
 
-            int nextTurnCard = cardsPlayedThisTurn + 1;
-            int nextWaveCard = cardsPlayedThisWave + 1;
+            int nextTurnCard = _cardsPlayedThisTurn + 1;
+            int nextWaveCard = _cardsPlayedThisWave + 1;
             for (int i = 0; i < packages.Count; i++)
             {
                 PackageInstance package = packages[i];
@@ -978,7 +982,7 @@ namespace KernelPanic.Combat
                     continue;
                 }
 
-                PackageEffectData effect = package.EffectFor(runConfig?.Distro?.Id);
+                PackageEffectData effect = package.EffectFor(_runConfig?.Distro?.Id);
                 switch (effect.Kind)
                 {
                     case PackageEffectKind.FirstCardEachWaveCostReduction:
@@ -1013,7 +1017,7 @@ namespace KernelPanic.Combat
             }
 
             state.JavaScriptFlatDamageBonus = 0;
-            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            IReadOnlyList<PackageInstance> packages = _runConfig?.EquippedPackages;
             if (packages == null)
             {
                 return;
@@ -1021,7 +1025,7 @@ namespace KernelPanic.Combat
 
             for (int i = 0; i < packages.Count; i++)
             {
-                PackageEffectData effect = packages[i] == null ? default : packages[i].EffectFor(runConfig?.Distro?.Id);
+                PackageEffectData effect = packages[i] == null ? default : packages[i].EffectFor(_runConfig?.Distro?.Id);
                 if (effect.Kind == PackageEffectKind.JavaScriptFlatDamage)
                 {
                     state.JavaScriptFlatDamageBonus += Mathf.Max(0, effect.Amount);
@@ -1031,7 +1035,7 @@ namespace KernelPanic.Combat
 
         private void ApplyPackageWaveStartEffects()
         {
-            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            IReadOnlyList<PackageInstance> packages = _runConfig?.EquippedPackages;
             if (packages == null)
             {
                 return;
@@ -1045,7 +1049,7 @@ namespace KernelPanic.Combat
                     continue;
                 }
 
-                PackageEffectData effect = package.EffectFor(runConfig?.Distro?.Id);
+                PackageEffectData effect = package.EffectFor(_runConfig?.Distro?.Id);
                 switch (effect.Kind)
                 {
                     case PackageEffectKind.WaveDraw:
@@ -1055,13 +1059,13 @@ namespace KernelPanic.Combat
                         GrantPlayerShield(Mathf.Max(0, effect.Amount), package.Definition.DisplayName);
                         break;
                     case PackageEffectKind.FirstTurnEachWaveShield:
-                        if (turnNumberThisWave == 0)
+                        if (_turnNumberThisWave == 0)
                         {
                             GrantPlayerShield(Mathf.Max(0, effect.Amount), package.Definition.DisplayName);
                         }
                         break;
                     case PackageEffectKind.FirstTurnFirstWaveDraw:
-                        if (CurrentWaveNumber == 1 && turnNumberThisWave == 0)
+                        if (CurrentWaveNumber == 1 && _turnNumberThisWave == 0)
                         {
                             StartCoroutine(DrawCardsToHandSequenced(Mathf.Max(0, effect.Amount), package.Definition.DisplayName));
                         }
@@ -1077,28 +1081,28 @@ namespace KernelPanic.Combat
         {
             if (HasPackageEffect(PackageEffectKind.EveryNthTurnShield, out PackageEffectData effect)
                 && effect.Threshold > 0
-                && turnNumberThisWave % effect.Threshold == 0)
+                && _turnNumberThisWave % effect.Threshold == 0)
             {
                 GrantPlayerShield(Mathf.Max(0, effect.Amount), "cron");
             }
 
             if (HasPackageEffect(PackageEffectKind.EveryNthTurnDraw, out effect)
                 && effect.Threshold > 0
-                && turnNumberThisWave % effect.Threshold == 0)
+                && _turnNumberThisWave % effect.Threshold == 0)
             {
                 StartCoroutine(DrawCardsToHandSequenced(Mathf.Max(0, effect.Amount), "udev"));
             }
 
-            if (turnNumberThisWave == 1
+            if (_turnNumberThisWave == 1
                 && HasPackageEffect(PackageEffectKind.FirstTurnEachWaveCycle, out effect)
                 && effect.Amount > 0)
             {
-                playerState.Cycles += effect.Amount;
+                _playerState.Cycles += effect.Amount;
                 Log($"apt-fast: gained {effect.Amount} Cycle");
             }
 
             if (HasPackageEffect(PackageEffectKind.StartTurnNoDebuffShield, out effect)
-                && !HasHarmfulStatus(playerState))
+                && !HasHarmfulStatus(_playerState))
             {
                 GrantPlayerShield(Mathf.Max(0, effect.Amount), "auditd");
             }
@@ -1111,79 +1115,79 @@ namespace KernelPanic.Combat
 
         private void ApplyPackageCardPlayedEffects(CardInstance card)
         {
-            if (card == null || playerState == null)
+            if (card == null || _playerState == null)
             {
                 return;
             }
 
             if (HasPackageEffect(PackageEffectKind.ThirdCardEachTurnGenerate, out PackageEffectData aptEffect)
-                && cardsPlayedThisTurn == Mathf.Max(1, aptEffect.Threshold))
+                && _cardsPlayedThisTurn == Mathf.Max(1, aptEffect.Threshold))
             {
                 GeneratePackageLanguageCard("apt");
                 if (aptEffect.RefundCycle)
                 {
-                    playerState.Cycles += 1;
+                    _playerState.Cycles += 1;
                     Log("apt refunded 1 Cycle");
                 }
             }
 
             if (HasPackageEffect(PackageEffectKind.DnfFedoraPassive, out PackageEffectData dnfEffect)
-                && cardsPlayedThisTurn == 1
+                && _cardsPlayedThisTurn == 1
                 && dnfEffect.Amount > 0)
             {
-                playerState.FlatEffectBonus += dnfEffect.Amount;
+                _playerState.FlatEffectBonus += dnfEffect.Amount;
                 Log($"DNF wave buff +{dnfEffect.Amount} damage");
             }
 
-            if (!packageInterpreterQueueShieldTriggeredThisWave
+            if (!_packageInterpreterQueueShieldTriggeredThisWave
                 && card.Definition.ResolutionTrack == ResolutionTrack.InterpreterQueue
                 && HasPackageEffect(PackageEffectKind.FirstInterpreterQueueCardEachWaveShield, out PackageEffectData queueEffect))
             {
-                packageInterpreterQueueShieldTriggeredThisWave = true;
+                _packageInterpreterQueueShieldTriggeredThisWave = true;
                 GrantPlayerShield(Mathf.Max(0, queueEffect.Amount), "dbus");
             }
 
-            if (!packageNativeDamageTriggeredThisWave
+            if (!_packageNativeDamageTriggeredThisWave
                 && card.Definition.ResolutionTrack == ResolutionTrack.Native
                 && HasPackageEffect(PackageEffectKind.FirstNativeCardEachWaveFlatDamage, out PackageEffectData nativeEffect)
                 && nativeEffect.Amount > 0)
             {
-                packageNativeDamageTriggeredThisWave = true;
-                playerState.FlatEffectBonus += nativeEffect.Amount;
+                _packageNativeDamageTriggeredThisWave = true;
+                _playerState.FlatEffectBonus += nativeEffect.Amount;
                 Log($"make: first Native card +{nativeEffect.Amount} damage");
             }
 
             if (HasPackageEffect(PackageEffectKind.EveryNthCardEachWaveCycle, out PackageEffectData cycleEffect)
                 && cycleEffect.Threshold > 0
-                && cardsPlayedThisWave % cycleEffect.Threshold == 0
+                && _cardsPlayedThisWave % cycleEffect.Threshold == 0
                 && cycleEffect.Amount > 0)
             {
-                playerState.Cycles += cycleEffect.Amount;
+                _playerState.Cycles += cycleEffect.Amount;
                 Log($"systemd-timer: gained {cycleEffect.Amount} Cycle");
             }
         }
 
         public void GrantPlayerShield(int amount, string label)
         {
-            if (playerState == null || amount <= 0)
+            if (_playerState == null || amount <= 0)
             {
                 return;
             }
 
             int total = amount;
-            if (!packageShieldBonusTriggeredThisTurn
+            if (!_packageShieldBonusTriggeredThisTurn
                 && HasPackageEffect(PackageEffectKind.FirstShieldEachTurnBonus, out PackageEffectData effect))
             {
                 int bonus = Mathf.Max(0, effect.Amount);
                 if (bonus > 0)
                 {
                     total += bonus;
-                    packageShieldBonusTriggeredThisTurn = true;
+                    _packageShieldBonusTriggeredThisTurn = true;
                     Log($"SELinux shield +{bonus}");
                 }
             }
 
-            playerState.Shield += total;
+            _playerState.Shield += total;
             if (!string.IsNullOrWhiteSpace(label))
             {
                 Log($"{label}: gained {total} Shield");
@@ -1192,14 +1196,14 @@ namespace KernelPanic.Combat
 
         private void GeneratePackageLanguageCard(string label)
         {
-            if (handController == null || handController.RemainingRam <= 0)
+            if (_handController == null || _handController.RemainingRam <= 0)
             {
                 return;
             }
 
-            Language language = RandomRoll.RollRange(0, 1, new RollContext(playerState)) == 0
-                ? runConfig.PrimaryLanguage
-                : runConfig.SecondaryLanguage;
+            Language language = RandomRoll.RollRange(0, 1, new RollContext(_playerState)) == 0
+                ? _runConfig.PrimaryLanguage
+                : _runConfig.SecondaryLanguage;
 
             if (!TryCreateGeneratedCard(language, Rarity.Common, out CardInstance generated))
             {
@@ -1207,7 +1211,7 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            if (handController.Add(generated))
+            if (_handController.Add(generated))
             {
                 Log($"{label}: generated {GetCardName(generated)} at 0c");
                 StateChanged?.Invoke();
@@ -1216,7 +1220,7 @@ namespace KernelPanic.Combat
 
         private void GenerateAurPackageCard(PackageEffectData effect)
         {
-            if (handController == null || handController.RemainingRam <= 0)
+            if (_handController == null || _handController.RemainingRam <= 0)
             {
                 return;
             }
@@ -1224,7 +1228,7 @@ namespace KernelPanic.Combat
             int maxRarity = Mathf.Clamp(effect.Threshold, 0, (int)Rarity.Legendary);
             List<CardDefinition> pool = new();
             HashSet<string> seenIds = new(StringComparer.OrdinalIgnoreCase);
-            IReadOnlyList<CardDefinition> source = generatedCardPool.Count > 0 ? generatedCardPool : runConfig?.StartingDeck;
+            IReadOnlyList<CardDefinition> source = _generatedCardPool.Count > 0 ? _generatedCardPool : _runConfig?.StartingDeck;
             if (source == null)
             {
                 Log("AUR: TODO card-generation pool unavailable");
@@ -1255,14 +1259,14 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            int index = RandomRoll.RollRange(0, pool.Count - 1, new RollContext(playerState));
+            int index = RandomRoll.RollRange(0, pool.Count - 1, new RollContext(_playerState));
             CardDefinition selected = pool[index];
             CardInstance generated = new(selected)
             {
                 TemporaryCostDelta = -Mathf.Clamp(effect.Amount, 0, selected.CycleCost)
             };
 
-            if (handController.Add(generated))
+            if (_handController.Add(generated))
             {
                 string discount = effect.Amount > 0 ? " at -1c" : string.Empty;
                 Log($"AUR: generated {GetCardName(generated)}{discount}");
@@ -1272,74 +1276,153 @@ namespace KernelPanic.Combat
 
         private void HandlePackageDamageDealt(DamageDealtEvent payload)
         {
-            if (payload.Target == playerState && playerState != null && playerState.ArchRollingReleaseRecoveredThisHit)
+            HandleEnemyDamageDealt(payload);
+
+            if (payload.Target == _playerState && _playerState != null && _playerState.ArchRollingReleaseRecoveredThisHit)
             {
-                playerState.ArchRollingReleaseRecoveredThisHit = false;
+                _playerState.ArchRollingReleaseRecoveredThisHit = false;
                 string recovery = "rolling release: recovered at 1 Uptime";
-                if (playerState.ArchRollingReleaseShieldOnSave > 0 || playerState.ArchRollingReleaseCyclesOnSave > 0)
+                if (_playerState.ArchRollingReleaseShieldOnSave > 0 || _playerState.ArchRollingReleaseCyclesOnSave > 0)
                 {
-                    recovery += $", +{playerState.ArchRollingReleaseShieldOnSave} Shield, +{playerState.ArchRollingReleaseCyclesOnSave} Cycle";
+                    recovery += $", +{_playerState.ArchRollingReleaseShieldOnSave} Shield, +{_playerState.ArchRollingReleaseCyclesOnSave} Cycle";
                 }
 
                 Log(recovery);
                 StateChanged?.Invoke();
             }
 
-            if (payload.Target != playerState
+            if (payload.Target != _playerState
                 || payload.UptimeDamage <= 0
-                || packageTimeshiftTriggeredThisWave
+                || _packageTimeshiftTriggeredThisWave
                 || !HasPackageEffect(PackageEffectKind.WaveThresholdRestore, out PackageEffectData effect))
             {
                 return;
             }
 
             int thresholdPercent = Mathf.Clamp(effect.Threshold, 1, 100);
-            int restoreTarget = Mathf.CeilToInt(playerState.MaxUptime * (thresholdPercent / 100f));
-            if (playerState.CurrentUptime >= restoreTarget)
+            int restoreTarget = Mathf.CeilToInt(_playerState.MaxUptime * (thresholdPercent / 100f));
+            if (_playerState.CurrentUptime >= restoreTarget)
             {
                 return;
             }
 
-            packageTimeshiftTriggeredThisWave = true;
-            playerState.CurrentUptime = restoreTarget;
+            _packageTimeshiftTriggeredThisWave = true;
+            _playerState.CurrentUptime = restoreTarget;
             if (effect.CleanseDebuffs)
             {
-                statusEffects.CleanseHarmful(playerState);
+                _statusEffects.CleanseHarmful(_playerState);
             }
 
             Log($"Timeshift restored uptime to {thresholdPercent}%");
             StateChanged?.Invoke();
         }
 
-        private void ResetArchBtwAtEndOfTurn()
+        private void HandleEnemyDamageDealt(DamageDealtEvent payload)
         {
-            if (!IsDistro("arch") || playerState == null || playerState.ArchBtwStacks <= 0 || ArchBtwPersistsThisWave())
+            EnemyInstance enemy = FindEnemy(payload.Target);
+            if (enemy == null)
             {
                 return;
             }
 
-            playerState.ArchBtwStacks = 0;
+            if (payload.Amount > 0)
+            {
+                enemy.MarkDamaged();
+            }
+
+            if (!enemy.HasBehavior(EnemyBehaviorFlags.Revive)
+                || payload.UptimeDamage <= 0
+                || enemy.State.CurrentUptime > 0)
+            {
+                return;
+            }
+
+            int uptimeBeforeHit = enemy.State.CurrentUptime + payload.UptimeDamage;
+            int reapThreshold = Mathf.CeilToInt(enemy.MaxUptime * (EnemyArchetypeCatalog.ZombieReapThresholdPercent / 100f));
+            bool reaped = enemy.HasRevived || enemy.LethalHitThisTurn || uptimeBeforeHit <= reapThreshold;
+            enemy.MarkLethalHit();
+            if (reaped)
+            {
+                enemy.MarkReaped();
+                Log($"{enemy.Name} reaped");
+                return;
+            }
+
+            enemy.MarkPendingRevive();
+            Log($"{enemy.Name} dropped to 0 uptime; reviving next exchange");
+            StateChanged?.Invoke();
+        }
+
+        private EnemyInstance FindEnemy(CombatantState state)
+        {
+            if (state == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                if (_enemies[i].State == state)
+                {
+                    return _enemies[i];
+                }
+            }
+
+            return null;
+        }
+
+        private void RevivePendingEnemies()
+        {
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                EnemyInstance enemy = _enemies[i];
+                if (!enemy.PendingRevive)
+                {
+                    continue;
+                }
+
+                enemy.ReviveAtHalfUptime();
+                Log($"{enemy.Name} revived at {enemy.CurrentUptime} uptime");
+            }
+        }
+
+        private void ResetEnemyTurnLethalMarkers()
+        {
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                _enemies[i].ResetTurnLethalMarker();
+            }
+        }
+
+        private void ResetArchBtwAtEndOfTurn()
+        {
+            if (!IsDistro("arch") || _playerState == null || _playerState.ArchBtwStacks <= 0 || ArchBtwPersistsThisWave())
+            {
+                return;
+            }
+
+            _playerState.ArchBtwStacks = 0;
         }
 
         private void ResetArchWaveState()
         {
-            if (playerState == null)
+            if (_playerState == null)
             {
                 return;
             }
 
-            playerState.ArchBtwStacks = 0;
-            playerState.ArchRollingReleaseSavesRemaining = IsDistro("arch") ? runConfig.DistroVersion >= 5 ? 2 : 1 : 0;
-            playerState.ArchRollingReleaseAvailableThisWave = playerState.ArchRollingReleaseSavesRemaining > 0;
-            playerState.ArchRollingReleaseRecoveredThisHit = false;
-            playerState.HasLastPlayedCardLanguage = false;
-            playerState.HasPreviousPlayedCardLanguage = false;
+            _playerState.ArchBtwStacks = 0;
+            _playerState.ArchRollingReleaseSavesRemaining = IsDistro("arch") ? _runConfig.DistroVersion >= 5 ? 2 : 1 : 0;
+            _playerState.ArchRollingReleaseAvailableThisWave = _playerState.ArchRollingReleaseSavesRemaining > 0;
+            _playerState.ArchRollingReleaseRecoveredThisHit = false;
+            _playerState.HasLastPlayedCardLanguage = false;
+            _playerState.HasPreviousPlayedCardLanguage = false;
         }
 
         private bool ArchBtwPersistsThisWave()
         {
             return IsDistro("arch")
-                && (runConfig.DistroVersion >= 5
+                && (_runConfig.DistroVersion >= 5
                 || HasOnDistroPackageEffect(PackageEffectKind.FirstCThisTurnDamageMultiplier, out PackageEffectData effect)
                 && effect.PersistArchBtw);
         }
@@ -1347,7 +1430,7 @@ namespace KernelPanic.Combat
         private bool HasOnDistroPackageEffect(PackageEffectKind kind, out PackageEffectData effect)
         {
             effect = default;
-            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            IReadOnlyList<PackageInstance> packages = _runConfig?.EquippedPackages;
             if (packages == null)
             {
                 return false;
@@ -1356,12 +1439,12 @@ namespace KernelPanic.Combat
             for (int i = 0; i < packages.Count; i++)
             {
                 PackageInstance package = packages[i];
-                if (package?.Definition == null || !package.Definition.IsIntendedFor(runConfig?.Distro?.Id))
+                if (package?.Definition == null || !package.Definition.IsIntendedFor(_runConfig?.Distro?.Id))
                 {
                     continue;
                 }
 
-                effect = package.EffectFor(runConfig?.Distro?.Id);
+                effect = package.EffectFor(_runConfig?.Distro?.Id);
                 if (effect.Kind == kind)
                 {
                     return true;
@@ -1374,7 +1457,7 @@ namespace KernelPanic.Combat
         private bool HasPackageEffect(PackageEffectKind kind, out PackageEffectData effect)
         {
             effect = default;
-            IReadOnlyList<PackageInstance> packages = runConfig?.EquippedPackages;
+            IReadOnlyList<PackageInstance> packages = _runConfig?.EquippedPackages;
             if (packages == null)
             {
                 return false;
@@ -1388,7 +1471,7 @@ namespace KernelPanic.Combat
                     continue;
                 }
 
-                effect = package.EffectFor(runConfig?.Distro?.Id);
+                effect = package.EffectFor(_runConfig?.Distro?.Id);
                 if (effect.Kind == kind)
                 {
                     return true;
@@ -1429,21 +1512,21 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            state.forceMaxRolls = IsDistro("mint");
+            state.ForceMaxRolls = IsDistro("mint");
             state.IgnoreDamageMultipliers = IsDistro("mint");
-            state.AllowFlatDamageBuffs = IsDistro("mint") && runConfig.DistroVersion >= 4;
-            state.FlatEffectBonus = IsDistro("mint") && runConfig.DistroVersion >= 2 ? 2 : 0;
+            state.AllowFlatDamageBuffs = IsDistro("mint") && _runConfig.DistroVersion >= 4;
+            state.FlatEffectBonus = IsDistro("mint") && _runConfig.DistroVersion >= 2 ? 2 : 0;
             state.DamageMultiplierPercent = 100;
             state.CurrentCardDamageMultiplierPercent = 100;
-            state.ArchBtwDamagePerStack = IsDistro("arch") && runConfig.DistroVersion >= 2 ? 2 : 1;
-            state.ArchMakepkgBtwMultiplier = IsDistro("arch") && runConfig.DistroVersion >= 3 ? 3 : 2;
-            state.ArchRollingReleaseShieldOnSave = IsDistro("arch") && runConfig.DistroVersion >= 4 ? 15 : 0;
-            state.ArchRollingReleaseCyclesOnSave = IsDistro("arch") && runConfig.DistroVersion >= 4 ? 2 : 0;
+            state.ArchBtwDamagePerStack = IsDistro("arch") && _runConfig.DistroVersion >= 2 ? 2 : 1;
+            state.ArchMakepkgBtwMultiplier = IsDistro("arch") && _runConfig.DistroVersion >= 3 ? 3 : 2;
+            state.ArchRollingReleaseShieldOnSave = IsDistro("arch") && _runConfig.DistroVersion >= 4 ? 15 : 0;
+            state.ArchRollingReleaseCyclesOnSave = IsDistro("arch") && _runConfig.DistroVersion >= 4 ? 2 : 0;
         }
 
         private bool IsDistro(string id)
         {
-            return string.Equals(runConfig?.Distro?.Id, id, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(_runConfig?.Distro?.Id, id, StringComparison.OrdinalIgnoreCase);
         }
 
         public bool CanPlayerReceiveCardShield(CardInstance card)
@@ -1464,7 +1547,7 @@ namespace KernelPanic.Combat
         private bool IsCurrentDistroExclusiveCard(CardInstance card)
         {
             CardDefinition definition = card?.Definition;
-            IReadOnlyList<CardDefinition> exclusiveCards = runConfig?.Distro?.ExclusiveCards;
+            IReadOnlyList<CardDefinition> exclusiveCards = _runConfig?.Distro?.ExclusiveCards;
             if (definition == null || exclusiveCards == null)
             {
                 return false;
@@ -1490,7 +1573,7 @@ namespace KernelPanic.Combat
 
         private CombatContext BuildContext(CardInstance card, IReadOnlyList<CombatantState> targets)
         {
-            return new CombatContext(card, playerState, targets, this, damagePipeline, statusEffects, deckController, handController, enemies);
+            return new CombatContext(card, _playerState, targets, this, _damagePipeline, _statusEffects, _deckController, _handController, _enemies);
         }
 
         private void ExecuteCardEffects(CardInstance card, IReadOnlyList<CombatantState> targets)
@@ -1510,7 +1593,7 @@ namespace KernelPanic.Combat
 
         private void ResolveCardRiders(CardInstance card)
         {
-            if (card == null || card.DrawRider <= 0 || handController == null || playerState == null)
+            if (card == null || card.DrawRider <= 0 || _handController == null || _playerState == null)
             {
                 return;
             }
@@ -1530,9 +1613,9 @@ namespace KernelPanic.Combat
                 return LivingEnemyStates();
             }
 
-            if (selectedEnemyIndex >= 0 && selectedEnemyIndex < enemies.Count && !enemies[selectedEnemyIndex].State.IsDefeated)
+            if (_selectedEnemyIndex >= 0 && _selectedEnemyIndex < _enemies.Count && !_enemies[_selectedEnemyIndex].State.IsDefeated)
             {
-                return new[] { enemies[selectedEnemyIndex].State };
+                return new[] { _enemies[_selectedEnemyIndex].State };
             }
 
             if (RequiresEnemyTarget(card))
@@ -1585,7 +1668,7 @@ namespace KernelPanic.Combat
 
         private List<CombatantState> LivingEnemyStates()
         {
-            return enemies
+            return _enemies
                 .Where(enemy => enemy.State != null && !enemy.State.IsDefeated)
                 .Select(enemy => enemy.State)
                 .ToList();
@@ -1593,11 +1676,11 @@ namespace KernelPanic.Combat
 
         private CombatantState FirstLivingEnemyState()
         {
-            for (int i = 0; i < enemies.Count; i++)
+            for (int i = 0; i < _enemies.Count; i++)
             {
-                if (enemies[i].State != null && !enemies[i].State.IsDefeated)
+                if (_enemies[i].State != null && !_enemies[i].State.IsDefeated)
                 {
-                    return enemies[i].State;
+                    return _enemies[i].State;
                 }
             }
 
@@ -1606,68 +1689,83 @@ namespace KernelPanic.Combat
 
         private void RemoveDefeatedEnemies()
         {
-            for (int i = enemies.Count - 1; i >= 0; i--)
+            for (int i = _enemies.Count - 1; i >= 0; i--)
             {
-                if (enemies[i].State.IsDefeated)
+                if (_enemies[i].State.IsDefeated)
                 {
-                    Log($"{enemies[i].Name} exited");
-                    runManager?.AddBits(CombatTuning.BitsPerKill);
-                    enemies.RemoveAt(i);
+                    if (_enemies[i].PendingRevive)
+                    {
+                        continue;
+                    }
+
+                    Log($"{_enemies[i].Name} exited");
+                    _runManager?.AddBits(CombatTuning.BitsPerKill);
+                    _enemies.RemoveAt(i);
                 }
             }
 
-            if (selectedEnemyIndex >= enemies.Count)
+            if (_selectedEnemyIndex >= _enemies.Count)
             {
-                selectedEnemyIndex = -1;
+                _selectedEnemyIndex = -1;
             }
         }
 
         private void SpawnStructuralEnemies()
         {
             int wave = CurrentWaveNumber;
-            int count = Mathf.Clamp(CombatTuning.BaseEnemiesPerWave + ((wave - 1) * CombatTuning.AdditionalEnemiesPerWave), CombatTuning.BaseEnemiesPerWave, CombatTuning.MaxEnemiesPerWave);
+            int countGrowth = ((wave - 1) / 2) * CombatTuning.AdditionalEnemiesPerWave;
+            int count = Mathf.Clamp(CombatTuning.BaseEnemiesPerWave + countGrowth, CombatTuning.BaseEnemiesPerWave, CombatTuning.MaxEnemiesPerWave);
             int waveUptimeBonus = Mathf.Max(0, wave - 1) * CombatTuning.EnemyUptimeGrowthPerWave;
             for (int i = 0; i < count; i++)
             {
-                // TODO: Replace this low-HP additive wave stub with the real encounter/difficulty system.
-                int baseUptime = RandomRoll.RollRange(CombatTuning.BaseEnemyUptimeMin, CombatTuning.BaseEnemyUptimeMax, RollContext.None);
-                int uptime = baseUptime + waveUptimeBonus;
-                enemies.Add(new EnemyInstance("zombie_process", uptime, CreateZombieProcessIntentPool(wave, i)));
+                SpawnEnemy(CreatePlaceholderArchetypeId(wave, i), waveUptimeBonus);
             }
         }
 
-        private static IReadOnlyList<EnemyIntent> CreateZombieProcessIntentPool(int wave, int slotIndex)
+        private void SpawnEnemy(string archetypeId, int uptimeBonus)
         {
-            // TODO: Replace this code-shaped pool with EnemyDefinition-provided intent data.
-            int attack = GetZombieProcessAttack(wave, slotIndex);
-            return new[]
-            {
-                new EnemyIntent(EnemyIntentKind.Attack, attack, attack, Language.C, "attack", ">"),
-                new EnemyIntent(EnemyIntentKind.Defend, 3 + wave, 3 + wave, Language.C, "defend", "#"),
-                new EnemyIntent(EnemyIntentKind.StatusAttack, CombatTuning.EnemyStatusAttackDamage, CombatTuning.EnemyStatusAttackDamage, Language.C, "leak", "!", false, StatusType.MemoryLeak, 1, CombatTuning.EnemyStatusDuration)
-            };
+            EnemyArchetypeDescriptor archetype = EnemyArchetypeCatalog.Get(archetypeId);
+            int baseUptime = RandomRoll.RollRange(archetype.BaseUptimeMin, archetype.BaseUptimeMax, RollContext.None);
+            _enemies.Add(new EnemyInstance(archetype, baseUptime + Mathf.Max(0, uptimeBonus)));
         }
 
-        private static int GetZombieProcessAttack(int wave, int slotIndex)
+        private static string CreatePlaceholderArchetypeId(int wave, int slotIndex)
         {
-            int safeWave = Mathf.Max(1, wave);
-            int waveGrowth = (safeWave - 1) / Mathf.Max(1, CombatTuning.EnemyAttackGrowthEveryWaves);
-            int slotVariance = CombatTuning.EnemySlotAttackVariance <= 0 ? 0 : slotIndex % (CombatTuning.EnemySlotAttackVariance + 1);
-            return CombatTuning.BaseEnemyAttack + waveGrowth + slotVariance;
+            // TODO: Replace this structural mix with encounter/difficulty assets.
+            string[] pool = wave switch
+            {
+                <= 1 => new[] { "zombie_process", "memory_leak" },
+                2 => new[] { "zombie_process", "memory_leak", "fork_bomb", "firewalld" },
+                3 => new[] { "zombie_process", "memory_leak", "fork_bomb", "firewalld", "daemon" },
+                _ => new[] { "zombie_process", "memory_leak", "fork_bomb", "firewalld", "daemon", "cron_job" }
+            };
+
+            if (slotIndex == 0)
+            {
+                return wave % 2 == 0 ? "firewalld" : "zombie_process";
+            }
+
+            if (slotIndex == 1 && wave >= 2)
+            {
+                return wave % 3 == 0 ? "fork_bomb" : "memory_leak";
+            }
+
+            int index = RandomRoll.RollRange(0, pool.Length - 1, RollContext.None);
+            return pool[index];
         }
 
         private void PickEnemyIntents()
         {
-            for (int i = 0; i < enemies.Count; i++)
+            for (int i = 0; i < _enemies.Count; i++)
             {
-                if (!enemies[i].State.IsDefeated)
+                if (!_enemies[i].State.IsDefeated)
                 {
-                    enemies[i].PickNextIntent();
+                    _enemies[i].PickNextIntent();
                 }
             }
         }
 
-        private void ExecuteEnemyIntent(EnemyInstance enemy)
+        private void ExecuteEnemyIntent(EnemyInstance enemy, int enemyIndex)
         {
             EnemyIntent intent = enemy.CurrentIntent;
             int value = intent.MinValue == intent.MaxValue
@@ -1678,37 +1776,91 @@ namespace KernelPanic.Combat
             {
                 case EnemyIntentKind.Attack:
                     value = ApplyIncomingAttackMitigation(value);
-                    DamageResult attackResult = damagePipeline.DealDamage(new DamageRequest(enemy.State, playerState, value, intent.DamageType, intent.TrueDamage, false));
+                    DamageResult attackResult = _damagePipeline.DealDamage(new DamageRequest(enemy.State, _playerState, value, intent.DamageType, intent.TrueDamage, false));
                     GameEvents.RaisePlayerDamaged(new PlayerDamagedEvent(enemy, attackResult.FinalAmount));
                     break;
                 case EnemyIntentKind.Defend:
-                    enemy.State.Shield += value;
+                    if (enemy.HasBehavior(EnemyBehaviorFlags.DefendAllies))
+                    {
+                        DefendSelfAndAdjacent(enemyIndex, value);
+                    }
+                    else
+                    {
+                        enemy.State.Shield += value;
+                    }
                     break;
                 case EnemyIntentKind.StatusAttack:
-                    DamageResult statusResult = damagePipeline.DealDamage(new DamageRequest(enemy.State, playerState, value, intent.DamageType, intent.TrueDamage, false));
+                    DamageResult statusResult = _damagePipeline.DealDamage(new DamageRequest(enemy.State, _playerState, value, intent.DamageType, intent.TrueDamage, false));
                     GameEvents.RaisePlayerDamaged(new PlayerDamagedEvent(enemy, statusResult.FinalAmount));
                     if (intent.StatusStacks > 0)
                     {
-                        statusEffects.Apply(playerState, intent.StatusType, intent.StatusStacks, intent.StatusDuration, enemy.State, skipNextTick: true);
+                        _statusEffects.Apply(_playerState, intent.StatusType, intent.StatusStacks, intent.StatusDuration, enemy.State, skipNextTick: true);
                     }
                     break;
                 case EnemyIntentKind.Buff:
                     Log("TODO: buff intent needs enemy buff/status support.");
                     break;
                 case EnemyIntentKind.Special:
-                    Log("TODO: special intent needs enemy-specific behavior hooks.");
+                    ExecuteSpecialEnemyIntent(enemy);
                     break;
             }
+
+            enemy.AdvanceCountdownAfterAction();
+        }
+
+        private void ExecuteSpecialEnemyIntent(EnemyInstance enemy)
+        {
+            if (enemy.HasBehavior(EnemyBehaviorFlags.Split))
+            {
+                TrySplitForkBomb(enemy);
+                return;
+            }
+
+            Log("TODO: special intent needs enemy-specific behavior hooks.");
+        }
+
+        private void TrySplitForkBomb(EnemyInstance source)
+        {
+            int totalForkBombs = _enemies.Count(enemy => enemy.ArchetypeId == source.ArchetypeId && !enemy.State.IsDefeated);
+            if (totalForkBombs >= EnemyArchetypeCatalog.ForkBombTotalCap)
+            {
+                Log("fork bomb: split capped");
+                return;
+            }
+
+            EnemyArchetypeDescriptor archetype = EnemyArchetypeCatalog.Get(source.ArchetypeId);
+            int uptime = Mathf.Max(1, Mathf.CeilToInt(source.MaxUptime * 0.5f));
+            EnemyInstance copy = new(archetype, uptime);
+            copy.PickNextIntent();
+            _enemies.Add(copy);
+            Log("fork bomb split");
+        }
+
+        private void DefendSelfAndAdjacent(int enemyIndex, int amount)
+        {
+            int applied = 0;
+            for (int i = enemyIndex - 1; i <= enemyIndex + 1; i++)
+            {
+                if (i < 0 || i >= _enemies.Count || _enemies[i].State.IsDefeated)
+                {
+                    continue;
+                }
+
+                _enemies[i].State.Shield += amount;
+                applied++;
+            }
+
+            Log($"firewalld shielded {applied} process(es) for {amount}");
         }
 
         private int ApplyIncomingAttackMitigation(int value)
         {
-            if (playerState == null || playerState.IncomingAttackHalfCharges <= 0)
+            if (_playerState == null || _playerState.IncomingAttackHalfCharges <= 0)
             {
                 return value;
             }
 
-            playerState.IncomingAttackHalfCharges--;
+            _playerState.IncomingAttackHalfCharges--;
             int mitigated = Mathf.CeilToInt(Mathf.Max(0, value) * 0.5f);
             Log($"SELinux enforcing halved attack {value}->{mitigated}");
             return mitigated;
@@ -1716,17 +1868,17 @@ namespace KernelPanic.Combat
 
         private void ResolveDelayedEndOfTurnEffects()
         {
-            for (int i = delayedEffects.Count - 1; i >= 0; i--)
+            for (int i = _delayedEffects.Count - 1; i >= 0; i--)
             {
-                DelayedCombatEffect effect = delayedEffects[i];
+                DelayedCombatEffect effect = _delayedEffects[i];
                 effect.GarbageCollectionsRemaining--;
                 if (effect.GarbageCollectionsRemaining > 0)
                 {
-                    delayedEffects[i] = effect;
+                    _delayedEffects[i] = effect;
                     continue;
                 }
 
-                delayedEffects.RemoveAt(i);
+                _delayedEffects.RemoveAt(i);
                 switch (effect.Kind)
                 {
                     case DelayedCombatEffectKind.UpdateManagerRepeat:
@@ -1744,7 +1896,7 @@ namespace KernelPanic.Combat
             List<CombatantState> targets = LivingEnemyStates();
             for (int i = 0; i < targets.Count; i++)
             {
-                damagePipeline.DealDamage(new DamageRequest(playerState, targets[i], amount, language, false, true));
+                _damagePipeline.DealDamage(new DamageRequest(_playerState, targets[i], amount, language, false, true));
             }
 
             Log($"{label}: dealt {amount} to all enemies");
@@ -1753,24 +1905,24 @@ namespace KernelPanic.Combat
 
         private void RestoreTimeshift(int snapshot)
         {
-            if (playerState == null || playerState.IsDefeated || playerState.CurrentUptime >= snapshot)
+            if (_playerState == null || _playerState.IsDefeated || _playerState.CurrentUptime >= snapshot)
             {
                 return;
             }
 
             int target = snapshot;
-            if (IsDistro("mint") && runConfig.DistroVersion >= 3)
+            if (IsDistro("mint") && _runConfig.DistroVersion >= 3)
             {
-                target = Mathf.Min(playerState.MaxUptime, snapshot + 2);
+                target = Mathf.Min(_playerState.MaxUptime, snapshot + 2);
             }
 
-            if (IsDistro("mint") && runConfig.DistroVersion >= 5)
+            if (IsDistro("mint") && _runConfig.DistroVersion >= 5)
             {
-                target = playerState.MaxUptime;
+                target = _playerState.MaxUptime;
             }
 
-            int restored = target - playerState.CurrentUptime;
-            playerState.CurrentUptime = target;
+            int restored = target - _playerState.CurrentUptime;
+            _playerState.CurrentUptime = target;
             Log($"timeshift restored {restored} uptime");
         }
 
@@ -1781,15 +1933,15 @@ namespace KernelPanic.Combat
 
         private bool CheckLoss()
         {
-            if (runLost || playerState == null || !playerState.IsDefeated)
+            if (_runLost || _playerState == null || !_playerState.IsDefeated)
             {
-                return runLost;
+                return _runLost;
             }
 
-            runLost = true;
-            awaitingWaveContinue = false;
-            selectedEnemyIndex = -1;
-            pendingTargetCard = null;
+            _runLost = true;
+            _awaitingWaveContinue = false;
+            _selectedEnemyIndex = -1;
+            _pendingTargetCard = null;
             GameEvents.RaiseEncounterLost(new EncounterLostEvent(CurrentWaveNumber));
             GameEvents.RaiseRunEnded(new RunEndedEvent(playerDied: true, entropyEarned: 0));
             Log("kernel panic: player uptime reached 0");
@@ -1799,14 +1951,14 @@ namespace KernelPanic.Combat
 
         private bool CheckWin()
         {
-            if (awaitingWaveContinue || runLost || enemies.Count > 0)
+            if (_awaitingWaveContinue || _runLost || _enemies.Count > 0)
             {
-                return awaitingWaveContinue;
+                return _awaitingWaveContinue;
             }
 
-            awaitingWaveContinue = true;
-            selectedEnemyIndex = -1;
-            pendingTargetCard = null;
+            _awaitingWaveContinue = true;
+            _selectedEnemyIndex = -1;
+            _pendingTargetCard = null;
             int clearedWave = CurrentWaveNumber;
             GameEvents.RaiseEncounterWon(new EncounterWonEvent(clearedWave));
             GameEvents.RaiseWaveCleared(new WaveClearedEvent(clearedWave));
@@ -1838,7 +1990,7 @@ namespace KernelPanic.Combat
             return string.IsNullOrWhiteSpace(card.Definition.DisplayName) ? card.Definition.Id : card.Definition.DisplayName;
         }
 
-        private bool IsCombatPaused => awaitingWaveContinue || runLost;
+        private bool IsCombatPaused => _awaitingWaveContinue || _runLost;
 
         private enum DelayedCombatEffectKind
         {

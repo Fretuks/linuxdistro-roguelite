@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: shop_c_free
   displayName: free()
-  description: deal 12. if segfault recoil happens, draw 2.
+  description: deal 12. 20% segfault: uptime -3 and draw 2.
   flavorText: double-free your schedule, not your heap.
   language: 0
   rarity: 0

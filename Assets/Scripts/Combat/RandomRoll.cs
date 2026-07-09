@@ -36,7 +36,7 @@ namespace KernelPanic.Combat
             }
 
             // Mint's passive will flip this bool; no passive sets it in this scaffold.
-            if (context.Source != null && context.Source.forceMaxRolls)
+            if (context.Source != null && context.Source.ForceMaxRolls)
             {
                 return max;
             }

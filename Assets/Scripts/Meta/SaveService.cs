@@ -90,7 +90,7 @@ namespace KernelPanic.Meta
         // with access to PackageDatabase) consumes this once per load to grant Cache for the extras,
         // then clears it. See MainMenuController.LoadMetaState.
         [NonSerialized]
-        public List<CollapsedPackageDuplicate> collapsedPackageDuplicates = new();
+        public List<CollapsedPackageDuplicate> CollapsedPackageDuplicates = new();
 
         public static SaveData CreateDefault()
         {
@@ -236,7 +236,7 @@ namespace KernelPanic.Meta
 
         private void NormalizeOwnedPackages()
         {
-            collapsedPackageDuplicates.Clear();
+            CollapsedPackageDuplicates.Clear();
             Dictionary<string, OwnedPackageSaveEntry> highestById = new(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, int> extraCountById = new(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < ownedPackages.Count; i++)
@@ -265,7 +265,7 @@ namespace KernelPanic.Meta
             ownedPackages = new List<OwnedPackageSaveEntry>(highestById.Values);
             foreach (KeyValuePair<string, int> extra in extraCountById)
             {
-                collapsedPackageDuplicates.Add(new CollapsedPackageDuplicate(extra.Key, extra.Value));
+                CollapsedPackageDuplicates.Add(new CollapsedPackageDuplicate(extra.Key, extra.Value));
             }
 
             ownedPackageIds.Clear();

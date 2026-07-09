@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: lang_c_pointer
   displayName: pointer
-  description: deal 6. if the previous card was C, deal 10 instead.
+  description: deal 6. if the previous card was C, deal 10 instead. 20% segfault: uptime -3.
   flavorText: points at the bug with suspicious confidence.
   language: 0
   rarity: 0

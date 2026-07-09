@@ -26,7 +26,8 @@ namespace KernelPanic.Combat
             bool trueDamage = false,
             StatusType statusType = StatusType.MemoryLeak,
             int statusStacks = 0,
-            int statusDuration = -1)
+            int statusDuration = -1,
+            string valueTextOverride = null)
         {
             Kind = kind;
             MinValue = minValue;
@@ -38,6 +39,7 @@ namespace KernelPanic.Combat
             StatusType = statusType;
             StatusStacks = statusStacks;
             StatusDuration = statusDuration;
+            ValueTextOverride = valueTextOverride;
         }
 
         public EnemyIntentKind Kind { get; }
@@ -50,8 +52,27 @@ namespace KernelPanic.Combat
         public StatusType StatusType { get; }
         public int StatusStacks { get; }
         public int StatusDuration { get; }
+        public string ValueTextOverride { get; }
 
-        public string ValueText => MinValue == MaxValue ? MinValue.ToString() : $"{MinValue}-{MaxValue}";
+        public string ValueText => string.IsNullOrWhiteSpace(ValueTextOverride)
+            ? MinValue == MaxValue ? MinValue.ToString() : $"{MinValue}-{MaxValue}"
+            : ValueTextOverride;
         public string DisplayText => $"{IconKey} {DisplayLabel} {ValueText}";
+
+        public EnemyIntent WithValues(int minValue, int maxValue, string displayLabel = null, string iconKey = null, string valueTextOverride = null)
+        {
+            return new EnemyIntent(
+                Kind,
+                minValue,
+                maxValue,
+                DamageType,
+                displayLabel ?? DisplayLabel,
+                iconKey ?? IconKey,
+                TrueDamage,
+                StatusType,
+                StatusStacks,
+                StatusDuration,
+                valueTextOverride);
+        }
     }
 }

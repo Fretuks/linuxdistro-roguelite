@@ -116,7 +116,7 @@ namespace KernelPanic.Combat
         private static int ApplyCrit(int amount, DamageRequest request, out bool wasCritical)
         {
             wasCritical = false;
-            if (!request.CanCrit || amount <= 0 || request.Source != null && request.Source.forceMaxRolls)
+            if (!request.CanCrit || amount <= 0 || request.Source != null && request.Source.ForceMaxRolls)
             {
                 return amount;
             }

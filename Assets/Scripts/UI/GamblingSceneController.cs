@@ -33,53 +33,53 @@ namespace KernelPanic.UI
         private const int SummaryTickSteps = 8;
         private const int SummaryTickMs = 220;
 
-        private readonly List<CompletedGachaReward> rewards = new();
-        private readonly List<PullCardView> cardViews = new();
-        private UIDocument document;
-        private VisualElement root;
-        private Label commandLabel;
-        private Label costLabel;
-        private Label flourishLabel;
-        private Label skipHint;
-        private VisualElement resultGrid;
-        private VisualElement effectLayer;
-        private VisualElement goldShimmer;
-        private VisualElement summaryPanel;
-        private Label summaryTotalsLabel;
-        private Button continueButton;
-        private string completedHeader;
-        private bool skipRequested;
-        private bool revealComplete;
-        private bool failed;
+        private readonly List<CompletedGachaReward> _rewards = new();
+        private readonly List<PullCardView> _cardViews = new();
+        private UIDocument _document;
+        private VisualElement _root;
+        private Label _commandLabel;
+        private Label _costLabel;
+        private Label _flourishLabel;
+        private Label _skipHint;
+        private VisualElement _resultGrid;
+        private VisualElement _effectLayer;
+        private VisualElement _goldShimmer;
+        private VisualElement _summaryPanel;
+        private Label _summaryTotalsLabel;
+        private Button _continueButton;
+        private string _completedHeader;
+        private bool _skipRequested;
+        private bool _revealComplete;
+        private bool _failed;
 
         private void Awake()
         {
-            document = GetComponent<UIDocument>();
-            root = document.rootVisualElement;
-            root.Clear();
-            root.focusable = true;
-            root.AddToClassList("gambling-root");
-            root.EnableInClassList("reduced-motion", UIPreferences.ReducedMotion);
+            _document = GetComponent<UIDocument>();
+            _root = _document.rootVisualElement;
+            _root.Clear();
+            _root.focusable = true;
+            _root.AddToClassList("gambling-root");
+            _root.EnableInClassList("reduced-motion", UIPreferences.ReducedMotion);
             LoadStyles();
             BuildLayout();
-            root.RegisterCallback<KeyDownEvent>(HandleKeyDown);
-            root.RegisterCallback<PointerDownEvent>(HandlePointerDown);
+            _root.RegisterCallback<KeyDownEvent>(HandleKeyDown);
+            _root.RegisterCallback<PointerDownEvent>(HandlePointerDown);
         }
 
         private void OnDestroy()
         {
-            if (root == null)
+            if (_root == null)
             {
                 return;
             }
 
-            root.UnregisterCallback<KeyDownEvent>(HandleKeyDown);
-            root.UnregisterCallback<PointerDownEvent>(HandlePointerDown);
+            _root.UnregisterCallback<KeyDownEvent>(HandleKeyDown);
+            _root.UnregisterCallback<PointerDownEvent>(HandlePointerDown);
         }
 
         private void Start()
         {
-            root.Focus();
+            _root.Focus();
             StartCoroutine(RunCutscene());
         }
 
@@ -95,7 +95,7 @@ namespace KernelPanic.UI
             StyleSheet styleSheet = Resources.Load<StyleSheet>(resourcePath);
             if (styleSheet != null)
             {
-                root.styleSheets.Add(styleSheet);
+                _root.styleSheets.Add(styleSheet);
             }
         }
 
@@ -103,7 +103,7 @@ namespace KernelPanic.UI
         {
             VisualElement shell = new();
             shell.AddToClassList("gambling-shell");
-            root.Add(shell);
+            _root.Add(shell);
 
             VisualElement frame = new();
             frame.AddToClassList("gambling-frame");
@@ -117,76 +117,76 @@ namespace KernelPanic.UI
             titleBlock.AddToClassList("gambling-title-block");
             header.Add(titleBlock);
 
-            commandLabel = new("git pull");
-            commandLabel.AddToClassList("gambling-command");
-            titleBlock.Add(commandLabel);
+            _commandLabel = new("git pull");
+            _commandLabel.AddToClassList("gambling-command");
+            titleBlock.Add(_commandLabel);
 
-            costLabel = new();
-            costLabel.AddToClassList("gambling-cost");
-            titleBlock.Add(costLabel);
+            _costLabel = new();
+            _costLabel.AddToClassList("gambling-cost");
+            titleBlock.Add(_costLabel);
 
-            skipHint = new("[tap/key] reveal all");
-            skipHint.AddToClassList("gambling-skip");
-            header.Add(skipHint);
+            _skipHint = new("[tap/key] reveal all");
+            _skipHint.AddToClassList("gambling-skip");
+            header.Add(_skipHint);
 
-            flourishLabel = new();
-            flourishLabel.AddToClassList("gambling-flourish");
-            frame.Add(flourishLabel);
+            _flourishLabel = new();
+            _flourishLabel.AddToClassList("gambling-flourish");
+            frame.Add(_flourishLabel);
 
-            resultGrid = new VisualElement();
-            resultGrid.AddToClassList("gambling-results");
-            frame.Add(resultGrid);
+            _resultGrid = new VisualElement();
+            _resultGrid.AddToClassList("gambling-results");
+            frame.Add(_resultGrid);
 
-            goldShimmer = new VisualElement();
-            goldShimmer.AddToClassList("gold-shimmer");
-            goldShimmer.pickingMode = PickingMode.Ignore;
-            frame.Add(goldShimmer);
+            _goldShimmer = new VisualElement();
+            _goldShimmer.AddToClassList("gold-shimmer");
+            _goldShimmer.pickingMode = PickingMode.Ignore;
+            frame.Add(_goldShimmer);
 
-            effectLayer = new VisualElement();
-            effectLayer.AddToClassList("effect-layer");
-            effectLayer.pickingMode = PickingMode.Ignore;
-            frame.Add(effectLayer);
+            _effectLayer = new VisualElement();
+            _effectLayer.AddToClassList("effect-layer");
+            _effectLayer.pickingMode = PickingMode.Ignore;
+            frame.Add(_effectLayer);
 
-            summaryPanel = new VisualElement();
-            summaryPanel.AddToClassList("summary-panel");
-            summaryPanel.AddToClassList("hidden");
-            frame.Add(summaryPanel);
+            _summaryPanel = new VisualElement();
+            _summaryPanel.AddToClassList("summary-panel");
+            _summaryPanel.AddToClassList("hidden");
+            frame.Add(_summaryPanel);
 
-            continueButton = new Button(ContinueToMenu) { text = "> continue" };
-            continueButton.AddToClassList("continue-button");
-            continueButton.AddToClassList("continue-button-pending");
-            continueButton.SetEnabled(false);
-            frame.Add(continueButton);
+            _continueButton = new Button(ContinueToMenu) { text = "> continue" };
+            _continueButton.AddToClassList("continue-button");
+            _continueButton.AddToClassList("continue-button-pending");
+            _continueButton.SetEnabled(false);
+            frame.Add(_continueButton);
         }
 
         private IEnumerator RunCutscene()
         {
             if (!GachaPullContext.TryConsumePending(out PendingGachaPull pending))
             {
-                failed = true;
-                commandLabel.text = "git pull failed";
-                costLabel.text = "no pending pull";
+                _failed = true;
+                _commandLabel.text = "git pull failed";
+                _costLabel.text = "no pending pull";
                 ShowContinue();
                 yield break;
             }
 
-            commandLabel.text = pending.PullCount == 10 ? "git pull --ten" : "git pull --single";
+            _commandLabel.text = pending.PullCount == 10 ? "git pull --ten" : "git pull --single";
             int pullCost = pending.PullCount == 10 ? GachaService.BeginnerTenPullCost : GachaService.BeginnerSinglePullCost;
-            costLabel.text = pending.EntropyTokenCount > 0
+            _costLabel.text = pending.EntropyTokenCount > 0
                 ? $"cost: {pending.EntropyTokenCount * GachaService.EntropyPerCommit} Entropy"
                 : $"cost: {pullCost} Commits / {pullCost * GachaService.EntropyPerCommit} Entropy";
-            flourishLabel.text = "$ fetch-pack | verify | unpack";
+            _flourishLabel.text = "$ fetch-pack | verify | unpack";
 
             CompletedGachaPull completed = ResolvePull(pending);
             GachaPullContext.SetCompleted(completed);
-            completedHeader = completed.HeaderText;
-            rewards.Clear();
-            rewards.AddRange(completed.Rewards);
+            _completedHeader = completed.HeaderText;
+            _rewards.Clear();
+            _rewards.AddRange(completed.Rewards);
 
-            if (rewards.Count == 0)
+            if (_rewards.Count == 0)
             {
-                failed = true;
-                costLabel.text = completed.HeaderText;
+                _failed = true;
+                _costLabel.text = completed.HeaderText;
                 ShowContinue();
                 yield break;
             }
@@ -199,24 +199,24 @@ namespace KernelPanic.UI
             }
 
             yield return WaitOrSkip(FlourishMs);
-            flourishLabel.text = "$ unpacking sealed objects";
-            for (int i = 0; i < rewards.Count; i++)
+            _flourishLabel.text = "$ unpacking sealed objects";
+            for (int i = 0; i < _rewards.Count; i++)
             {
-                if (skipRequested)
+                if (_skipRequested)
                 {
                     RevealAll();
                     yield break;
                 }
 
-                CompletedGachaReward reward = rewards[i];
-                PullCardView card = cardViews[i];
+                CompletedGachaReward reward = _rewards[i];
+                PullCardView card = _cardViews[i];
                 int holdMs = GetAnticipationMs(reward.Stars);
                 if (holdMs > 0)
                 {
                     ApplyGridFocus(i, reward.Stars);
                     card.ShowHold(reward.Stars >= 5 ? "........ signed tag" : "... promoted object", reward.Stars);
                     yield return WaitOrSkip(holdMs);
-                    if (skipRequested)
+                    if (_skipRequested)
                     {
                         RevealAll();
                         yield break;
@@ -315,25 +315,25 @@ namespace KernelPanic.UI
 
         private void BuildRows()
         {
-            resultGrid.Clear();
-            cardViews.Clear();
-            for (int i = 0; i < rewards.Count; i++)
+            _resultGrid.Clear();
+            _cardViews.Clear();
+            for (int i = 0; i < _rewards.Count; i++)
             {
-                PullCardView card = new(rewards[i]);
-                cardViews.Add(card);
-                resultGrid.Add(card.Root);
+                PullCardView card = new(_rewards[i]);
+                _cardViews.Add(card);
+                _resultGrid.Add(card.Root);
             }
         }
 
         private void RevealAll()
         {
-            skipRequested = true;
+            _skipRequested = true;
             ClearGridFocus();
-            goldShimmer.RemoveFromClassList("gold-shimmer-on");
-            for (int i = 0; i < cardViews.Count; i++)
+            _goldShimmer.RemoveFromClassList("gold-shimmer-on");
+            for (int i = 0; i < _cardViews.Count; i++)
             {
-                cardViews[i].HideHold();
-                cardViews[i].Reveal(allowFlash: false, persistentMotion: !UIPreferences.ReducedMotion);
+                _cardViews[i].HideHold();
+                _cardViews[i].Reveal(allowFlash: false, persistentMotion: !UIPreferences.ReducedMotion);
             }
 
             CompleteReveal();
@@ -341,49 +341,49 @@ namespace KernelPanic.UI
 
         private void CompleteReveal()
         {
-            if (revealComplete)
+            if (_revealComplete)
             {
                 return;
             }
 
-            revealComplete = true;
-            skipHint.text = "complete";
-            flourishLabel.text = completedHeader;
-            flourishLabel.AddToClassList("gambling-flourish-complete");
-            BuildSummary(animate: !skipRequested && !UIPreferences.ReducedMotion);
+            _revealComplete = true;
+            _skipHint.text = "complete";
+            _flourishLabel.text = _completedHeader;
+            _flourishLabel.AddToClassList("gambling-flourish-complete");
+            BuildSummary(animate: !_skipRequested && !UIPreferences.ReducedMotion);
             ShowContinue();
         }
 
         private void BuildSummary(bool animate)
         {
-            summaryPanel.Clear();
-            summaryPanel.RemoveFromClassList("hidden");
-            summaryTotalsLabel = new Label { name = "PullSummaryTotals" };
-            summaryTotalsLabel.AddToClassList("summary-totals");
-            summaryPanel.Add(summaryTotalsLabel);
+            _summaryPanel.Clear();
+            _summaryPanel.RemoveFromClassList("hidden");
+            _summaryTotalsLabel = new Label { name = "PullSummaryTotals" };
+            _summaryTotalsLabel.AddToClassList("summary-totals");
+            _summaryPanel.Add(_summaryTotalsLabel);
 
             SummaryTotals totals = CalculateTotals();
             if (!animate)
             {
-                summaryTotalsLabel.text = FormatTotals(totals.Units, totals.Merges, totals.Cache, totals.LanguagesText);
+                _summaryTotalsLabel.text = FormatTotals(totals.Units, totals.Merges, totals.Cache, totals.LanguagesText);
                 return;
             }
 
-            summaryTotalsLabel.AddToClassList("summary-tick");
+            _summaryTotalsLabel.AddToClassList("summary-tick");
             for (int step = 0; step <= SummaryTickSteps; step++)
             {
                 int capturedStep = step;
                 int delay = Mathf.RoundToInt((SummaryTickMs / (float)SummaryTickSteps) * capturedStep);
-                summaryTotalsLabel.schedule.Execute(() =>
+                _summaryTotalsLabel.schedule.Execute(() =>
                 {
                     float t = capturedStep / (float)SummaryTickSteps;
                     int units = Mathf.RoundToInt(Mathf.Lerp(0, totals.Units, t));
                     int merges = Mathf.RoundToInt(Mathf.Lerp(0, totals.Merges, t));
                     int cache = Mathf.RoundToInt(Mathf.Lerp(0, totals.Cache, t));
-                    summaryTotalsLabel.text = FormatTotals(units, merges, cache, capturedStep == SummaryTickSteps ? totals.LanguagesText : "...");
+                    _summaryTotalsLabel.text = FormatTotals(units, merges, cache, capturedStep == SummaryTickSteps ? totals.LanguagesText : "...");
                     if (capturedStep == SummaryTickSteps)
                     {
-                        summaryTotalsLabel.RemoveFromClassList("summary-tick");
+                        _summaryTotalsLabel.RemoveFromClassList("summary-tick");
                     }
                 }).StartingIn(delay);
             }
@@ -395,25 +395,25 @@ namespace KernelPanic.UI
             int merges = 0;
             int cache = 0;
             HashSet<Language> languages = new();
-            for (int i = 0; i < rewards.Count; i++)
+            for (int i = 0; i < _rewards.Count; i++)
             {
-                if (rewards[i].OutcomeKind == PullOutcomeKind.Granted && rewards[i].IsCharacter)
+                if (_rewards[i].OutcomeKind == PullOutcomeKind.Granted && _rewards[i].IsCharacter)
                 {
                     units++;
                 }
 
-                if (rewards[i].RewardType == GachaRewardType.Package)
+                if (_rewards[i].RewardType == GachaRewardType.Package)
                 {
-                    cache += rewards[i].MergesAwarded;
+                    cache += _rewards[i].MergesAwarded;
                 }
                 else
                 {
-                    merges += rewards[i].MergesAwarded;
+                    merges += _rewards[i].MergesAwarded;
                 }
 
-                for (int languageIndex = 0; languageIndex < rewards[i].LanguagesUnlocked.Count; languageIndex++)
+                for (int languageIndex = 0; languageIndex < _rewards[i].LanguagesUnlocked.Count; languageIndex++)
                 {
-                    languages.Add(rewards[i].LanguagesUnlocked[languageIndex]);
+                    languages.Add(_rewards[i].LanguagesUnlocked[languageIndex]);
                 }
             }
 
@@ -591,7 +591,7 @@ namespace KernelPanic.UI
         {
             float elapsed = 0f;
             float duration = Mathf.Max(0f, milliseconds / 1000f);
-            while (!skipRequested && elapsed < duration)
+            while (!_skipRequested && elapsed < duration)
             {
                 elapsed += Time.deltaTime;
                 yield return null;
@@ -615,17 +615,17 @@ namespace KernelPanic.UI
                 return;
             }
 
-            for (int i = 0; i < cardViews.Count; i++)
+            for (int i = 0; i < _cardViews.Count; i++)
             {
-                cardViews[i].SetDimmed(i != focusedIndex);
+                _cardViews[i].SetDimmed(i != focusedIndex);
             }
         }
 
         private void ClearGridFocus()
         {
-            for (int i = 0; i < cardViews.Count; i++)
+            for (int i = 0; i < _cardViews.Count; i++)
             {
-                cardViews[i].SetDimmed(false);
+                _cardViews[i].SetDimmed(false);
             }
         }
 
@@ -656,32 +656,32 @@ namespace KernelPanic.UI
 
         private void PlayGoldShimmer(VisualElement source)
         {
-            if (source == null || goldShimmer?.parent == null)
+            if (source == null || _goldShimmer?.parent == null)
             {
                 return;
             }
 
             Rect sourceBounds = source.worldBound;
-            Rect parentBounds = goldShimmer.parent.worldBound;
+            Rect parentBounds = _goldShimmer.parent.worldBound;
             float left = Mathf.Max(0f, sourceBounds.x - parentBounds.x);
             float top = Mathf.Max(0f, sourceBounds.y - parentBounds.y);
-            goldShimmer.style.left = left;
-            goldShimmer.style.top = top;
-            goldShimmer.style.width = sourceBounds.width;
-            goldShimmer.style.height = sourceBounds.height;
-            goldShimmer.AddToClassList("gold-shimmer-on");
-            goldShimmer.schedule.Execute(() => goldShimmer.RemoveFromClassList("gold-shimmer-on")).StartingIn(LegendaryShimmerMs);
+            _goldShimmer.style.left = left;
+            _goldShimmer.style.top = top;
+            _goldShimmer.style.width = sourceBounds.width;
+            _goldShimmer.style.height = sourceBounds.height;
+            _goldShimmer.AddToClassList("gold-shimmer-on");
+            _goldShimmer.schedule.Execute(() => _goldShimmer.RemoveFromClassList("gold-shimmer-on")).StartingIn(LegendaryShimmerMs);
         }
 
         private void EmitSparks(VisualElement source, Color color, int count, float radius)
         {
-            if (effectLayer == null || source == null)
+            if (_effectLayer == null || source == null)
             {
                 return;
             }
 
             Rect sourceBounds = source.worldBound;
-            Rect layerBounds = effectLayer.worldBound;
+            Rect layerBounds = _effectLayer.worldBound;
             float centerX = sourceBounds.center.x - layerBounds.x;
             float centerY = sourceBounds.center.y - layerBounds.y;
             float halfWidth = sourceBounds.width * 0.5f;
@@ -728,41 +728,41 @@ namespace KernelPanic.UI
             VisualElement spark = new();
             spark.pickingMode = PickingMode.Ignore;
             spark.AddToClassList("spark");
-            effectLayer.Add(spark);
+            _effectLayer.Add(spark);
             return spark;
         }
 
         private void HandleKeyDown(KeyDownEvent evt)
         {
-            if (revealComplete)
+            if (_revealComplete)
             {
                 ContinueToMenu();
                 evt.StopPropagation();
                 return;
             }
 
-            skipRequested = true;
+            _skipRequested = true;
             evt.StopPropagation();
         }
 
         private void HandlePointerDown(PointerDownEvent evt)
         {
-            if (revealComplete)
+            if (_revealComplete)
             {
                 return;
             }
 
-            skipRequested = true;
+            _skipRequested = true;
             evt.StopPropagation();
         }
 
         private void ShowContinue()
         {
-            continueButton.SetEnabled(true);
-            continueButton.RemoveFromClassList("continue-button-pending");
-            if (failed)
+            _continueButton.SetEnabled(true);
+            _continueButton.RemoveFromClassList("continue-button-pending");
+            if (_failed)
             {
-                skipHint.text = "failed";
+                _skipHint.text = "failed";
             }
         }
 
@@ -789,17 +789,17 @@ namespace KernelPanic.UI
 
         private sealed class PullCardView
         {
-            private readonly CompletedGachaReward reward;
-            private readonly Label rarityLabel;
-            private readonly Label nameLabel;
-            private readonly Label statusLabel;
-            private readonly Label typeIconLabel;
-            private IVisualElementScheduledItem glowPulse;
-            private bool glowOn;
+            private readonly CompletedGachaReward _reward;
+            private readonly Label _rarityLabel;
+            private readonly Label _nameLabel;
+            private readonly Label _statusLabel;
+            private readonly Label _typeIconLabel;
+            private IVisualElementScheduledItem _glowPulse;
+            private bool _glowOn;
 
             public PullCardView(CompletedGachaReward reward)
             {
-                this.reward = reward;
+                this._reward = reward;
                 RarityStyle rarity = RarityPresentation.ForStars(reward.Stars);
                 Root = new VisualElement();
                 Root.AddToClassList("pull-card");
@@ -814,27 +814,27 @@ namespace KernelPanic.UI
                 indexLabel.AddToClassList("pull-index");
                 top.Add(indexLabel);
 
-                rarityLabel = new(rarity.Stars);
-                rarityLabel.AddToClassList("pull-rarity");
-                rarityLabel.AddToClassList(rarity.ClassName);
-                top.Add(rarityLabel);
+                _rarityLabel = new(rarity.Stars);
+                _rarityLabel.AddToClassList("pull-rarity");
+                _rarityLabel.AddToClassList(rarity.ClassName);
+                top.Add(_rarityLabel);
 
-                typeIconLabel = new(reward.IsCharacter ? "@" : "#");
-                typeIconLabel.tooltip = reward.TypeText;
-                typeIconLabel.AddToClassList("pull-type-icon");
-                top.Add(typeIconLabel);
+                _typeIconLabel = new(reward.IsCharacter ? "@" : "#");
+                _typeIconLabel.tooltip = reward.TypeText;
+                _typeIconLabel.AddToClassList("pull-type-icon");
+                top.Add(_typeIconLabel);
 
-                nameLabel = new(reward.DisplayName);
-                nameLabel.AddToClassList("pull-name");
-                Root.Add(nameLabel);
+                _nameLabel = new(reward.DisplayName);
+                _nameLabel.AddToClassList("pull-name");
+                Root.Add(_nameLabel);
 
-                statusLabel = new(reward.StatusText);
-                statusLabel.AddToClassList("pull-status");
-                statusLabel.EnableInClassList("pull-status-new", reward.OutcomeKind == PullOutcomeKind.Granted);
-                statusLabel.visible = !string.IsNullOrWhiteSpace(reward.StatusText);
-                if (statusLabel.visible)
+                _statusLabel = new(reward.StatusText);
+                _statusLabel.AddToClassList("pull-status");
+                _statusLabel.EnableInClassList("pull-status-new", reward.OutcomeKind == PullOutcomeKind.Granted);
+                _statusLabel.visible = !string.IsNullOrWhiteSpace(reward.StatusText);
+                if (_statusLabel.visible)
                 {
-                    Root.Add(statusLabel);
+                    Root.Add(_statusLabel);
                 }
             }
 
@@ -846,11 +846,11 @@ namespace KernelPanic.UI
                 Root.AddToClassList("pull-card-held");
                 Root.EnableInClassList("pull-card-held-rare", stars == 4);
                 Root.EnableInClassList("pull-card-held-legendary", stars >= 5);
-                rarityLabel.text = "...";
-                nameLabel.text = holdText;
-                statusLabel.text = "";
-                statusLabel.visible = false;
-                typeIconLabel.visible = false;
+                _rarityLabel.text = "...";
+                _nameLabel.text = holdText;
+                _statusLabel.text = "";
+                _statusLabel.visible = false;
+                _typeIconLabel.visible = false;
             }
 
             public void HideHold()
@@ -862,21 +862,21 @@ namespace KernelPanic.UI
 
             public void Reveal(bool allowFlash, bool persistentMotion)
             {
-                RarityStyle rarity = RarityPresentation.ForStars(reward.Stars);
+                RarityStyle rarity = RarityPresentation.ForStars(_reward.Stars);
                 Root.RemoveFromClassList("pull-card-hidden");
                 Root.RemoveFromClassList("pull-card-held");
                 Root.RemoveFromClassList("pull-card-held-rare");
                 Root.RemoveFromClassList("pull-card-held-legendary");
                 Root.AddToClassList("pull-card-revealed");
-                Root.EnableInClassList("pull-card-glow-4", persistentMotion && reward.Stars == 4);
-                Root.EnableInClassList("pull-card-glow-5", persistentMotion && reward.Stars >= 5);
-                SetPersistentGlow(persistentMotion && reward.Stars >= 5);
-                rarityLabel.text = reward.Stars >= 5 ? $"{rarity.Badge} {rarity.Stars}" : rarity.Stars;
-                nameLabel.text = reward.DisplayName;
-                typeIconLabel.text = reward.IsCharacter ? "@" : "#";
-                typeIconLabel.visible = true;
-                statusLabel.text = reward.StatusText;
-                statusLabel.visible = !string.IsNullOrWhiteSpace(reward.StatusText);
+                Root.EnableInClassList("pull-card-glow-4", persistentMotion && _reward.Stars == 4);
+                Root.EnableInClassList("pull-card-glow-5", persistentMotion && _reward.Stars >= 5);
+                SetPersistentGlow(persistentMotion && _reward.Stars >= 5);
+                _rarityLabel.text = _reward.Stars >= 5 ? $"{rarity.Badge} {rarity.Stars}" : rarity.Stars;
+                _nameLabel.text = _reward.DisplayName;
+                _typeIconLabel.text = _reward.IsCharacter ? "@" : "#";
+                _typeIconLabel.visible = true;
+                _statusLabel.text = _reward.StatusText;
+                _statusLabel.visible = !string.IsNullOrWhiteSpace(_reward.StatusText);
                 if (allowFlash)
                 {
                     Root.AddToClassList("pull-card-flash");
@@ -897,34 +897,34 @@ namespace KernelPanic.UI
 
             public void PulseStatus(int durationMs)
             {
-                if (!statusLabel.visible)
+                if (!_statusLabel.visible)
                 {
                     return;
                 }
 
-                statusLabel.AddToClassList("pull-status-pop");
-                statusLabel.schedule.Execute(() => statusLabel.RemoveFromClassList("pull-status-pop")).StartingIn(durationMs);
+                _statusLabel.AddToClassList("pull-status-pop");
+                _statusLabel.schedule.Execute(() => _statusLabel.RemoveFromClassList("pull-status-pop")).StartingIn(durationMs);
             }
 
             private void SetPersistentGlow(bool enabled)
             {
                 if (!enabled)
                 {
-                    glowPulse?.Pause();
+                    _glowPulse?.Pause();
                     Root.RemoveFromClassList("pull-card-glow-on");
                     return;
                 }
 
-                if (glowPulse != null)
+                if (_glowPulse != null)
                 {
-                    glowPulse.Resume();
+                    _glowPulse.Resume();
                     return;
                 }
 
-                glowPulse = Root.schedule.Execute(() =>
+                _glowPulse = Root.schedule.Execute(() =>
                 {
-                    glowOn = !glowOn;
-                    Root.EnableInClassList("pull-card-glow-on", glowOn);
+                    _glowOn = !_glowOn;
+                    Root.EnableInClassList("pull-card-glow-on", _glowOn);
                 }).Every(900);
             }
         }

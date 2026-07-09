@@ -38,5 +38,7 @@ namespace KernelPanic.Combat
         public DeckController DeckController { get; }
         public HandController HandController { get; }
         public IReadOnlyList<EnemyInstance> Enemies { get; }
+
+        internal bool SegfaultRecoilRolled { get; set; }
     }
 }

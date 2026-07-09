@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: lang_c_malloc
   displayName: malloc()
-  description: deal 8. 20% segfault: take 3.
+  description: deal 8. 20% segfault: uptime -3.
   flavorText: memory acquired. ownership emotionally unresolved.
   language: 0
   rarity: 0
