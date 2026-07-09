@@ -186,7 +186,7 @@ namespace KernelPanic.UI
 
             Button tenButton = new(() => RequestPullSelectedBanner(10))
             {
-                text = $"git pull --ten\n10x {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)}"
+                text = $"git pull --ten\n{_gachaService.GetBeginnerPullCost(10)}x {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)}"
             };
             tenButton.AddToClassList("terminal-button");
             tenButton.AddToClassList("gacha-action-button");

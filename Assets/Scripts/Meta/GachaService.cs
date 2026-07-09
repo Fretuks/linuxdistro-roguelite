@@ -14,7 +14,7 @@ namespace KernelPanic.Meta
         public const string LimitedBannerId = "limited";
         public const int BeginnerMaxPulls = 50;
         public const int BeginnerSinglePullCost = 1;
-        public const int BeginnerTenPullCost = 10;
+        public const int BeginnerTenPullCost = 8;
         public const int FourStarHardPity = 10;
         public const int FiveStarSoftPityStart = 66;
         public const int FiveStarHardPity = 80;
