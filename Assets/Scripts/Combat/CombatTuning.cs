@@ -37,10 +37,20 @@ namespace KernelPanic.Combat
         public const int EntropyStartWave = 5;
         public const int EntropyPerWave = 3;
         public const int StatUpgradeMaxCycles = 1;
-        public const int StatUpgradeMaxUptime = 4;
-        public const int StatUpgradeHeal = 5;
+        public const int StatUpgradeMaxUptimePercent = 20;
+        public const int StatUpgradeHealPercent = 30;
         public const int StatUpgradeRam = 1;
         public const int UpgradeMagnitudeBonus = 2;
+
+        public static int ScaleStatUpgradeMaxUptime(int maxUptime)
+        {
+            return System.Math.Max(1, ((System.Math.Max(1, maxUptime) * StatUpgradeMaxUptimePercent) + 99) / 100);
+        }
+
+        public static int ScaleStatUpgradeHeal(int maxUptime)
+        {
+            return System.Math.Max(1, ((System.Math.Max(1, maxUptime) * StatUpgradeHealPercent) + 99) / 100);
+        }
 
         // Combat pacing: gaps between phase transitions and per-item resolution steps so
         // players can follow drawing/queue/enemy resolution instead of seeing it all at once.

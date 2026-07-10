@@ -7,12 +7,15 @@ namespace KernelPanic.Combat
 {
     public sealed class DealDamageEffect : ICardEffect
     {
+        private const int RustOverflowRollMax = 1000000;
+        private const string RustUnsigned64LimitText = "18446744073709551615";
+
         private readonly int _minAmount;
         private readonly int _maxAmount;
         private readonly Language _language;
         private readonly bool _trueDamage;
         private readonly bool _canCrit;
-        private readonly bool _allEnemies;
+        private readonly bool _allEnemies; 
 
         public DealDamageEffect(int minAmount, int maxAmount, Language language, bool trueDamage = false, bool canCrit = true, bool allEnemies = false)
         {
@@ -49,20 +52,78 @@ namespace KernelPanic.Combat
                 int amount = minAmount == maxAmount
                     ? minAmount
                     : RandomRoll.RollRange(minAmount, maxAmount, new RollContext(context.Source));
+                bool rustUnsignedOverflow = IsRustDamage(context)
+                    && RandomRoll.RollRange(1, RustOverflowRollMax, new RollContext(context.Source)) == 1;
+                if (rustUnsignedOverflow)
+                {
+                    amount = int.MaxValue;
+                    context.CombatManager.ReportEffectResult($"rust unsigned overflow: {RustUnsigned64LimitText}");
+                }
 
-                bool rustOverkillToShield = _language == Language.Rust || context.Card?.Definition?.Language == Language.Rust;
-                int survivable = rustOverkillToShield
-                    ? _trueDamage ? target.CurrentUptime : target.CurrentUptime + target.Shield
+                bool rustOverkillToShield = IsRustDamage(context);
+                bool overkillSpills = IsSpillDamage(context);
+                int survivable = rustOverkillToShield || overkillSpills
+                    ? GetSurvivableDamage(target, _trueDamage)
                     : 0;
-                DamageResult result = context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, _trueDamage, _canCrit));
+                DamageResult result = context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, _trueDamage, _canCrit && !rustUnsignedOverflow));
                 dealtDamage |= result.IncomingAmount > 0;
                 if (rustOverkillToShield)
                 {
                     GrantRustOverkillShield(context, result, survivable);
                 }
+
+                if (overkillSpills)
+                {
+                    dealtDamage |= SpillOverkillDamage(context, target, result, survivable);
+                }
             }
 
             SegfaultRecoil.TryApply(context, _language, dealtDamage);
+        }
+
+        private bool IsRustDamage(CombatContext context)
+        {
+            return _language == Language.Rust || context.Card?.Definition?.Language == Language.Rust;
+        }
+
+        private bool IsSpillDamage(CombatContext context)
+        {
+            Language cardLanguage = context.Card?.Definition == null ? _language : context.Card.Definition.Language;
+            return _language == Language.C
+                || _language == Language.Java
+                || cardLanguage == Language.C
+                || cardLanguage == Language.Java;
+        }
+
+        private static int GetSurvivableDamage(CombatantState target, bool trueDamage)
+        {
+            return target == null ? 0 : trueDamage ? target.CurrentUptime : target.CurrentUptime + target.Shield;
+        }
+
+        private bool SpillOverkillDamage(CombatContext context, CombatantState firstTarget, DamageResult firstResult, int firstSurvivable)
+        {
+            int remaining = UnityEngine.Mathf.Max(0, firstResult.IncomingAmount - firstSurvivable);
+            if (remaining <= 0)
+            {
+                return false;
+            }
+
+            bool dealtDamage = false;
+            for (int i = 0; i < context.Enemies.Count && remaining > 0; i++)
+            {
+                CombatantState spillTarget = context.Enemies[i].State;
+                if (spillTarget == null || spillTarget == firstTarget || spillTarget.IsDefeated)
+                {
+                    continue;
+                }
+
+                int survivable = GetSurvivableDamage(spillTarget, _trueDamage);
+                DamageResult spillResult = context.DamagePipeline.DealDamage(new DamageRequest(context.Source, spillTarget, remaining, _language, _trueDamage, false, applySourceModifiers: false));
+                dealtDamage |= spillResult.IncomingAmount > 0;
+                remaining = UnityEngine.Mathf.Max(0, spillResult.IncomingAmount - survivable);
+            }
+
+            return dealtDamage;
         }
 
         private static void GrantRustOverkillShield(CombatContext context, DamageResult result, int survivable)
@@ -165,7 +226,9 @@ namespace KernelPanic.Combat
                     continue;
                 }
 
-                int roll = RandomRoll.RollRange(1, 100, new RollContext(context.Source));
+                int roll = context.Source != null && context.Source.ForceMaxRolls
+                    ? 1
+                    : RandomRoll.RollRange(1, 100, RollContext.None);
                 int damageAmount = UpgradeMath.ScaleAmount(UpgradeMath.ApplySourceFlatBonus(_damageAmount, context), context.Card);
                 int amount = roll <= _successPercent ? damageAmount : 0;
                 DamageResult result = context.DamagePipeline.DealDamage(new DamageRequest(context.Source, target, amount, _language, false, true));
@@ -308,7 +371,7 @@ namespace KernelPanic.Combat
         public void Execute(CombatContext context)
         {
             int cCards = context.HandController.Cards.Count(card => card?.Definition != null && card.Definition.Language == Language.C);
-            int amount = 3 * cCards;
+            int amount = 5 * cCards;
             new DealDamageEffect(amount, amount, Language.C).Execute(context);
         }
     }
@@ -873,6 +936,7 @@ namespace KernelPanic.Combat
 
             DamageResult result = context.DamagePipeline.DealDamage(new DamageRequest(null, context.Source, uptimeDamage, Language.C, true, false));
             context.CombatManager.ReportEffectResult($"segfault: uptime -{result.FinalAmount}");
+            context.CombatManager.TryCorruptRandomHandCard("segfault");
             if (drawOnSegfault)
             {
                 context.CombatManager.DrawCards(2, "free() recoil");
@@ -922,9 +986,9 @@ namespace KernelPanic.Combat
                     new DrawEffect(1)
                 },
                 "lang_rs_borrow" => One(new ShieldEffect(5)),
-                "lang_c_malloc" => One(new DealDamageEffect(8, 8, Language.C)),
-                "lang_c_printf" => One(new DealDamageEffect(4, 4, Language.C)),
-                "lang_c_pointer" => One(new PreviousLanguageDamageEffect(6, 10, Language.C)),
+                "lang_c_malloc" => One(new DealDamageEffect(12, 12, Language.C)),
+                "lang_c_printf" => One(new DealDamageEffect(7, 7, Language.C)),
+                "lang_c_pointer" => One(new PreviousLanguageDamageEffect(9, 15, Language.C)),
                 "lang_java_public_static_main" => One(new DealDamageEffect(7, 7, Language.Java)),
                 "lang_java_system_out_println" => One(new DealDamageEffect(5, 5, Language.Java)),
                 "lang_java_new_object" => One(new DealDamageEffect(3, 3, Language.Java)),
@@ -976,14 +1040,14 @@ namespace KernelPanic.Combat
                 "fedora_dnf_update" => One(new DealDamageEffect(9, 9, Language.Java)),
                 "fedora_rawhide" => One(new RawhideEffect()),
                 "fedora_selinux" => One(new IncomingAttackHalveEffect(2)),
-                "arch_pacman_syu" => One(new DealDamageEffect(8, 8, Language.C)),
+                "arch_pacman_syu" => One(new DealDamageEffect(14, 14, Language.C)),
                 "arch_consult_wiki" => One(new ConsultWikiEffect()),
-                "arch_makepkg" => One(new BtwScaledDamageEffect(4, 2, Language.C)),
+                "arch_makepkg" => One(new BtwScaledDamageEffect(7, 3, Language.C)),
                 "arch_aur_helper" => One(new RandomCommonLanguageCardEffect()),
                 "arch_minimal_install" => One(new MinimalInstallEffect()),
-                "shop_c_free" => One(new DealDamageEffect(12, 12, Language.C)),
+                "shop_c_free" => One(new DealDamageEffect(18, 18, Language.C)),
                 "shop_c_sizeof" => One(new SizeofDamageEffect()),
-                "shop_c_kernel_exploit" => One(new DealDamageEffect(25, 25, Language.C, true)),
+                "shop_c_kernel_exploit" => One(new DealDamageEffect(36, 36, Language.C, true)),
                 _ => Todo("card effect is not authored")
             };
         }
@@ -1053,12 +1117,12 @@ namespace KernelPanic.Combat
                 "lang_rs_fn_main" => $"deal {UpgradeMath.ScaleAmount(6, card)}. overkill becomes shield.{marker}",
                 "lang_rs_unwrap" => $"deal {UpgradeMath.ScaleAmount(9, card)}. overkill becomes shield. draw {UpgradeMath.ScaleAmount(1, card)}.{marker}",
                 "lang_rs_borrow" => $"gain {UpgradeMath.ScaleShield(5, card)} shield.{marker}",
-                "lang_c_malloc" => $"deal {UpgradeMath.ScaleAmount(8, card)}. 20%: segfault, uptime -3.{marker}",
-                "lang_c_printf" => $"deal {UpgradeMath.ScaleAmount(4, card)}. 20%: segfault, uptime -3.{marker}",
-                "lang_c_pointer" => $"deal {UpgradeMath.ScaleAmount(6, card)}; {UpgradeMath.ScaleAmount(10, card)} if the previous card was C. 20%: segfault, uptime -3.{marker}",
-                "lang_java_public_static_main" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(7, card)}. JIT: Java cards cost 1 less this combat each time you play a Java card; discount decays by 1 after each wave.{marker}",
-                "lang_java_system_out_println" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(5, card)}. JIT applies; discount decays by 1 after each wave.{marker}",
-                "lang_java_new_object" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(3, card)}. JIT applies; discount decays by 1 after each wave.{marker}",
+                "lang_c_malloc" => $"deal {UpgradeMath.ScaleAmount(12, card)}. overkill spills. 20%: segfault, uptime -3 and corrupt a hand card.{marker}",
+                "lang_c_printf" => $"deal {UpgradeMath.ScaleAmount(7, card)}. overkill spills. 20%: segfault, uptime -3 and corrupt a hand card.{marker}",
+                "lang_c_pointer" => $"deal {UpgradeMath.ScaleAmount(9, card)}; {UpgradeMath.ScaleAmount(15, card)} if the previous card was C. overkill spills. 20%: segfault, uptime -3 and corrupt a hand card.{marker}",
+                "lang_java_public_static_main" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(7, card)}. overkill spills. JIT: Java cards cost 1 less this combat each time you play a Java card; discount decays by 1 after each wave.{marker}",
+                "lang_java_system_out_println" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(5, card)}. overkill spills. JIT applies; discount decays by 1 after each wave.{marker}",
+                "lang_java_new_object" => $"uses 2 RAM. deal {UpgradeMath.ScaleAmount(3, card)}. overkill spills. JIT applies; discount decays by 1 after each wave.{marker}",
                 "shop_py_list_append" => $"queue: deal {UpgradeMath.ScaleAmount(4 + UnityEngine.Mathf.Max(0, card.QueuePlayCount - 1), card)}; +1 each time re-queued.{marker}",
                 "shop_py_async_def" => $"queue: draw {UpgradeMath.ScaleAmount(2, card)}. gain {UpgradeMath.ScaleAmount(1, card)} cycle next turn.{marker}",
                 "shop_py_zip" => $"next {UpgradeMath.ScaleAmount(2, card)} queued cards resolve twice.{marker}",
@@ -1077,17 +1141,17 @@ namespace KernelPanic.Combat
                 "mint_timeshift" => $"queue: record uptime now. at end of your next turn, restore to it if lower.{marker}",
                 "fedora_dnf_autoremove" => $"deal {UpgradeMath.ScaleAmount(7, card)}. exhaust a junk/NOP/broken card from hand; if you do, gain {UpgradeMath.ScaleAmount(1, card)} cycle. if not, do nothing.{marker}",
                 "fedora_first_to_package" => $"deal {UpgradeMath.ScaleAmount(7, card)}. Java cards cost 1 less this turn.{marker}",
-                "fedora_dnf_update" => $"deal {UpgradeMath.ScaleAmount(9, card)}. costs 1 less per Java card played this combat.{marker}",
+                "fedora_dnf_update" => $"deal {UpgradeMath.ScaleAmount(9, card)}. overkill spills. costs 1 less per Java card played this combat.{marker}",
                 "fedora_rawhide" => $"draw {UpgradeMath.ScaleAmount(2, card)}. next card this turn gains bleeding edge.{marker}",
                 "fedora_selinux" => $"next {UpgradeMath.ScaleAmount(2, card)} enemy attacks deal half damage.{marker}",
-                "arch_pacman_syu" => $"deal {UpgradeMath.ScaleAmount(8, card)}. 20%: segfault, uptime -3. TODO: 20% break a random hand card.{marker}",
+                "arch_pacman_syu" => $"deal {UpgradeMath.ScaleAmount(14, card)}. overkill spills. 20%: segfault, uptime -3 and corrupt a hand card.{marker}",
                 "arch_consult_wiki" => $"fix a broken card and draw {UpgradeMath.ScaleAmount(1, card)}; if none, deal {UpgradeMath.ScaleAmount(6, card)}.{marker}",
-                "arch_makepkg" => $"deal {UpgradeMath.ScaleAmount(4, card)} + btw x2; x3 at Arch v3+. 20%: segfault, uptime -3.{marker}",
+                "arch_makepkg" => $"deal {UpgradeMath.ScaleAmount(7, card)} + btw x3; x4 at Arch v3+. overkill spills. 20%: segfault, uptime -3 and corrupt a hand card.{marker}",
                 "arch_aur_helper" => $"add a random C/Rust common card to hand; it costs 0 this turn.{marker}",
                 "arch_minimal_install" => $"exhaust up to 2 hand cards. per card: gain 3 Shield and 1 Cycle.{marker}",
-                "shop_c_free" => $"deal {UpgradeMath.ScaleAmount(12, card)}. 20%: segfault, uptime -3 and draw 2.{marker}",
-                "shop_c_sizeof" => $"deal 3 x C cards in hand. 20%: segfault, uptime -3.{marker}",
-                "shop_c_kernel_exploit" => $"deal {UpgradeMath.ScaleAmount(25, card)} ignoring Shield. 50%: segfault, uptime -8.{marker}",
+                "shop_c_free" => $"deal {UpgradeMath.ScaleAmount(18, card)}. overkill spills. 20%: segfault, uptime -3, corrupt a hand card, and draw 2.{marker}",
+                "shop_c_sizeof" => $"deal 5 x C cards in hand. overkill spills. 20%: segfault, uptime -3 and corrupt a hand card.{marker}",
+                "shop_c_kernel_exploit" => $"deal {UpgradeMath.ScaleAmount(36, card)} ignoring Shield. overkill spills. 50%: segfault, uptime -8 and corrupt a hand card.{marker}",
                 _ => string.IsNullOrWhiteSpace(card.Definition.Description) ? "effect not authored." : $"{card.Definition.Description}{marker}"
             };
         }

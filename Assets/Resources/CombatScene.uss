@@ -400,10 +400,23 @@
     font-size: 10px;
 }
 
+.enemy-scroll {
+    flex-grow: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.enemy-scroll .unity-scroll-view__content-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+}
+
 .enemy-row {
     flex-direction: row;
     flex-wrap: wrap;
     flex-grow: 1;
+    min-height: 0;
     align-content: flex-start;
 }
 
@@ -420,6 +433,64 @@
     border-bottom-width: 1px;
     border-color: var(--kp-border);
     color: var(--kp-text);
+}
+
+.enemy-row-compact {
+    align-content: flex-start;
+}
+
+.enemy-card-compact {
+    width: 98px;
+    min-height: 126px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    padding: 6px;
+}
+
+.enemy-card-compact .enemy-name {
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.enemy-card-compact .meter-block {
+    margin-bottom: 6px;
+}
+
+.enemy-card-compact .meter-head {
+    margin-bottom: 3px;
+}
+
+.enemy-card-compact .metric-label,
+.enemy-card-compact .status-label,
+.enemy-card-compact .enemy-shield {
+    font-size: 10px;
+}
+
+.enemy-card-compact .metric-value,
+.enemy-card-compact .metric-value-muted {
+    font-size: 11px;
+}
+
+.enemy-card-compact .meter-track {
+    height: 10px;
+}
+
+.enemy-card-compact .status-pip,
+.enemy-card-compact .tag {
+    font-size: 9px;
+    padding-left: 4px;
+    padding-right: 4px;
+    margin-right: 3px;
+    margin-bottom: 3px;
+}
+
+.enemy-card-compact .intent-panel {
+    margin-top: 5px;
+    padding: 5px;
+}
+
+.enemy-card-compact .intent-value {
+    font-size: 15px;
 }
 
 .enemy-card:hover {

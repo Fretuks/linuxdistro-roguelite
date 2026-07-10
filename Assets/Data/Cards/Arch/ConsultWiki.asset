@@ -10,20 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: Free
+  m_Name: ConsultWiki
   m_EditorClassIdentifier: 
-  id: shop_c_free
-  displayName: free()
-  description: deal 18. overkill spills. 20% segfault: uptime -3, corrupt a random card in hand, and draw 2.
-  flavorText: double-free your schedule, not your heap.
-  language: 0
+  id: arch_consult_wiki
+  displayName: Consult the Wiki
+  description: fix a broken card and draw 1. if none are broken, deal 6.
+  flavorText: the answer was in a footnote from 2013.
+  language: 2
   rarity: 0
-  cycleCost: 2
+  cycleCost: 0
   resolutionTrack: 0
-  distroExclusive: 0
+  distroExclusive: 1
   isToken: 0
-  isRunOnly: 1
-  designNotes: C run-only shop card. Uses segfault recoil hook through RandomRoll and DamagePipeline; draw uses existing draw pipeline.
-  requiresSystem: []
+  isRunOnly: 0
+  designNotes: Arch exclusive. Uses existing IsBroken flag if present; card-break creation is TODO, draw/damage fallback works now.
+  requiresSystem:
+  - card-break
   upgradeTarget: {fileID: 0}
   effects: []

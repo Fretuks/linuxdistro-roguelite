@@ -496,10 +496,11 @@ namespace KernelPanic.Run
                     }
                     return true;
                 case RunStatUpgradeKind.MaxUptime:
-                    _maxUptimeBonus += CombatTuning.StatUpgradeMaxUptime;
+                    int uptimeBonus = CombatTuning.ScaleStatUpgradeMaxUptime(playerState == null ? EffectiveMaxUptime() : playerState.MaxUptime);
+                    _maxUptimeBonus += uptimeBonus;
                     if (playerState != null)
                     {
-                        playerState.MaxUptime += CombatTuning.StatUpgradeMaxUptime;
+                        playerState.MaxUptime += uptimeBonus;
                     }
                     return true;
                 case RunStatUpgradeKind.Heal:
@@ -508,7 +509,8 @@ namespace KernelPanic.Run
                         return false;
                     }
 
-                    playerState.CurrentUptime = Mathf.Min(playerState.MaxUptime, playerState.CurrentUptime + CombatTuning.StatUpgradeHeal);
+                    int healAmount = CombatTuning.ScaleStatUpgradeHeal(playerState.MaxUptime);
+                    playerState.CurrentUptime = Mathf.Min(playerState.MaxUptime, playerState.CurrentUptime + healAmount);
                     return true;
                 case RunStatUpgradeKind.Ram:
                     _ramBonus += CombatTuning.StatUpgradeRam;

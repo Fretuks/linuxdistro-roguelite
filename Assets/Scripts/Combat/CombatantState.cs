@@ -36,7 +36,7 @@ namespace KernelPanic.Combat
         public int IncomingAttackHalfCharges { get; set; }
         public int ArchBtwStacks { get; set; }
         public int ArchBtwDamagePerStack { get; set; } = 1;
-        public int ArchMakepkgBtwMultiplier { get; set; } = 2;
+        public int ArchMakepkgBtwMultiplier { get; set; } = 3;
         public int ArchRollingReleaseSavesRemaining { get; set; }
         public int ArchRollingReleaseShieldOnSave { get; set; }
         public int ArchRollingReleaseCyclesOnSave { get; set; }

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: lang_java_system_out_println
   displayName: System.out.println
-  description: uses 2 RAM. deal 5. JIT applies.
+  description: uses 2 RAM. deal 5. overkill spills. JIT applies.
   flavorText: standard output, standard damage.
   language: 8
   rarity: 0

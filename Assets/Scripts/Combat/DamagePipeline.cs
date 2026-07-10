@@ -11,7 +11,8 @@ namespace KernelPanic.Combat
             int amount,
             Language language,
             bool trueDamage,
-            bool canCrit)
+            bool canCrit,
+            bool applySourceModifiers = true)
         {
             Source = source;
             Target = target;
@@ -19,6 +20,7 @@ namespace KernelPanic.Combat
             Language = language;
             TrueDamage = trueDamage;
             CanCrit = canCrit;
+            ApplySourceModifiers = applySourceModifiers;
         }
 
         public CombatantState Source { get; }
@@ -27,6 +29,7 @@ namespace KernelPanic.Combat
         public Language Language { get; }
         public bool TrueDamage { get; }
         public bool CanCrit { get; }
+        public bool ApplySourceModifiers { get; }
     }
 
     public readonly struct DamageResult
@@ -56,6 +59,8 @@ namespace KernelPanic.Combat
     /// </summary>
     public sealed class DamagePipeline
     {
+        public System.Func<DamageRequest, int, int> ResistanceResolver { get; set; }
+
         public DamageResult DealDamage(DamageRequest request)
         {
             if (request.Target == null || request.Target.IsDefeated)
@@ -64,9 +69,14 @@ namespace KernelPanic.Combat
             }
 
             int amount = Mathf.Max(0, request.Amount);
-            amount = ApplyFlatAdditions(amount, request);
-            amount = ApplyMultipliers(amount, request);
-            amount = ApplyCrit(amount, request, out bool wasCritical);
+            bool wasCritical = false;
+            if (request.ApplySourceModifiers)
+            {
+                amount = ApplyFlatAdditions(amount, request);
+                amount = ApplyMultipliers(amount, request);
+                amount = ApplyCrit(amount, request, out wasCritical);
+            }
+
             amount = ApplyResistancesAndWeaknesses(amount, request);
 
             int finalAmount = ApplyShieldAndUptime(amount, request, out int absorbedAmount, out int shieldDamage, out int uptimeDamage);
@@ -86,6 +96,11 @@ namespace KernelPanic.Combat
 
         private static int ApplyMultipliers(int amount, DamageRequest request)
         {
+            if (amount == int.MaxValue)
+            {
+                return amount;
+            }
+
             if (request.Source != null && request.Source.IgnoreDamageMultipliers)
             {
                 // Mint V1+ ignores multiplicative damage modifiers. Mint V4 still allows flat
@@ -100,6 +115,11 @@ namespace KernelPanic.Combat
 
         private static int ApplyFlatAdditions(int amount, DamageRequest request)
         {
+            if (amount == int.MaxValue)
+            {
+                return amount;
+            }
+
             if (request.Source != null && request.Language == Language.JavaScript)
             {
                 amount += Mathf.Max(0, request.Source.JavaScriptFlatDamageBonus);
@@ -116,7 +136,7 @@ namespace KernelPanic.Combat
         private static int ApplyCrit(int amount, DamageRequest request, out bool wasCritical)
         {
             wasCritical = false;
-            if (!request.CanCrit || amount <= 0 || request.Source != null && request.Source.ForceMaxRolls)
+            if (!request.CanCrit || amount <= 0 || amount == int.MaxValue || request.Source != null && request.Source.ForceMaxRolls)
             {
                 return amount;
             }
@@ -144,12 +164,12 @@ namespace KernelPanic.Combat
             target.ArchRollingReleaseRecoveredThisHit = true;
         }
 
-        private static int ApplyResistancesAndWeaknesses(int amount, DamageRequest request)
+        private int ApplyResistancesAndWeaknesses(int amount, DamageRequest request)
         {
             // TODO: Enemy resistances/reductions are not authored yet. Mint V5 should re-resolve
             // a once-per-combat reduced effect here once those reduction sources exist.
             // TODO: Apply enemy language resistances and weaknesses here.
-            return amount;
+            return ResistanceResolver == null ? amount : ResistanceResolver(request, amount);
         }
 
         private static int ApplyShieldAndUptime(int amount, DamageRequest request, out int absorbedAmount, out int shieldDamage, out int uptimeDamage)

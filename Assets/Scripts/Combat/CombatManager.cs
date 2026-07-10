@@ -53,6 +53,7 @@ namespace KernelPanic.Combat
         private int _rawhideBonusCharges;
         private int _queuedRepeatCharges;
         private int _nextTurnCycleBonus;
+        private int _nextRacePairId = 1;
         private Coroutine _phaseCoroutine;
 
         public TurnPhase CurrentPhase => currentPhase;
@@ -77,6 +78,7 @@ namespace KernelPanic.Combat
         private void Awake()
         {
             _runManager = GetComponent<RunManager>();
+            _damagePipeline.ResistanceResolver = ResolveDamageResistance;
         }
 
         private void OnEnable()
@@ -181,6 +183,18 @@ namespace KernelPanic.Combat
             if (card.Definition.IsToken)
             {
                 Log($"{GetCardName(card)} is unplayable");
+                return false;
+            }
+
+            if (card.IsBroken)
+            {
+                Log($"{GetCardName(card)} is corrupted");
+                return false;
+            }
+
+            if (card.IsLocked)
+            {
+                Log($"{GetCardName(card)} is locked");
                 return false;
             }
 
@@ -341,6 +355,21 @@ namespace KernelPanic.Combat
             {
                 Log(message);
             }
+        }
+
+        public bool TryCorruptRandomHandCard(string sourceLabel)
+        {
+            CardInstance card = RandomHandCard(cardInstance => cardInstance != null && !cardInstance.IsBroken);
+            if (card == null)
+            {
+                Log($"{sourceLabel}: no card available to corrupt");
+                return false;
+            }
+
+            card.IsBroken = true;
+            Log($"{sourceLabel}: corrupted {GetCardName(card)}");
+            StateChanged?.Invoke();
+            return true;
         }
 
         public void ReportEffectResult(string message)
@@ -651,6 +680,7 @@ namespace KernelPanic.Combat
             _pendingTargetCard = null;
             _cardsPlayedThisWave = 0;
             _turnNumberThisWave = 0;
+            _nextRacePairId = 1;
             _packageShieldBonusTriggeredThisTurn = false;
             _packageTimeshiftTriggeredThisWave = false;
             ResetArchWaveState();
@@ -753,10 +783,10 @@ namespace KernelPanic.Combat
 
         private IEnumerator ProcessEnemiesSequenced()
         {
-            int enemyCountAtPhaseStart = _enemies.Count;
-            for (int i = 0; i < enemyCountAtPhaseStart && i < _enemies.Count; i++)
+            List<EnemyInstance> actors = BuildEnemyActionOrder();
+            for (int i = 0; i < actors.Count; i++)
             {
-                EnemyInstance enemy = _enemies[i];
+                EnemyInstance enemy = actors[i];
                 if (enemy.State.IsDefeated)
                 {
                     continue;
@@ -779,11 +809,17 @@ namespace KernelPanic.Combat
                 StateChanged?.Invoke();
                 yield return Wait(CombatTuning.EnemyTelegraphDelaySeconds);
 
-                ExecuteEnemyIntent(enemy, i);
-                enemy.MarkTurnSurvived();
+                ExecuteEnemyIntent(enemy, _enemies.IndexOf(enemy));
+                ResolvePassiveEnemyAfterAction(enemy);
+                if (!enemy.State.IsDefeated)
+                {
+                    enemy.MarkTurnSurvived();
+                }
+
                 GameEvents.RaiseEnemyActed(new EnemyActedEvent(enemy, enemy.CurrentIntent));
+                RemoveDefeatedEnemies();
                 StateChanged?.Invoke();
-                if (CheckLoss())
+                if (CheckWinOrLoss())
                 {
                     yield break;
                 }
@@ -1519,7 +1555,7 @@ namespace KernelPanic.Combat
             state.DamageMultiplierPercent = 100;
             state.CurrentCardDamageMultiplierPercent = 100;
             state.ArchBtwDamagePerStack = IsDistro("arch") && _runConfig.DistroVersion >= 2 ? 2 : 1;
-            state.ArchMakepkgBtwMultiplier = IsDistro("arch") && _runConfig.DistroVersion >= 3 ? 3 : 2;
+            state.ArchMakepkgBtwMultiplier = IsDistro("arch") && _runConfig.DistroVersion >= 3 ? 4 : 3;
             state.ArchRollingReleaseShieldOnSave = IsDistro("arch") && _runConfig.DistroVersion >= 4 ? 15 : 0;
             state.ArchRollingReleaseCyclesOnSave = IsDistro("arch") && _runConfig.DistroVersion >= 4 ? 2 : 0;
         }
@@ -1693,13 +1729,15 @@ namespace KernelPanic.Combat
             {
                 if (_enemies[i].State.IsDefeated)
                 {
-                    if (_enemies[i].PendingRevive)
+                    EnemyInstance enemy = _enemies[i];
+                    if (enemy.PendingRevive)
                     {
                         continue;
                     }
 
-                    Log($"{_enemies[i].Name} exited");
+                    Log($"{enemy.Name} exited");
                     _runManager?.AddBits(CombatTuning.BitsPerKill);
+                    HandleEnemyDeath(enemy);
                     _enemies.RemoveAt(i);
                 }
             }
@@ -1710,23 +1748,135 @@ namespace KernelPanic.Combat
             }
         }
 
+        private void HandleEnemyDeath(EnemyInstance enemy)
+        {
+            if (enemy == null)
+            {
+                return;
+            }
+
+            if (enemy.HasBehavior(EnemyBehaviorFlags.SegfaultOnDeath))
+            {
+                ApplySegfaultDeathPayload(enemy);
+            }
+
+            if (enemy.HasBehavior(EnemyBehaviorFlags.RacePair))
+            {
+                BreakRacePair(enemy);
+            }
+
+            if (enemy.HasBehavior(EnemyBehaviorFlags.LeavesOrphan))
+            {
+                SpawnOrphanFromDeath(enemy);
+            }
+        }
+
+        private void ApplySegfaultDeathPayload(EnemyInstance enemy)
+        {
+            _statusEffects.Apply(_playerState, StatusType.Segfault, 1, -1, enemy.State, skipNextTick: true);
+            TryCorruptRandomHandCard("segfault");
+        }
+
+        private CardInstance RandomHandCard(Predicate<CardInstance> predicate)
+        {
+            if (_handController == null || _handController.Cards.Count == 0)
+            {
+                return null;
+            }
+
+            List<CardInstance> candidates = new();
+            for (int i = 0; i < _handController.Cards.Count; i++)
+            {
+                CardInstance candidate = _handController.Cards[i];
+                if (predicate == null || predicate(candidate))
+                {
+                    candidates.Add(candidate);
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                return null;
+            }
+
+            int index = RandomRoll.RollRange(0, candidates.Count - 1, new RollContext(_playerState));
+            return candidates[index];
+        }
+
+        private void BreakRacePair(EnemyInstance defeated)
+        {
+            EnemyInstance survivor = RacePartner(defeated);
+            if (survivor == null)
+            {
+                return;
+            }
+
+            survivor.EnrageRaceSurvivor();
+            Log($"{survivor.Name} race link broke; survivor enraged");
+        }
+
+        private void SpawnOrphanFromDeath(EnemyInstance source)
+        {
+            EnemyInstance orphan = SpawnEnemy("orphan_process", 0);
+            orphan.MarkSpawnedFromDeath();
+            Log($"{source.Name} left an orphan process");
+        }
+
         private void SpawnStructuralEnemies()
         {
             int wave = CurrentWaveNumber;
             int countGrowth = ((wave - 1) / 2) * CombatTuning.AdditionalEnemiesPerWave;
             int count = Mathf.Clamp(CombatTuning.BaseEnemiesPerWave + countGrowth, CombatTuning.BaseEnemiesPerWave, CombatTuning.MaxEnemiesPerWave);
             int waveUptimeBonus = Mathf.Max(0, wave - 1) * CombatTuning.EnemyUptimeGrowthPerWave;
+            bool rootkitSpawned = false;
             for (int i = 0; i < count; i++)
             {
-                SpawnEnemy(CreatePlaceholderArchetypeId(wave, i), waveUptimeBonus);
+                string archetypeId = CreatePlaceholderArchetypeId(wave, i);
+                if (archetypeId == "rootkit")
+                {
+                    if (rootkitSpawned)
+                    {
+                        archetypeId = CreateRootkitFallbackArchetypeId(wave, i);
+                    }
+                    else
+                    {
+                        rootkitSpawned = true;
+                    }
+                }
+
+                if (archetypeId == "race_condition" && i + 1 < count)
+                {
+                    SpawnRacePair(waveUptimeBonus);
+                    i++;
+                    continue;
+                }
+
+                if (archetypeId == "race_condition")
+                {
+                    archetypeId = "segfault";
+                }
+
+                SpawnEnemy(archetypeId, waveUptimeBonus);
             }
         }
 
-        private void SpawnEnemy(string archetypeId, int uptimeBonus)
+        private void SpawnRacePair(int uptimeBonus)
+        {
+            int pairId = _nextRacePairId++;
+            EnemyInstance first = SpawnEnemy("race_condition", uptimeBonus);
+            EnemyInstance second = SpawnEnemy("race_condition", uptimeBonus);
+            first.SetPairId(pairId);
+            second.SetPairId(pairId);
+            Log("race condition pair spawned");
+        }
+
+        private EnemyInstance SpawnEnemy(string archetypeId, int uptimeBonus)
         {
             EnemyArchetypeDescriptor archetype = EnemyArchetypeCatalog.Get(archetypeId);
             int baseUptime = RandomRoll.RollRange(archetype.BaseUptimeMin, archetype.BaseUptimeMax, RollContext.None);
-            _enemies.Add(new EnemyInstance(archetype, baseUptime + Mathf.Max(0, uptimeBonus)));
+            EnemyInstance enemy = new(archetype, baseUptime + Mathf.Max(0, uptimeBonus));
+            _enemies.Add(enemy);
+            return enemy;
         }
 
         private static string CreatePlaceholderArchetypeId(int wave, int slotIndex)
@@ -1736,22 +1886,40 @@ namespace KernelPanic.Combat
             {
                 <= 1 => new[] { "zombie_process", "memory_leak" },
                 2 => new[] { "zombie_process", "memory_leak", "fork_bomb", "firewalld" },
-                3 => new[] { "zombie_process", "memory_leak", "fork_bomb", "firewalld", "daemon" },
-                _ => new[] { "zombie_process", "memory_leak", "fork_bomb", "firewalld", "daemon", "cron_job" }
+                3 => new[] { "zombie_process", "memory_leak", "fork_bomb", "firewalld", "segfault" },
+                4 => new[] { "zombie_process", "memory_leak", "fork_bomb", "firewalld", "cron_job", "segfault", "race_condition" },
+                _ => new[] { "zombie_process", "memory_leak", "fork_bomb", "firewalld", "daemon", "cron_job", "segfault", "race_condition", "rootkit" }
             };
 
             if (slotIndex == 0)
             {
+                if (wave >= 5 && wave % 2 == 1)
+                {
+                    return "rootkit";
+                }
+
                 return wave % 2 == 0 ? "firewalld" : "zombie_process";
             }
 
             if (slotIndex == 1 && wave >= 2)
             {
+                if (wave >= 4 && wave % 4 == 0)
+                {
+                    return "race_condition";
+                }
+
                 return wave % 3 == 0 ? "fork_bomb" : "memory_leak";
             }
 
             int index = RandomRoll.RollRange(0, pool.Length - 1, RollContext.None);
             return pool[index];
+        }
+
+        private static string CreateRootkitFallbackArchetypeId(int wave, int slotIndex)
+        {
+            return slotIndex % 2 == 0
+                ? "firewalld"
+                : wave % 3 == 0 ? "fork_bomb" : "memory_leak";
         }
 
         private void PickEnemyIntents()
@@ -1765,6 +1933,37 @@ namespace KernelPanic.Combat
             }
         }
 
+        private List<EnemyInstance> BuildEnemyActionOrder()
+        {
+            List<EnemyInstance> actors = _enemies
+                .Where(enemy => enemy.State != null && !enemy.State.IsDefeated)
+                .ToList();
+
+            for (int i = 0; i < actors.Count - 1; i++)
+            {
+                EnemyInstance enemy = actors[i];
+                if (!IsRacePairLinked(enemy))
+                {
+                    continue;
+                }
+
+                EnemyInstance partner = RacePartner(enemy);
+                int partnerIndex = partner == null ? -1 : actors.IndexOf(partner);
+                if (partnerIndex <= i)
+                {
+                    continue;
+                }
+
+                if (RandomRoll.RollRange(0, 1, new RollContext(enemy.State)) == 1)
+                {
+                    actors[i] = partner;
+                    actors[partnerIndex] = enemy;
+                }
+            }
+
+            return actors;
+        }
+
         private void ExecuteEnemyIntent(EnemyInstance enemy, int enemyIndex)
         {
             EnemyIntent intent = enemy.CurrentIntent;
@@ -1775,6 +1974,7 @@ namespace KernelPanic.Combat
             switch (intent.Kind)
             {
                 case EnemyIntentKind.Attack:
+                    value = ApplyEnemyAttackBonuses(enemy, value);
                     value = ApplyIncomingAttackMitigation(value);
                     DamageResult attackResult = _damagePipeline.DealDamage(new DamageRequest(enemy.State, _playerState, value, intent.DamageType, intent.TrueDamage, false));
                     GameEvents.RaisePlayerDamaged(new PlayerDamagedEvent(enemy, attackResult.FinalAmount));
@@ -1790,6 +1990,7 @@ namespace KernelPanic.Combat
                     }
                     break;
                 case EnemyIntentKind.StatusAttack:
+                    value = ApplyEnemyAttackBonuses(enemy, value);
                     DamageResult statusResult = _damagePipeline.DealDamage(new DamageRequest(enemy.State, _playerState, value, intent.DamageType, intent.TrueDamage, false));
                     GameEvents.RaisePlayerDamaged(new PlayerDamagedEvent(enemy, statusResult.FinalAmount));
                     if (intent.StatusStacks > 0)
@@ -1810,13 +2011,48 @@ namespace KernelPanic.Combat
 
         private void ExecuteSpecialEnemyIntent(EnemyInstance enemy)
         {
-            if (enemy.HasBehavior(EnemyBehaviorFlags.Split))
+            if (enemy.HasBehavior(EnemyBehaviorFlags.SegfaultOnDeath))
             {
-                TrySplitForkBomb(enemy);
+                enemy.AdvanceSegfaultCountdown();
+                if (enemy.CountdownRemaining <= 0)
+                {
+                    _damagePipeline.DealDamage(new DamageRequest(enemy.State, enemy.State, enemy.CurrentUptime, Language.C, true, false));
+                    Log($"{enemy.Name} dereferenced null");
+                }
+
                 return;
             }
 
             Log("TODO: special intent needs enemy-specific behavior hooks.");
+        }
+
+        private void ResolvePassiveEnemyAfterAction(EnemyInstance enemy)
+        {
+            if (enemy == null || enemy.State.IsDefeated)
+            {
+                return;
+            }
+
+            if (enemy.HasBehavior(EnemyBehaviorFlags.Split))
+            {
+                TrySplitForkBomb(enemy);
+            }
+        }
+
+        private int ApplyEnemyAttackBonuses(EnemyInstance enemy, int value)
+        {
+            int modified = value;
+            if (IsRacePairLinked(enemy))
+            {
+                modified += EnemyArchetypeCatalog.RacePairDamageBonus;
+            }
+
+            if (enemy != null && enemy.RaceEnrageStacks > 0)
+            {
+                modified += enemy.RaceEnrageStacks;
+            }
+
+            return modified;
         }
 
         private void TrySplitForkBomb(EnemyInstance source)
@@ -1834,6 +2070,34 @@ namespace KernelPanic.Combat
             copy.PickNextIntent();
             _enemies.Add(copy);
             Log("fork bomb split");
+        }
+
+        private bool IsRacePairLinked(EnemyInstance enemy)
+        {
+            return enemy != null
+                && enemy.HasBehavior(EnemyBehaviorFlags.RacePair)
+                && RacePartner(enemy) != null;
+        }
+
+        private EnemyInstance RacePartner(EnemyInstance enemy)
+        {
+            if (enemy == null || enemy.PairId < 0)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                EnemyInstance candidate = _enemies[i];
+                if (candidate != enemy
+                    && candidate.PairId == enemy.PairId
+                    && !candidate.State.IsDefeated)
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
         }
 
         private void DefendSelfAndAdjacent(int enemyIndex, int amount)
@@ -1864,6 +2128,38 @@ namespace KernelPanic.Combat
             int mitigated = Mathf.CeilToInt(Mathf.Max(0, value) * 0.5f);
             Log($"SELinux enforcing halved attack {value}->{mitigated}");
             return mitigated;
+        }
+
+        private int ResolveDamageResistance(DamageRequest request, int amount)
+        {
+            EnemyInstance target = FindEnemy(request.Target);
+            if (target == null
+                || !target.HasBehavior(EnemyBehaviorFlags.RootkitMasked)
+                || !HasOtherLivingEnemy(target))
+            {
+                return amount;
+            }
+
+            if (amount <= 0)
+            {
+                return 0;
+            }
+
+            return Mathf.Max(1, Mathf.CeilToInt(amount * (EnemyArchetypeCatalog.RootkitMaskedDamagePercent / 100f)));
+        }
+
+        private bool HasOtherLivingEnemy(EnemyInstance target)
+        {
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                EnemyInstance enemy = _enemies[i];
+                if (enemy != target && enemy.State != null && !enemy.State.IsDefeated)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ResolveDelayedEndOfTurnEffects()

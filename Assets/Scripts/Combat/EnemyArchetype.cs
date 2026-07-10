@@ -14,7 +14,12 @@ namespace KernelPanic.Combat
         Grow = 1 << 2,
         ObfuscateIntent = 1 << 3,
         DefendAllies = 1 << 4,
-        Countdown = 1 << 5
+        Countdown = 1 << 5,
+        LeavesOrphan = 1 << 6,
+        SegfaultOnDeath = 1 << 7,
+        RacePair = 1 << 8,
+        RootkitMasked = 1 << 9,
+        Elite = 1 << 10
     }
 
     public sealed class EnemyArchetypeDescriptor
@@ -51,18 +56,23 @@ namespace KernelPanic.Combat
     {
         public const int ZombieReapThresholdPercent = 30;
         public const int MemoryLeakAttackGrowthPerTurn = 1;
+        public const int MemoryLeakAttackCapMin = 4;
+        public const int MemoryLeakAttackCapMax = 5;
         public const int ForkBombTotalCap = 5;
+        public const int RootkitMaskedDamagePercent = 10;
+        public const int RacePairDamageBonus = 2;
         public const int CronInitialCountdown = 2;
+        public const int SegfaultInitialCountdown = 2;
 
         private static readonly EnemyArchetypeDescriptor ZombieProcess = new(
             "zombie_process",
             "Zombie Process",
             6,
             10,
-            EnemyBehaviorFlags.Revive,
+            EnemyBehaviorFlags.Revive | EnemyBehaviorFlags.LeavesOrphan,
             new[]
             {
-                new EnemyIntent(EnemyIntentKind.Attack, 3, 4, Language.C, "attack", "!")
+                new EnemyIntent(EnemyIntentKind.Attack, 2, 3, Language.C, "attack", "!")
             });
 
         private static readonly EnemyArchetypeDescriptor MemoryLeak = new(
@@ -73,7 +83,7 @@ namespace KernelPanic.Combat
             EnemyBehaviorFlags.Grow,
             new[]
             {
-                new EnemyIntent(EnemyIntentKind.StatusAttack, 1, 1, Language.C, "leak", "!", false, StatusType.MemoryLeak, 1, CombatTuning.EnemyStatusDuration)
+                new EnemyIntent(EnemyIntentKind.StatusAttack, 1, 2, Language.C, "leak", "!", false, StatusType.MemoryLeak, 1, CombatTuning.EnemyStatusDuration)
             });
 
         private static readonly EnemyArchetypeDescriptor ForkBomb = new(
@@ -81,10 +91,10 @@ namespace KernelPanic.Combat
             "Fork Bomb",
             3,
             5,
-            EnemyBehaviorFlags.Split,
+            EnemyBehaviorFlags.Split | EnemyBehaviorFlags.LeavesOrphan,
             new[]
             {
-                new EnemyIntent(EnemyIntentKind.Special, 0, 0, Language.C, "fork", ":", false, StatusType.MemoryLeak, 0, -1, "split")
+                new EnemyIntent(EnemyIntentKind.Attack, 1, 2, Language.C, "fork hit", "!")
             });
 
         private static readonly EnemyArchetypeDescriptor Daemon = new(
@@ -92,7 +102,7 @@ namespace KernelPanic.Combat
             "Daemon",
             10,
             14,
-            EnemyBehaviorFlags.ObfuscateIntent,
+            EnemyBehaviorFlags.ObfuscateIntent | EnemyBehaviorFlags.Elite,
             new[]
             {
                 new EnemyIntent(EnemyIntentKind.Attack, 6, 8, Language.C, "daemon hit", "!")
@@ -108,7 +118,7 @@ namespace KernelPanic.Combat
             {
                 new EnemyIntent(EnemyIntentKind.Defend, 3, 5, Language.C, "shield adjacent", "#"),
                 new EnemyIntent(EnemyIntentKind.Defend, 3, 5, Language.C, "shield adjacent", "#"),
-                new EnemyIntent(EnemyIntentKind.Attack, 1, 2, Language.C, "poke", "!")
+                new EnemyIntent(EnemyIntentKind.Attack, 0, 1, Language.C, "poke", "!")
             });
 
         private static readonly EnemyArchetypeDescriptor CronJob = new(
@@ -122,6 +132,50 @@ namespace KernelPanic.Combat
                 new EnemyIntent(EnemyIntentKind.Attack, 10, 12, Language.C, "cron fire", "@")
             });
 
+        private static readonly EnemyArchetypeDescriptor OrphanProcess = new(
+            "orphan_process",
+            "Orphan Process",
+            2,
+            4,
+            EnemyBehaviorFlags.None,
+            new[]
+            {
+                new EnemyIntent(EnemyIntentKind.Attack, 1, 2, Language.C, "orphan chip", ".")
+            });
+
+        private static readonly EnemyArchetypeDescriptor Segfault = new(
+            "segfault",
+            "Segfault",
+            2,
+            4,
+            EnemyBehaviorFlags.SegfaultOnDeath,
+            new[]
+            {
+                new EnemyIntent(EnemyIntentKind.Attack, 2, 3, Language.C, "unstable hit", "!")
+            });
+
+        private static readonly EnemyArchetypeDescriptor RaceCondition = new(
+            "race_condition",
+            "Race Condition",
+            5,
+            7,
+            EnemyBehaviorFlags.RacePair,
+            new[]
+            {
+                new EnemyIntent(EnemyIntentKind.Attack, 2, 3, Language.C, "racy strike", "~")
+            });
+
+        private static readonly EnemyArchetypeDescriptor Rootkit = new(
+            "rootkit",
+            "Rootkit",
+            14,
+            18,
+            EnemyBehaviorFlags.RootkitMasked,
+            new[]
+            {
+                new EnemyIntent(EnemyIntentKind.Attack, 1, 2, Language.C, "masked hit", "?")
+            });
+
         public static EnemyArchetypeDescriptor Get(string id)
         {
             return id switch
@@ -131,6 +185,10 @@ namespace KernelPanic.Combat
                 "daemon" => Daemon,
                 "firewalld" => Defender,
                 "cron_job" => CronJob,
+                "orphan_process" => OrphanProcess,
+                "segfault" => Segfault,
+                "race_condition" => RaceCondition,
+                "rootkit" => Rootkit,
                 _ => ZombieProcess
             };
         }

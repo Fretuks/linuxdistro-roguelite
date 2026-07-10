@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: lang_java_new_object
   displayName: new Object()
-  description: uses 2 RAM. deal 3. JIT applies.
+  description: uses 2 RAM. deal 3. overkill spills. JIT applies.
   flavorText: allocation as a love language.
   language: 8
   rarity: 0
