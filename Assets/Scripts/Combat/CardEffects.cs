@@ -1062,6 +1062,23 @@ namespace KernelPanic.Combat
                 or "arch_pacman_syu" or "arch_consult_wiki" or "arch_makepkg" or "shop_c_free" or "shop_c_sizeof" or "shop_c_kernel_exploit";
         }
 
+        public static bool CanReceiveBleedingEdgeDamageBonus(CardDefinition definition)
+        {
+            if (definition == null || definition.ResolutionTrack != ResolutionTrack.Native)
+            {
+                return false;
+            }
+
+            return definition.Id is "lang_js_console_log" or "lang_js_fetch" or "lang_js_typeof" or "mint_fix_broken"
+                or "lang_rs_fn_main" or "lang_rs_unwrap"
+                or "lang_c_malloc" or "lang_c_printf" or "lang_c_pointer"
+                or "lang_java_public_static_main" or "lang_java_system_out_println" or "lang_java_new_object"
+                or "shop_js_math_random" or "shop_js_promise_all" or "ubuntu_snap_install"
+                or "mint_nemo" or "fedora_dnf_autoremove" or "fedora_first_to_package" or "fedora_dnf_update"
+                or "arch_pacman_syu" or "arch_consult_wiki" or "arch_makepkg"
+                or "shop_c_free" or "shop_c_sizeof" or "shop_c_kernel_exploit";
+        }
+
         public static bool TargetsAllEnemies(CardDefinition definition)
         {
             return definition?.Id is "lang_py_for_loop";

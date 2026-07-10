@@ -162,11 +162,16 @@ namespace KernelPanic.Core
         }
 
         public DamageDealtEvent(CombatantState source, CombatantState target, int amount, Language language, int incomingAmount, int absorbedAmount, bool wasCritical)
-            : this(source, target, amount, language, incomingAmount, absorbedAmount, wasCritical, 0, amount)
+            : this(source, target, amount, language, incomingAmount, absorbedAmount, wasCritical, 0, amount, false)
         {
         }
 
         public DamageDealtEvent(CombatantState source, CombatantState target, int amount, Language language, int incomingAmount, int absorbedAmount, bool wasCritical, int shieldDamage, int uptimeDamage)
+            : this(source, target, amount, language, incomingAmount, absorbedAmount, wasCritical, shieldDamage, uptimeDamage, false)
+        {
+        }
+
+        public DamageDealtEvent(CombatantState source, CombatantState target, int amount, Language language, int incomingAmount, int absorbedAmount, bool wasCritical, int shieldDamage, int uptimeDamage, bool trueDamage)
         {
             Source = source;
             Target = target;
@@ -177,6 +182,7 @@ namespace KernelPanic.Core
             WasCritical = wasCritical;
             ShieldDamage = shieldDamage;
             UptimeDamage = uptimeDamage;
+            TrueDamage = trueDamage;
         }
 
         public CombatantState Source { get; }
@@ -188,6 +194,7 @@ namespace KernelPanic.Core
         public bool WasCritical { get; }
         public int ShieldDamage { get; }
         public int UptimeDamage { get; }
+        public bool TrueDamage { get; }
         public bool WasFullyBlocked => IncomingAmount > 0 && UptimeDamage <= 0;
         public bool WasMitigated => ShieldDamage > 0 || AbsorbedAmount > 0 || WasFullyBlocked;
     }

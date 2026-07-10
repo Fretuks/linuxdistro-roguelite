@@ -54,6 +54,11 @@ namespace KernelPanic.Combat
             return card != null && _cards.Remove(card);
         }
 
+        public void SetRamCapacity(int ramCapacity)
+        {
+            RamCapacity = System.Math.Max(1, ramCapacity);
+        }
+
         public void Clear()
         {
             _cards.Clear();

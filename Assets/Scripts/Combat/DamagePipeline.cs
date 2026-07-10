@@ -81,7 +81,7 @@ namespace KernelPanic.Combat
 
             int finalAmount = ApplyShieldAndUptime(amount, request, out int absorbedAmount, out int shieldDamage, out int uptimeDamage);
             ApplyArchRollingReleaseSave(request);
-            GameEvents.RaiseDamageDealt(new DamageDealtEvent(request.Source, request.Target, finalAmount, request.Language, amount, absorbedAmount, wasCritical, shieldDamage, uptimeDamage));
+            GameEvents.RaiseDamageDealt(new DamageDealtEvent(request.Source, request.Target, finalAmount, request.Language, amount, absorbedAmount, wasCritical, shieldDamage, uptimeDamage, request.TrueDamage));
 
             bool defeated = false;
             if (request.Target.CurrentUptime <= 0 && !request.Target.IsDefeated)

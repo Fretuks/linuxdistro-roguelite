@@ -41,6 +41,12 @@ namespace KernelPanic.Combat
         public const int StatUpgradeHealPercent = 30;
         public const int StatUpgradeRam = 1;
         public const int UpgradeMagnitudeBonus = 2;
+        public const int FedoraBleedingEdgeBaseCrashChance = 5;
+        public const int FedoraBleedingEdgeCrashChanceStep = 5;
+        public const int FedoraBleedingEdgeMaxCrashChance = 90;
+        public const int HitMagnitudeModeratePercent = 10;
+        public const int HitMagnitudeMajorPercent = 25;
+        public const int HitMagnitudeMassivePercent = 45;
 
         public static int ScaleStatUpgradeMaxUptime(int maxUptime)
         {
@@ -60,5 +66,33 @@ namespace KernelPanic.Combat
         public const float QueueCardResolveDelaySeconds = 0.45f;
         public const float EnemyTelegraphDelaySeconds = 0.35f;
         public const float EnemyActionDelaySeconds = 0.45f;
+    }
+
+    public enum HitMagnitudeTier
+    {
+        Minor,
+        Moderate,
+        Major,
+        Massive
+    }
+
+    public static class HitMagnitude
+    {
+        public static HitMagnitudeTier Classify(int damageAmount, int targetMaxUptime, bool targetDefeated)
+        {
+            int maxUptime = UnityEngine.Mathf.Max(1, targetMaxUptime);
+            int amount = UnityEngine.Mathf.Max(0, damageAmount);
+            int percent = UnityEngine.Mathf.FloorToInt((amount * 100f) / maxUptime);
+
+            HitMagnitudeTier tier = percent >= CombatTuning.HitMagnitudeMassivePercent
+                ? HitMagnitudeTier.Massive
+                : percent >= CombatTuning.HitMagnitudeMajorPercent
+                    ? HitMagnitudeTier.Major
+                    : percent >= CombatTuning.HitMagnitudeModeratePercent
+                        ? HitMagnitudeTier.Moderate
+                        : HitMagnitudeTier.Minor;
+
+            return targetDefeated && tier < HitMagnitudeTier.Major ? HitMagnitudeTier.Major : tier;
+        }
     }
 }

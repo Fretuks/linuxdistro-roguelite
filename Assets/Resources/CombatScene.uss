@@ -59,6 +59,22 @@
     transition-duration: 0ms;
 }
 
+.root-shake-major {
+    translate: 3px 0;
+    transition-property: translate;
+    transition-duration: 70ms;
+}
+
+.root-shake-massive {
+    translate: 6px 0;
+    transition-property: translate;
+    transition-duration: 90ms;
+}
+
+.root-shake-player {
+    background-color: #080202;
+}
+
 .scene-fade-curtain {
     position: absolute;
     left: 0;
@@ -500,6 +516,11 @@
 .enemy-card-targeted {
     border-color: var(--kp-accent);
     background-color: var(--kp-panel-targeted);
+}
+
+.enemy-card-elite {
+    border-left-color: var(--kp-warning);
+    border-left-width: 4px;
 }
 
 .enemy-name {
@@ -1120,6 +1141,12 @@
     border-color: var(--kp-kill);
 }
 
+.damage-vignette-massive {
+    opacity: 0.94;
+    border-color: var(--kp-kill);
+    background-color: rgba(255, 51, 51, 0.08);
+}
+
 .float-number {
     position: absolute;
     min-width: 60px;
@@ -1135,6 +1162,14 @@
 
 .float-damage {
     color: var(--kp-damage);
+}
+
+.float-shield {
+    color: var(--kp-beneficial);
+}
+
+.float-true {
+    color: var(--kp-kill);
 }
 
 .float-heal {
@@ -1155,6 +1190,37 @@
 
 .float-large {
     font-size: 23px;
+}
+
+.float-tier-minor {
+    font-size: 14px;
+    -unity-font-style: normal;
+    opacity: 0.86;
+}
+
+.float-tier-moderate {
+    font-size: 19px;
+    -unity-font-style: bold;
+}
+
+.float-tier-major {
+    font-size: 25px;
+    -unity-font-style: bold;
+    color: var(--kp-warning);
+}
+
+.float-tier-massive {
+    min-width: 92px;
+    height: 34px;
+    font-size: 32px;
+    -unity-font-style: bold;
+    color: var(--kp-kill);
+    background-color: rgba(255, 179, 71, 0.08);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-color: var(--kp-warning);
 }
 
 .float-static {
@@ -1195,6 +1261,29 @@
     border-color: var(--kp-beneficial);
 }
 
+.impact-tier-minor {
+    opacity: 0.72;
+    font-size: 9px;
+}
+
+.impact-tier-moderate {
+    font-size: 10px;
+}
+
+.impact-tier-major {
+    min-width: 58px;
+    font-size: 11px;
+    border-color: var(--kp-warning);
+}
+
+.impact-tier-massive {
+    min-width: 68px;
+    height: 22px;
+    font-size: 12px;
+    color: var(--kp-kill);
+    border-color: var(--kp-kill);
+}
+
 .feedback-card-ghost {
     opacity: 0.9;
     transition-property: left, top, opacity;
@@ -1227,6 +1316,36 @@
     transition-duration: 90ms;
 }
 
+.feedback-hit-minor {
+    background-color: var(--kp-panel-raised);
+    border-color: var(--kp-border);
+    scale: 0.98 0.98;
+    transition-property: scale, background-color, border-color;
+    transition-duration: 70ms;
+}
+
+.feedback-hit-major {
+    background-color: #251703;
+    border-color: var(--kp-warning);
+    translate: 6px 0;
+    scale: 1.055 0.94;
+    transition-property: scale, translate, background-color, border-color;
+    transition-duration: 140ms;
+}
+
+.feedback-hit-minor .meter-fill {
+    background-color: var(--kp-damage);
+}
+
+.feedback-hit .meter-fill,
+.feedback-hit-major .meter-fill {
+    background-color: var(--kp-warning);
+}
+
+.feedback-crit .meter-fill {
+    background-color: var(--kp-kill);
+}
+
 .feedback-crit {
     background-color: #2d0707;
     border-color: var(--kp-kill);
@@ -1243,6 +1362,20 @@
     scale: 1.02 1.02;
     transition-property: scale, background-color, border-color;
     transition-duration: 80ms;
+}
+
+.feedback-clang-major {
+    background-color: #061820;
+    border-color: var(--kp-beneficial);
+    translate: 5px 0;
+    scale: 1.045 0.96;
+    transition-property: scale, translate, background-color, border-color;
+    transition-duration: 130ms;
+}
+
+.feedback-clang .meter-fill,
+.feedback-clang-major .meter-fill {
+    background-color: var(--kp-beneficial);
 }
 
 .feedback-status {
@@ -1361,9 +1494,15 @@
 .reduced-motion .impact-marker,
 .reduced-motion .feedback-card-ghost,
 .reduced-motion .damage-vignette,
+.reduced-motion .root-shake-major,
+.reduced-motion .root-shake-massive,
+.reduced-motion .root-shake-player,
+.reduced-motion .feedback-hit-minor,
 .reduced-motion .feedback-hit,
+.reduced-motion .feedback-hit-major,
 .reduced-motion .feedback-crit,
 .reduced-motion .feedback-clang,
+.reduced-motion .feedback-clang-major,
 .reduced-motion .feedback-killed,
 .reduced-motion .enemy-anticipating,
 .reduced-motion .enemy-acting,
@@ -1375,4 +1514,19 @@
 .reduced-motion .stack-chip-resolve,
 .reduced-motion .death-ghost {
     transition-duration: 0ms;
+}
+
+.reduced-motion .feedback-hit-minor,
+.reduced-motion .feedback-hit,
+.reduced-motion .feedback-hit-major,
+.reduced-motion .feedback-crit,
+.reduced-motion .feedback-clang,
+.reduced-motion .feedback-clang-major,
+.reduced-motion .feedback-killed,
+.reduced-motion .enemy-anticipating,
+.reduced-motion .enemy-acting,
+.reduced-motion .root-shake-major,
+.reduced-motion .root-shake-massive {
+    translate: 0 0;
+    scale: 1 1;
 }

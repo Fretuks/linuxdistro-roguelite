@@ -39,7 +39,7 @@ namespace KernelPanic.Combat
         private bool _skipNextAllocateDraw;
         private bool _ubuntuEmptyHandRefillUsed;
         private int _fedoraCardsDiscountedThisTurn;
-        private int _fedoraCrashChance = 10;
+        private int _fedoraCrashChance = CombatTuning.FedoraBleedingEdgeBaseCrashChance;
         private int _cardsPlayedThisTurn;
         private int _cardsPlayedThisWave;
         private int _cCardsPlayedThisTurn;
@@ -54,6 +54,7 @@ namespace KernelPanic.Combat
         private int _queuedRepeatCharges;
         private int _nextTurnCycleBonus;
         private int _nextRacePairId = 1;
+        private int _activeKernelRamPenalty;
         private Coroutine _phaseCoroutine;
 
         public TurnPhase CurrentPhase => currentPhase;
@@ -71,6 +72,7 @@ namespace KernelPanic.Combat
         public bool AwaitingWaveContinue => _awaitingWaveContinue;
         public bool RunLost => _runLost;
         public int CurrentWaveNumber => _runManager == null ? 1 : _runManager.CurrentWaveNumber;
+        public int ActiveKernelRamPenalty => _activeKernelRamPenalty;
 
         public event Action StateChanged;
         public event Action<string> CombatLog;
@@ -194,11 +196,11 @@ namespace KernelPanic.Combat
 
             if (card.IsLocked)
             {
-                Log($"{GetCardName(card)} is locked");
+                Log($"{GetCardName(card)} is locked; pay {EnemyArchetypeCatalog.DrmUnlockCycleCost} Cycle to unlock");
                 return false;
             }
 
-            bool fedoraBonus = CanApplyFedoraBonus();
+            bool fedoraBonus = CanApplyFedoraBonus(card);
             int cost = GetEffectiveCardCost(card);
             if (fedoraBonus)
             {
@@ -248,11 +250,13 @@ namespace KernelPanic.Combat
             }
 
             GameEvents.RaiseCardPlayed(new CardPlayedEvent(card, track));
+            ApplyTelemetryCardPlayed();
             LogPlayIntent(card);
             card.SetTargetSnapshot(CaptureTargets(card));
 
             if (fedoraBonus)
             {
+                bool firstFedoraBonusThisTurn = _fedoraCardsDiscountedThisTurn == 0;
                 _fedoraCardsDiscountedThisTurn++;
                 bool rawhideChargeUsed = _rawhideBonusCharges > 0;
                 if (rawhideChargeUsed)
@@ -262,7 +266,7 @@ namespace KernelPanic.Combat
 
                 if (!IsCrashImmune(card) && RandomRoll.RollRange(1, 100, new RollContext(_playerState)) <= _fedoraCrashChance)
                 {
-                    _fedoraCrashChance = 10;
+                    _fedoraCrashChance = CombatTuning.FedoraBleedingEdgeBaseCrashChance;
                     if (IsDistro("fedora") && _runConfig.DistroVersion >= 4)
                     {
                         _playerState.Cycles += 1;
@@ -276,10 +280,12 @@ namespace KernelPanic.Combat
                     return true;
                 }
 
-                _fedoraCrashChance = Mathf.Min(90, _fedoraCrashChance + 10);
+                _fedoraCrashChance = Mathf.Min(
+                    CombatTuning.FedoraBleedingEdgeMaxCrashChance,
+                    _fedoraCrashChance + CombatTuning.FedoraBleedingEdgeCrashChanceStep);
                 card.MarkFedoraNonCrashBonus();
                 _playerState.DamageMultiplierPercent = _runConfig.DistroVersion >= 2 ? 175 : 150;
-                ApplyFedoraGrowth(card, rawhideChargeUsed);
+                ApplyFedoraGrowth(card, rawhideChargeUsed, firstFedoraBonusThisTurn);
             }
 
             if (card.Definition.Language == Language.C && _cCardsPlayedThisTurn == 0 && HasPackageEffect(PackageEffectKind.FirstCThisTurnDamageMultiplier, out PackageEffectData cPackageEffect))
@@ -368,6 +374,27 @@ namespace KernelPanic.Combat
 
             card.IsBroken = true;
             Log($"{sourceLabel}: corrupted {GetCardName(card)}");
+            StateChanged?.Invoke();
+            return true;
+        }
+
+        public bool TryUnlockCard(CardInstance card)
+        {
+            if (currentPhase != TurnPhase.Execute || card == null || !card.IsLocked || _playerState == null)
+            {
+                return false;
+            }
+
+            int cost = EnemyArchetypeCatalog.DrmUnlockCycleCost;
+            if (_playerState.Cycles < cost)
+            {
+                Log($"not enough cycles to unlock {GetCardName(card)}");
+                return false;
+            }
+
+            _playerState.Cycles -= cost;
+            card.IsLocked = false;
+            Log($"unlocked {GetCardName(card)}");
             StateChanged?.Invoke();
             return true;
         }
@@ -626,7 +653,7 @@ namespace KernelPanic.Combat
             _awaitingWaveContinue = false;
             _loggedEffectTodos.Clear();
             _ubuntuEmptyHandRefillUsed = false;
-            _fedoraCrashChance = 10;
+            _fedoraCrashChance = CombatTuning.FedoraBleedingEdgeBaseCrashChance;
             _fedoraCardsDiscountedThisTurn = 0;
             _cardsPlayedThisTurn = 0;
             _cardsPlayedThisWave = 0;
@@ -700,6 +727,7 @@ namespace KernelPanic.Combat
             _interpreterQueue.Clear();
             _enemies.Clear();
             SpawnStructuralEnemies();
+            RecalculateKernelRamPressure();
             PickEnemyIntents();
             StateChanged?.Invoke();
             yield return DrawOpeningHandSequenced();
@@ -715,6 +743,7 @@ namespace KernelPanic.Combat
             }
 
             RevivePendingEnemies();
+            UnlockHandCards("license check expired");
             _playerState.Cycles = _playerState.MaxCycles;
             _fedoraCardsDiscountedThisTurn = 0;
             _cardsPlayedThisTurn = 0;
@@ -856,7 +885,7 @@ namespace KernelPanic.Combat
 
         private IEnumerator DrawOpeningHandSequenced()
         {
-            int openingDraw = Mathf.Min(CombatTuning.OpeningHandSize, _playerState.Ram);
+            int openingDraw = Mathf.Min(CombatTuning.OpeningHandSize, _handController == null ? _playerState.Ram : _handController.RamCapacity);
             yield return DrawCardsToHandSequenced(openingDraw, "opening hand");
         }
 
@@ -954,9 +983,87 @@ namespace KernelPanic.Combat
             StartCoroutine(DrawCardsToHandSequenced(_playerState.Ram, "ubuntu 24.04 refill"));
         }
 
-        private bool CanApplyFedoraBonus()
+        private bool CanApplyFedoraBonus(CardInstance card)
         {
-            return CanApplyFedoraPassiveBonus() || _rawhideBonusCharges > 0;
+            return CardEffectFactory.CanReceiveBleedingEdgeDamageBonus(card?.Definition)
+                && CardCanBenefitFromBleedingEdgeNow(card)
+                && (CanApplyFedoraPassiveBonus() || _rawhideBonusCharges > 0);
+        }
+
+        private bool CardCanBenefitFromBleedingEdgeNow(CardInstance card)
+        {
+            string id = card?.Definition?.Id;
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return false;
+            }
+
+            if (id == "arch_consult_wiki")
+            {
+                return _handController == null || !HasBrokenHandCard();
+            }
+
+            if (id == "fedora_dnf_autoremove")
+            {
+                return HasJunkHandCard(card);
+            }
+
+            return true;
+        }
+
+        private bool HasBrokenHandCard()
+        {
+            if (_handController == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _handController.Cards.Count; i++)
+            {
+                if (_handController.Cards[i]?.IsBroken == true)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool HasJunkHandCard(CardInstance playedCard)
+        {
+            if (_handController == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _handController.Cards.Count; i++)
+            {
+                CardInstance card = _handController.Cards[i];
+                if (card != playedCard && IsJunkForDnfAutoremove(card))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsJunkForDnfAutoremove(CardInstance card)
+        {
+            if (card == null)
+            {
+                return false;
+            }
+
+            string id = card.Definition?.Id ?? string.Empty;
+            string name = card.Definition?.DisplayName ?? string.Empty;
+            return card.Definition != null && card.Definition.IsToken
+                || card.IsBroken
+                || id.IndexOf("junk", StringComparison.OrdinalIgnoreCase) >= 0
+                || id.IndexOf("nop", StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("junk", StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("NOP", StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("broken", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private void DecayJavaWarmupForNextWave()
@@ -981,9 +1088,9 @@ namespace KernelPanic.Combat
             return _fedoraCardsDiscountedThisTurn < limit;
         }
 
-        private void ApplyFedoraGrowth(CardInstance card, bool rawhideChargeUsed)
+        private void ApplyFedoraGrowth(CardInstance card, bool rawhideChargeUsed, bool firstFedoraBonusThisTurn)
         {
-            if (!IsDistro("fedora") || _runConfig.DistroVersion < 3 || card == null || !card.WasFirstCardThisTurn)
+            if (!IsDistro("fedora") || _runConfig.DistroVersion < 3 || card == null || !firstFedoraBonusThisTurn)
             {
                 return;
             }
@@ -1739,6 +1846,7 @@ namespace KernelPanic.Combat
                     _runManager?.AddBits(CombatTuning.BitsPerKill);
                     HandleEnemyDeath(enemy);
                     _enemies.RemoveAt(i);
+                    RecalculateKernelRamPressure();
                 }
             }
 
@@ -1803,6 +1911,87 @@ namespace KernelPanic.Combat
             return candidates[index];
         }
 
+        private void UnlockHandCards(string reason)
+        {
+            if (_handController == null)
+            {
+                return;
+            }
+
+            int unlocked = 0;
+            for (int i = 0; i < _handController.Cards.Count; i++)
+            {
+                CardInstance card = _handController.Cards[i];
+                if (card != null && card.IsLocked)
+                {
+                    card.IsLocked = false;
+                    unlocked++;
+                }
+            }
+
+            if (unlocked > 0)
+            {
+                Log($"{reason}: unlocked {unlocked} card(s)");
+            }
+        }
+
+        private void RecalculateKernelRamPressure()
+        {
+            if (_handController == null || _playerState == null || _runManager == null)
+            {
+                return;
+            }
+
+            int penalty = 0;
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                EnemyInstance enemy = _enemies[i];
+                if (enemy.HasBehavior(EnemyBehaviorFlags.RamPressure) && !enemy.State.IsDefeated)
+                {
+                    penalty += EnemyArchetypeCatalog.KernelPanicRamPenalty;
+                }
+            }
+
+            _activeKernelRamPenalty = penalty;
+            int baseRam = _runManager.EffectiveRam();
+            int effectiveRam = Mathf.Max(1, baseRam - penalty);
+            _playerState.Ram = effectiveRam;
+            _handController.SetRamCapacity(effectiveRam);
+        }
+
+        private void ApplyTelemetryCardPlayed()
+        {
+            int collectors = 0;
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                EnemyInstance enemy = _enemies[i];
+                if (enemy.HasBehavior(EnemyBehaviorFlags.TelemetryCollector) && !enemy.State.IsDefeated)
+                {
+                    enemy.AddTelemetryStack();
+                    collectors++;
+                }
+            }
+
+            if (collectors > 0)
+            {
+                Log($"telemetry collector profiled card: +{EnemyArchetypeCatalog.TelemetryDamageGrowthPerCard} damage");
+                StateChanged?.Invoke();
+            }
+        }
+
+        private void LockRandomHandCard(EnemyInstance source)
+        {
+            CardInstance card = RandomHandCard(cardInstance => cardInstance != null && !cardInstance.IsBroken && !cardInstance.IsLocked);
+            if (card == null)
+            {
+                Log("license check: no unlockable hand card");
+                return;
+            }
+
+            card.IsLocked = true;
+            Log($"{source.Name} locked {GetCardName(card)}");
+        }
+
         private void BreakRacePair(EnemyInstance defeated)
         {
             EnemyInstance survivor = RacePartner(defeated);
@@ -1829,7 +2018,8 @@ namespace KernelPanic.Combat
             int count = Mathf.Clamp(CombatTuning.BaseEnemiesPerWave + countGrowth, CombatTuning.BaseEnemiesPerWave, CombatTuning.MaxEnemiesPerWave);
             int waveUptimeBonus = Mathf.Max(0, wave - 1) * CombatTuning.EnemyUptimeGrowthPerWave;
             bool rootkitSpawned = false;
-            for (int i = 0; i < count; i++)
+            bool eliteSpawned = TrySpawnEliteEncounter(wave, waveUptimeBonus);
+            for (int i = eliteSpawned ? 1 : 0; i < count; i++)
             {
                 string archetypeId = CreatePlaceholderArchetypeId(wave, i);
                 if (archetypeId == "rootkit")
@@ -1858,6 +2048,33 @@ namespace KernelPanic.Combat
 
                 SpawnEnemy(archetypeId, waveUptimeBonus);
             }
+        }
+
+        private bool TrySpawnEliteEncounter(int wave, int uptimeBonus)
+        {
+            if (wave < 5)
+            {
+                return false;
+            }
+
+            bool guaranteedIntro = wave == 5;
+            bool rolledElite = RandomRoll.RollRange(1, 100, RollContext.None) <= 35;
+            if (!guaranteedIntro && !rolledElite)
+            {
+                return false;
+            }
+
+            SpawnEnemy(CreateEliteArchetypeId(), uptimeBonus);
+            Log("elite process escorted by fodder");
+            // TODO: Replace this single-elite chance with authored elite encounter assets.
+            return true;
+        }
+
+        private static string CreateEliteArchetypeId()
+        {
+            string[] pool = { "daemon", "kernel_panic", "telemetry_collector", "drm_guardian" };
+            int index = RandomRoll.RollRange(0, pool.Length - 1, RollContext.None);
+            return pool[index];
         }
 
         private void SpawnRacePair(int uptimeBonus)
@@ -2002,15 +2219,24 @@ namespace KernelPanic.Combat
                     Log("TODO: buff intent needs enemy buff/status support.");
                     break;
                 case EnemyIntentKind.Special:
-                    ExecuteSpecialEnemyIntent(enemy);
+                    ExecuteSpecialEnemyIntent(enemy, value);
                     break;
             }
 
             enemy.AdvanceCountdownAfterAction();
         }
 
-        private void ExecuteSpecialEnemyIntent(EnemyInstance enemy)
+        private void ExecuteSpecialEnemyIntent(EnemyInstance enemy, int value)
         {
+            if (enemy.HasBehavior(EnemyBehaviorFlags.CardLocker))
+            {
+                LockRandomHandCard(enemy);
+                value = ApplyIncomingAttackMitigation(value);
+                DamageResult result = _damagePipeline.DealDamage(new DamageRequest(enemy.State, _playerState, value, enemy.CurrentIntent.DamageType, enemy.CurrentIntent.TrueDamage, false));
+                GameEvents.RaisePlayerDamaged(new PlayerDamagedEvent(enemy, result.FinalAmount));
+                return;
+            }
+
             if (enemy.HasBehavior(EnemyBehaviorFlags.SegfaultOnDeath))
             {
                 enemy.AdvanceSegfaultCountdown();

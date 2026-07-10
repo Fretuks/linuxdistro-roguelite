@@ -11,39 +11,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4222a6b8-add3-4f43-9c42-fd6bb5a76169" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/AurHelper.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/AurHelper.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/ConsultWiki.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/ConsultWiki.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/Makepkg.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/Makepkg.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/MinimalInstall.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/MinimalInstall.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/PacmanSyu.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/Data/Cards/Arch/PacmanSyu.asset.meta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/indexLayout.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.linuxdistrosbuttheyarebreedable/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Fedora/DnfUpdate.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Fedora/DnfUpdate.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Languages/C/Malloc.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Languages/C/Malloc.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Languages/C/Pointer.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Languages/C/Pointer.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Languages/C/Printf.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Languages/C/Printf.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Languages/Java/JavaNewObject.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Languages/Java/JavaNewObject.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Languages/Java/JavaPublicStaticMain.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Languages/Java/JavaPublicStaticMain.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Languages/Java/JavaSystemOutPrintln.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Languages/Java/JavaSystemOutPrintln.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Shop/Free.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Shop/Free.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Shop/KernelExploit.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Shop/KernelExploit.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Data/Cards/Shop/Sizeof.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Data/Cards/Shop/Sizeof.asset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Resources/CombatScene.uss" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/CombatScene.uss" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CardEffects.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CardEffects.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatManager.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatTuning.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatTuning.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatantState.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/CombatantState.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/DamagePipeline.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/DamagePipeline.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/EnemyArchetype.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/EnemyArchetype.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/EnemyInstance.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/EnemyInstance.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/StatusEffectController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/StatusEffectController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RepositoryOffer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RepositoryOffer.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Run/RunManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Combat/HandController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Combat/HandController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Core/GameEvents.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Core/GameEvents.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/UI/CombatSceneController.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -128,23 +104,23 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.743262326028233" />
-      <entry key="MS500" value="5.976929062573193" />
-      <entry key="S2" value="17.53689034207893" />
-      <entry key="S5" value="27.584806857875957" />
-      <entry key="S10" value="33.27162043754185" />
-      <entry key="S30" value="38.14780953249457" />
-      <entry key="S60" value="39.53571836868974" />
-      <entry key="M2" value="40.262726944904955" />
-      <entry key="M5" value="43.32220297215448" />
-      <entry key="M10" value="66.17309975101882" />
-      <entry key="M15" value="106.65472090214925" />
-      <entry key="M30" value="269.18080676227913" />
-      <entry key="H1" value="561.7788280748766" />
-      <entry key="H2" value="954.5740596560953" />
-      <entry key="H4" value="1474.025592246917" />
-      <entry key="D1" value="4120.268616608263" />
-      <entry key="W1" value="6567.8208311010485" />
+      <entry key="MS100" value="1.7402462730204733" />
+      <entry key="MS500" value="5.212822426631115" />
+      <entry key="S2" value="15.469623231379348" />
+      <entry key="S5" value="29.842466880777515" />
+      <entry key="S10" value="48.17178903184381" />
+      <entry key="S30" value="103.86178571051501" />
+      <entry key="S60" value="151.400209690654" />
+      <entry key="M2" value="201.01266486561804" />
+      <entry key="M5" value="261.5973708018234" />
+      <entry key="M10" value="299.5317141800844" />
+      <entry key="M15" value="327.6694025041181" />
+      <entry key="M30" value="438.2042699732131" />
+      <entry key="H1" value="698.7973356946319" />
+      <entry key="H2" value="1110.17006856563" />
+      <entry key="H4" value="1669.5601617756433" />
+      <entry key="D1" value="4400.825096157156" />
+      <entry key="W1" value="6908.8758325877625" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -155,34 +131,34 @@
       <entry key="S30" value="0.0" />
       <entry key="S60" value="0.0" />
       <entry key="M2" value="0.0" />
-      <entry key="M5" value="9.303102041982209E-153" />
-      <entry key="M10" value="9.645258960745102E-77" />
-      <entry key="M15" value="2.1031775057960495E-51" />
-      <entry key="M30" value="4.586042805192191E-26" />
-      <entry key="H1" value="2.1436097902215403E-13" />
-      <entry key="H2" value="4.878952351612686E-7" />
-      <entry key="H4" value="9.54846149789426E-4" />
-      <entry key="D1" value="0.9334224145260533" />
-      <entry key="W1" value="3.244779666296953" />
+      <entry key="M5" value="3.867598516552587E-155" />
+      <entry key="M10" value="6.219001942878838E-78" />
+      <entry key="M15" value="3.381793836897591E-52" />
+      <entry key="M30" value="1.8389660182180397E-26" />
+      <entry key="H1" value="1.3574177751524003E-13" />
+      <entry key="H2" value="3.8824911709080487E-7" />
+      <entry key="H4" value="8.517759062521447E-4" />
+      <entry key="D1" value="0.9158201973847542" />
+      <entry key="W1" value="3.235966878195177" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.668533264021644" />
-      <entry key="MS500" value="5.913573457970713" />
-      <entry key="S2" value="17.47919105497625" />
-      <entry key="S5" value="27.548161746345162" />
-      <entry key="S10" value="33.249516115897215" />
-      <entry key="S30" value="38.1393616328719" />
-      <entry key="S60" value="39.53134062098556" />
-      <entry key="M2" value="40.26049784489663" />
-      <entry key="M5" value="43.32125926171084" />
-      <entry key="M10" value="66.17242872752867" />
-      <entry key="M15" value="106.65399822613271" />
-      <entry key="M30" value="269.1797553890588" />
-      <entry key="H1" value="561.7775677248208" />
-      <entry key="H2" value="954.5729275577665" />
-      <entry key="H4" value="1474.025680151079" />
-      <entry key="D1" value="4121.2016186941155" />
-      <entry key="W1" value="6571.065502619166" />
+      <entry key="MS100" value="1.684339997461739" />
+      <entry key="MS500" value="5.1624842789484084" />
+      <entry key="S2" value="15.426146204785072" />
+      <entry key="S5" value="29.8122059339745" />
+      <entry key="S10" value="48.149217760882784" />
+      <entry key="S30" value="103.84706944591119" />
+      <entry key="S60" value="151.3898367310693" />
+      <entry key="M2" value="201.00547613774899" />
+      <entry key="M5" value="261.59163125526345" />
+      <entry key="M10" value="299.52705025178165" />
+      <entry key="M15" value="327.66555086022873" />
+      <entry key="M30" value="438.20154496052015" />
+      <entry key="H1" value="698.7952502773087" />
+      <entry key="H2" value="1110.1684860433274" />
+      <entry key="H4" value="1669.5598893072865" />
+      <entry key="D1" value="4401.740444022695" />
+      <entry key="W1" value="6912.111683013967" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -276,7 +252,7 @@
       <workItem from="1783519887449" duration="6425000" />
       <workItem from="1783578446731" duration="20118000" />
       <workItem from="1783615847433" duration="3791000" />
-      <workItem from="1783665689762" duration="4791000" />
+      <workItem from="1783665689762" duration="8074000" />
     </task>
     <task id="LOCAL-00001" summary="implement main screen">
       <option name="closed" value="true" />
@@ -510,7 +486,15 @@
       <option name="project" value="LOCAL" />
       <updated>1783620160977</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="implement more enemies, balance some programming languages and enemies to be less annoying">
+      <option name="closed" value="true" />
+      <created>1783671710808</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1783671710808</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -526,7 +510,6 @@
   <component name="UnityUnitTestConfiguration" currentTestLauncher="Both" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
-    <MESSAGE value="refactor card systems" />
     <MESSAGE value="Add actual carts and shit&#10;&#10;Upgrade UI to Level 6&#10;&#10;Balls" />
     <MESSAGE value="Implement more UX and cards for other distros" />
     <MESSAGE value="Fix some fucking bugs (FSFB)" />
@@ -551,7 +534,8 @@
     <MESSAGE value="Make multiple UX improvements in distro -&gt; packages" />
     <MESSAGE value="Implement Arch and some additional changes" />
     <MESSAGE value="Fix C, more enemies and less scaling for enemies." />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix C, more enemies and less scaling for enemies." />
+    <MESSAGE value="implement more enemies, balance some programming languages and enemies to be less annoying" />
+    <option name="LAST_COMMIT_MESSAGE" value="implement more enemies, balance some programming languages and enemies to be less annoying" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

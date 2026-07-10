@@ -19,7 +19,16 @@ namespace KernelPanic.Combat
         SegfaultOnDeath = 1 << 7,
         RacePair = 1 << 8,
         RootkitMasked = 1 << 9,
-        Elite = 1 << 10
+        Elite = 1 << 10,
+        RamPressure = 1 << 11,
+        TelemetryCollector = 1 << 12,
+        CardLocker = 1 << 13
+    }
+
+    public enum EnemyTier
+    {
+        Fodder,
+        Elite
     }
 
     public sealed class EnemyArchetypeDescriptor
@@ -30,7 +39,8 @@ namespace KernelPanic.Combat
             int baseUptimeMin,
             int baseUptimeMax,
             EnemyBehaviorFlags behaviorFlags,
-            IReadOnlyList<EnemyIntent> intentPool)
+            IReadOnlyList<EnemyIntent> intentPool,
+            EnemyTier tier = EnemyTier.Fodder)
         {
             Id = string.IsNullOrWhiteSpace(id) ? "unknown_process" : id;
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? Id : displayName;
@@ -38,6 +48,7 @@ namespace KernelPanic.Combat
             BaseUptimeMax = Mathf.Max(BaseUptimeMin, baseUptimeMax);
             BehaviorFlags = behaviorFlags;
             IntentPool = intentPool ?? Array.Empty<EnemyIntent>();
+            Tier = tier;
         }
 
         public string Id { get; }
@@ -46,6 +57,7 @@ namespace KernelPanic.Combat
         public int BaseUptimeMax { get; }
         public EnemyBehaviorFlags BehaviorFlags { get; }
         public IReadOnlyList<EnemyIntent> IntentPool { get; }
+        public EnemyTier Tier { get; }
     }
 
     /// <summary>
@@ -61,6 +73,9 @@ namespace KernelPanic.Combat
         public const int ForkBombTotalCap = 5;
         public const int RootkitMaskedDamagePercent = 10;
         public const int RacePairDamageBonus = 2;
+        public const int KernelPanicRamPenalty = 2;
+        public const int TelemetryDamageGrowthPerCard = 1;
+        public const int DrmUnlockCycleCost = 1;
         public const int CronInitialCountdown = 2;
         public const int SegfaultInitialCountdown = 2;
 
@@ -106,7 +121,8 @@ namespace KernelPanic.Combat
             new[]
             {
                 new EnemyIntent(EnemyIntentKind.Attack, 6, 8, Language.C, "daemon hit", "!")
-            });
+            },
+            EnemyTier.Elite);
 
         private static readonly EnemyArchetypeDescriptor Defender = new(
             "firewalld",
@@ -176,6 +192,42 @@ namespace KernelPanic.Combat
                 new EnemyIntent(EnemyIntentKind.Attack, 1, 2, Language.C, "masked hit", "?")
             });
 
+        private static readonly EnemyArchetypeDescriptor KernelPanic = new(
+            "kernel_panic",
+            "Kernel Panic",
+            25,
+            30,
+            EnemyBehaviorFlags.Elite | EnemyBehaviorFlags.RamPressure,
+            new[]
+            {
+                new EnemyIntent(EnemyIntentKind.Attack, 5, 7, Language.C, "panic hit", "!")
+            },
+            EnemyTier.Elite);
+
+        private static readonly EnemyArchetypeDescriptor TelemetryCollector = new(
+            "telemetry_collector",
+            "Telemetry Collector",
+            20,
+            25,
+            EnemyBehaviorFlags.Elite | EnemyBehaviorFlags.TelemetryCollector,
+            new[]
+            {
+                new EnemyIntent(EnemyIntentKind.Attack, 2, 3, Language.C, "profile hit", "!")
+            },
+            EnemyTier.Elite);
+
+        private static readonly EnemyArchetypeDescriptor DrmGuardian = new(
+            "drm_guardian",
+            "DRM Guardian",
+            25,
+            30,
+            EnemyBehaviorFlags.Elite | EnemyBehaviorFlags.CardLocker,
+            new[]
+            {
+                new EnemyIntent(EnemyIntentKind.Special, 4, 6, Language.C, "license check", "$")
+            },
+            EnemyTier.Elite);
+
         public static EnemyArchetypeDescriptor Get(string id)
         {
             return id switch
@@ -189,6 +241,9 @@ namespace KernelPanic.Combat
                 "segfault" => Segfault,
                 "race_condition" => RaceCondition,
                 "rootkit" => Rootkit,
+                "kernel_panic" => KernelPanic,
+                "telemetry_collector" => TelemetryCollector,
+                "drm_guardian" => DrmGuardian,
                 _ => ZombieProcess
             };
         }

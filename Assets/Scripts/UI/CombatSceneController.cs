@@ -23,6 +23,7 @@ namespace KernelPanic.UI
         private const string StyleResourcePath = "CombatScene";
         private const string SharedScrollbarStyleResourcePath = "TerminalScrollbars";
         private const string SharedRarityStyleResourcePath = "RarityPresentation";
+        private const int MaxFeedbackElements = 42;
         private const string FilledCycle = "●";
         private const string EmptyCycle = "○";
 
@@ -66,6 +67,9 @@ namespace KernelPanic.UI
         private int _queueCascadeIndex;
         private int _feedbackCascadeIndex;
         private int _feedbackBeatVersion;
+        private int _rootShakeVersion;
+        private int _hitStopVersion;
+        private int _lastHitStopFrame = -1;
 
         private void Awake()
         {
@@ -143,6 +147,7 @@ namespace KernelPanic.UI
 
         private void OnDisable()
         {
+            Time.timeScale = 1f;
             SettleRunRewardsIfNeeded();
             _combatManager.StateChanged -= Refresh;
             _combatManager.CombatLog -= HandleCombatLog;
@@ -432,6 +437,14 @@ namespace KernelPanic.UI
             Label ram = new($"ram hand cap {_combatManager.HandController.UsedRam}/{_combatManager.HandController.RamCapacity}");
             ram.AddToClassList("ram-note");
             _playerPanel.Add(ram);
+            if (_combatManager.ActiveKernelRamPenalty > 0)
+            {
+                Label ramPressure = new($"! kernel panic: RAM -{_combatManager.ActiveKernelRamPenalty}");
+                ramPressure.AddToClassList("status-label");
+                ramPressure.AddToClassList("intent-attack");
+                _playerPanel.Add(ramPressure);
+            }
+
             _playerPanel.Add(StatusBlock(state, true));
         }
 
@@ -465,6 +478,7 @@ namespace KernelPanic.UI
                 card.text = string.Empty;
                 card.AddToClassList("enemy-card");
                 card.EnableInClassList("enemy-card-compact", compactEnemies);
+                card.EnableInClassList("enemy-card-elite", enemy.HasEliteSignal);
                 bool highlighted = _combatManager.PendingTargetCard != null || _combatManager.SelectedEnemyIndex == index;
                 if (highlighted)
                 {
@@ -823,7 +837,16 @@ namespace KernelPanic.UI
 
         private VisualElement CardFace(CardInstance card)
         {
-            Button button = new(() => PlayCardWithFeedback(card));
+            Button button = new(() =>
+            {
+                if (card.IsLocked)
+                {
+                    UnlockCardWithFeedback(card);
+                    return;
+                }
+
+                PlayCardWithFeedback(card);
+            });
             button.text = string.Empty;
             button.AddToClassList("hand-card");
             if (_combatManager.PendingTargetCard == card)
@@ -839,7 +862,7 @@ namespace KernelPanic.UI
             if (card.IsBroken || card.IsLocked)
             {
                 button.AddToClassList("hand-card-unaffordable");
-                button.SetEnabled(false);
+                button.SetEnabled(!card.IsBroken);
             }
 
             PopulateCardFace(button, card);
@@ -874,7 +897,7 @@ namespace KernelPanic.UI
 
             if (card.IsBroken || card.IsLocked)
             {
-                Label state = new(card.IsBroken ? "segv corrupt" : "locked");
+                Label state = new(card.IsBroken ? "segv corrupt" : $"locked: pay {EnemyArchetypeCatalog.DrmUnlockCycleCost}c");
                 state.AddToClassList("status-label");
                 target.Add(state);
             }
@@ -924,6 +947,21 @@ namespace KernelPanic.UI
             if (enemy.HasEliteSignal)
             {
                 row.Add(Tag("! elite", "intent-attack"));
+            }
+
+            if (enemy.HasRamPressureSignal)
+            {
+                row.Add(Tag($"# RAM -{EnemyArchetypeCatalog.KernelPanicRamPenalty}", "intent-attack"));
+            }
+
+            if (enemy.HasTelemetrySignal)
+            {
+                row.Add(Tag($"+ profile {enemy.TelemetryStacks}", "intent-special"));
+            }
+
+            if (enemy.HasCardLockerSignal)
+            {
+                row.Add(Tag($"$ lock {EnemyArchetypeCatalog.DrmUnlockCycleCost}c", "intent-special"));
             }
 
             if (enemy.HasSplitSignal)
@@ -1155,6 +1193,29 @@ namespace KernelPanic.UI
             return false;
         }
 
+        private bool UnlockCardWithFeedback(CardInstance card)
+        {
+            int cyclesBefore = _combatManager.PlayerState == null ? 0 : _combatManager.PlayerState.Cycles;
+            bool unlocked = _combatManager.TryUnlockCard(card);
+            if (unlocked)
+            {
+                int spent = Mathf.Max(0, cyclesBefore - (_combatManager.PlayerState == null ? cyclesBefore : _combatManager.PlayerState.Cycles));
+                if (spent > 0)
+                {
+                    PlayElementBeat(_turnResourceGrid, "cycles-spent-beat", 220);
+                }
+
+                return true;
+            }
+
+            if (_handCardElements.TryGetValue(card, out VisualElement face))
+            {
+                PlayElementBeat(face, "feedback-denied", 220);
+            }
+
+            return false;
+        }
+
         private void HandleCardPlayed(CardPlayedEvent payload)
         {
             if (payload.Card == null)
@@ -1216,24 +1277,30 @@ namespace KernelPanic.UI
         {
             bool isPlayer = payload.Target == _combatManager.PlayerState;
             VisualElement target = CombatantElement(payload.Target);
+            int magnitudeAmount = payload.UptimeDamage > 0 ? payload.UptimeDamage : payload.ShieldDamage > 0 ? payload.ShieldDamage : payload.Amount;
+            bool defeated = payload.Target != null && payload.Target.CurrentUptime <= 0;
+            HitMagnitudeTier tier = HitMagnitude.Classify(magnitudeAmount, payload.Target?.MaxUptime ?? 1, defeated);
+            bool shieldOnly = payload.WasFullyBlocked && payload.ShieldDamage > 0;
             ScheduleCombatBeat(beatIndex =>
             {
-                string text = payload.WasFullyBlocked ? "clang" : payload.UptimeDamage <= 0 ? "blocked" : $"-{Mathf.RoundToInt(payload.UptimeDamage)}";
-                string tone = payload.WasFullyBlocked || payload.WasMitigated ? "float-muted" : "float-damage";
-                string beatClass = payload.WasFullyBlocked || payload.WasMitigated ? "feedback-clang" : payload.WasCritical ? "feedback-crit" : "feedback-hit";
-                int beatDuration = payload.WasCritical ? 360 : payload.WasMitigated ? 260 : 240;
+                string bypass = payload.TrueDamage ? "! " : string.Empty;
+                string text = shieldOnly
+                    ? $"{bypass}block {payload.ShieldDamage}"
+                    : payload.WasFullyBlocked
+                        ? $"{bypass}blocked"
+                        : $"{bypass}-{Mathf.RoundToInt(payload.UptimeDamage)}";
+                string tone = BuildDamageFloatClasses(tier, payload, shieldOnly);
+                string beatClass = BuildDamageBeatClass(tier, payload, shieldOnly);
+                int beatDuration = HitBeatDuration(tier, payload.WasMitigated);
 
-                if (payload.WasCritical || payload.UptimeDamage >= 8)
-                {
-                    tone += " float-large";
-                }
-
+                TriggerHitStop(tier);
+                TriggerRootShake(tier, isPlayer);
                 SpawnFloatingText(target, text, tone, beatIndex);
-                SpawnImpactMarker(target, payload.WasCritical, payload.WasMitigated, beatIndex);
+                SpawnImpactMarker(target, payload.WasCritical, payload.WasMitigated, beatIndex, tier, shieldOnly);
                 PlayElementBeat(target, beatClass, beatDuration);
                 if (isPlayer && payload.UptimeDamage > 0)
                 {
-                    FlashDamageVignette(payload.WasCritical);
+                    FlashDamageVignette(tier);
                 }
             });
         }
@@ -1308,6 +1375,80 @@ namespace KernelPanic.UI
             _previousShield[state] = state.Shield;
         }
 
+        private static string BuildDamageFloatClasses(HitMagnitudeTier tier, DamageDealtEvent payload, bool shieldOnly)
+        {
+            string classes = shieldOnly || payload.WasFullyBlocked ? "float-shield" : "float-damage";
+            classes += " " + TierFloatClass(tier);
+            if (payload.TrueDamage)
+            {
+                classes += " float-true";
+            }
+
+            return classes;
+        }
+
+        private static string BuildDamageBeatClass(HitMagnitudeTier tier, DamageDealtEvent payload, bool shieldOnly)
+        {
+            if (shieldOnly || payload.WasFullyBlocked)
+            {
+                return tier >= HitMagnitudeTier.Major ? "feedback-clang-major" : "feedback-clang";
+            }
+
+            if (payload.WasCritical || tier == HitMagnitudeTier.Massive)
+            {
+                return "feedback-crit";
+            }
+
+            return tier switch
+            {
+                HitMagnitudeTier.Minor => "feedback-hit-minor",
+                HitMagnitudeTier.Moderate => "feedback-hit",
+                HitMagnitudeTier.Major => "feedback-hit-major",
+                _ => "feedback-crit"
+            };
+        }
+
+        private static string TierFloatClass(HitMagnitudeTier tier)
+        {
+            return tier switch
+            {
+                HitMagnitudeTier.Minor => "float-tier-minor",
+                HitMagnitudeTier.Moderate => "float-tier-moderate",
+                HitMagnitudeTier.Major => "float-tier-major",
+                HitMagnitudeTier.Massive => "float-tier-massive",
+                _ => "float-tier-moderate"
+            };
+        }
+
+        private static string TierImpactClass(HitMagnitudeTier tier)
+        {
+            return tier switch
+            {
+                HitMagnitudeTier.Minor => "impact-tier-minor",
+                HitMagnitudeTier.Moderate => "impact-tier-moderate",
+                HitMagnitudeTier.Major => "impact-tier-major",
+                HitMagnitudeTier.Massive => "impact-tier-massive",
+                _ => "impact-tier-moderate"
+            };
+        }
+
+        private static int HitBeatDuration(HitMagnitudeTier tier, bool mitigated)
+        {
+            if (mitigated && tier < HitMagnitudeTier.Major)
+            {
+                return 220;
+            }
+
+            return tier switch
+            {
+                HitMagnitudeTier.Minor => 120,
+                HitMagnitudeTier.Moderate => 220,
+                HitMagnitudeTier.Major => 340,
+                HitMagnitudeTier.Massive => 460,
+                _ => 220
+            };
+        }
+
         private VisualElement CombatantElement(CombatantState state)
         {
             if (state != null && _combatantElements.TryGetValue(state, out VisualElement element))
@@ -1375,6 +1516,7 @@ namespace KernelPanic.UI
                 return;
             }
 
+            PruneFeedbackLayer();
             Rect anchorRect = anchor.worldBound;
             Rect rootRect = _root.worldBound;
             Label label = new(text);
@@ -1412,18 +1554,20 @@ namespace KernelPanic.UI
             ScheduleFeedback(() => label.RemoveFromHierarchy(), 520);
         }
 
-        private void SpawnImpactMarker(VisualElement anchor, bool critical, bool mitigated, int cascadeOffset)
+        private void SpawnImpactMarker(VisualElement anchor, bool critical, bool mitigated, int cascadeOffset, HitMagnitudeTier tier = HitMagnitudeTier.Moderate, bool shieldOnly = false)
         {
             if (_feedbackLayer == null || anchor == null)
             {
                 return;
             }
 
+            PruneFeedbackLayer();
             Rect anchorRect = anchor.worldBound;
             Rect rootRect = _root.worldBound;
-            Label marker = new(critical ? "crit" : mitigated ? "clang" : "hit");
+            Label marker = new(shieldOnly ? "shield" : critical ? "crit" : mitigated ? "clang" : "hit");
             marker.AddToClassList("impact-marker");
-            marker.AddToClassList(critical ? "impact-marker-crit" : mitigated ? "impact-marker-clang" : "impact-marker-hit");
+            marker.AddToClassList(shieldOnly || mitigated ? "impact-marker-clang" : critical ? "impact-marker-crit" : "impact-marker-hit");
+            marker.AddToClassList(TierImpactClass(tier));
 
             float lane = (cascadeOffset % 4) * 18f;
             marker.style.left = anchorRect.xMax - rootRect.x - 54f;
@@ -1442,6 +1586,65 @@ namespace KernelPanic.UI
                 marker.style.opacity = 0f;
             }, 20);
             ScheduleFeedback(() => marker.RemoveFromHierarchy(), 420);
+        }
+
+        private void TriggerHitStop(HitMagnitudeTier tier)
+        {
+            if (UIPreferences.ReducedMotion || tier < HitMagnitudeTier.Major || Time.frameCount == _lastHitStopFrame)
+            {
+                return;
+            }
+
+            _lastHitStopFrame = Time.frameCount;
+            int version = ++_hitStopVersion;
+            float duration = tier == HitMagnitudeTier.Massive ? 0.16f : 0.09f;
+            Time.timeScale = 0.04f;
+            ScheduleFeedback(() =>
+            {
+                if (_hitStopVersion == version)
+                {
+                    Time.timeScale = 1f;
+                }
+            }, Mathf.RoundToInt(duration * 1000f));
+        }
+
+        private void TriggerRootShake(HitMagnitudeTier tier, bool playerHit)
+        {
+            if (UIPreferences.ReducedMotion || tier < HitMagnitudeTier.Major || _root == null)
+            {
+                return;
+            }
+
+            int version = ++_rootShakeVersion;
+            _root.RemoveFromClassList("root-shake-major");
+            _root.RemoveFromClassList("root-shake-massive");
+            _root.RemoveFromClassList("root-shake-player");
+            _root.AddToClassList(tier == HitMagnitudeTier.Massive ? "root-shake-massive" : "root-shake-major");
+            _root.EnableInClassList("root-shake-player", playerHit);
+            ScheduleFeedback(() =>
+            {
+                if (_rootShakeVersion != version)
+                {
+                    return;
+                }
+
+                _root.RemoveFromClassList("root-shake-major");
+                _root.RemoveFromClassList("root-shake-massive");
+                _root.RemoveFromClassList("root-shake-player");
+            }, tier == HitMagnitudeTier.Massive ? 220 : 140);
+        }
+
+        private void PruneFeedbackLayer()
+        {
+            if (_feedbackLayer == null)
+            {
+                return;
+            }
+
+            while (_feedbackLayer.childCount >= MaxFeedbackElements)
+            {
+                _feedbackLayer.ElementAt(0).RemoveFromHierarchy();
+            }
         }
 
         private void FlyCardGhost(CardInstance card, VisualElement source, VisualElement destination, string className)
@@ -1514,21 +1717,29 @@ namespace KernelPanic.UI
             ScheduleFeedback(() => ghost.RemoveFromHierarchy(), 360);
         }
 
-        private void FlashDamageVignette(bool critical)
+        private void FlashDamageVignette(HitMagnitudeTier tier)
         {
             if (_damageVignette == null)
             {
                 return;
             }
 
-            PlayElementBeat(_damageVignette, critical ? "damage-vignette-crit" : "damage-vignette-on", UIPreferences.ReducedMotion ? 120 : critical ? 320 : 240);
+            string className = tier >= HitMagnitudeTier.Massive
+                ? "damage-vignette-massive"
+                : tier >= HitMagnitudeTier.Major
+                    ? "damage-vignette-crit"
+                    : "damage-vignette-on";
+            PlayElementBeat(_damageVignette, className, UIPreferences.ReducedMotion ? 120 : tier >= HitMagnitudeTier.Massive ? 360 : tier >= HitMagnitudeTier.Major ? 300 : 180);
         }
 
         private static void RemoveFeedbackBeatClasses(VisualElement element)
         {
+            element.RemoveFromClassList("feedback-hit-minor");
             element.RemoveFromClassList("feedback-hit");
+            element.RemoveFromClassList("feedback-hit-major");
             element.RemoveFromClassList("feedback-crit");
             element.RemoveFromClassList("feedback-clang");
+            element.RemoveFromClassList("feedback-clang-major");
             element.RemoveFromClassList("feedback-block");
             element.RemoveFromClassList("feedback-status");
             element.RemoveFromClassList("feedback-boost");
@@ -1543,6 +1754,7 @@ namespace KernelPanic.UI
             element.RemoveFromClassList("hand-card-drawn");
             element.RemoveFromClassList("damage-vignette-on");
             element.RemoveFromClassList("damage-vignette-crit");
+            element.RemoveFromClassList("damage-vignette-massive");
         }
 
         private void ScheduleCombatBeat(Action action, int holdMs = 0)
