@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: lang_java_public_static_main
   displayName: public static void main
-  description: uses 2 RAM. deal 7. overkill spills. JIT: Java cards cost 1 less this combat each time you play a Java card; the discount decays by 1 after each wave.
+  description: uses 2 RAM. deal 7. overkill spills. JIT applies.
   flavorText: verbose, but warmed up.
   language: 8
   rarity: 0

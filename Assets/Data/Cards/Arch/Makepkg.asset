@@ -13,7 +13,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: arch_makepkg
   displayName: makepkg
-  description: deal 7 + btw stacks x3; x4 at Arch v3+. overkill spills. 20% segfault: uptime -3 and corrupt a random card in hand.
+  description: deal 7 + btw stacks x3. overkill spills. 20% segfault: uptime -3 and corrupt a random card in hand.
   flavorText: it built on my machine, which is the only machine.
   language: 0
   rarity: 1

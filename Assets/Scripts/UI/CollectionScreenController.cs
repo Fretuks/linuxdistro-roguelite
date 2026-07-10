@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using KernelPanic.Combat;
 using KernelPanic.Core;
 using KernelPanic.Data;
 using KernelPanic.Meta;
@@ -1703,7 +1704,7 @@ namespace KernelPanic.UI
             summary.Add(meta);
             row.Add(summary);
 
-            Label description = new(entry.Card == null || string.IsNullOrWhiteSpace(entry.Card.Description) ? "--" : entry.Card.Description);
+            Label description = new(GetCardCollectionDescription(entry.Card));
             description.AddToClassList("package-description");
             row.Add(description);
             return row;
@@ -1718,7 +1719,7 @@ namespace KernelPanic.UI
             name.AddToClassList("collection-detail-name");
             _detail.Add(name);
 
-            Label description = new(card == null || string.IsNullOrWhiteSpace(card.Description) ? "--" : card.Description);
+            Label description = new(GetCardCollectionDescription(card));
             description.AddToClassList("collection-detail-description");
             _detail.Add(description);
 
@@ -1733,6 +1734,22 @@ namespace KernelPanic.UI
             _detail.Add(BuildDetailLine("rarity", card == null ? "--" : card.Rarity.ToString()));
             _detail.Add(BuildDetailLine("cost", card == null ? "--" : card.CycleCost.ToString()));
             _detail.Add(BuildDetailLine("track", card == null ? "--" : card.ResolutionTrack.ToString()));
+        }
+
+        private static string GetCardCollectionDescription(CardDefinition card)
+        {
+            if (card == null)
+            {
+                return "--";
+            }
+
+            if (!string.IsNullOrWhiteSpace(card.Description))
+            {
+                return card.Description;
+            }
+
+            string rulesText = CardEffectFactory.GetRulesText(new CardInstance(card));
+            return string.IsNullOrWhiteSpace(rulesText) || rulesText == "effect not authored." ? "--" : rulesText;
         }
 
         private static VisualElement BuildDetailLine(string key, string value)
