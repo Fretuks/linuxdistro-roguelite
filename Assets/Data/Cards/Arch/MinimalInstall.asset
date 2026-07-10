@@ -5,23 +5,24 @@ MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: DnfUpdate
+  m_Name: MinimalInstall
   m_EditorClassIdentifier: 
-  id: fedora_dnf_update
-  displayName: dnf update
-  description: deal 9. overkill spills. costs 1 less per java card played this combat (min 0).
-  flavorText: today everything gets newer.
-  language: 8
-  rarity: 0
-  cycleCost: 2
+  id: arch_minimal_install
+  displayName: minimal install
+  description: exhaust up to 2 cards from hand. per card exhausted, gain 3 Shield and 1 Cycle.
+  flavorText: no desktop, no browser, no regrets.
+  language: 2
+  rarity: 1
+  cycleCost: 1
   resolutionTrack: 0
   distroExclusive: 1
   isToken: 0
-  designNotes: Java ramp card; cost reduction counts prior Java cards played this combat and clamps at 0.
+  isRunOnly: 0
+  designNotes: Arch exclusive. Exhausts first available hand cards using existing exhaust pile, shield, and cycle systems.
+  requiresSystem: []
   upgradeTarget: {fileID: 0}
   effects: []

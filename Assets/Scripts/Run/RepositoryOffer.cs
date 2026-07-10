@@ -131,8 +131,8 @@ namespace KernelPanic.Run
             return upgradeKind switch
             {
                 RunStatUpgradeKind.MaxCycles => $"+{CombatTuning.StatUpgradeMaxCycles} max cycles this run",
-                RunStatUpgradeKind.MaxUptime => $"+{CombatTuning.StatUpgradeMaxUptime} max uptime this run",
-                RunStatUpgradeKind.Heal => $"heal {CombatTuning.StatUpgradeHeal} uptime now",
+                RunStatUpgradeKind.MaxUptime => $"+{CombatTuning.StatUpgradeMaxUptimePercent}% max uptime this run",
+                RunStatUpgradeKind.Heal => $"heal {CombatTuning.StatUpgradeHealPercent}% max uptime now",
                 RunStatUpgradeKind.Ram => $"+{CombatTuning.StatUpgradeRam} RAM this run",
                 _ => "--"
             };

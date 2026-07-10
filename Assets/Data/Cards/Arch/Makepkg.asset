@@ -5,25 +5,24 @@ MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: Free
+  m_Name: Makepkg
   m_EditorClassIdentifier: 
-  id: shop_c_free
-  displayName: free()
-  description: deal 18. overkill spills. 20% segfault: uptime -3, corrupt a random card in hand, and draw 2.
-  flavorText: double-free your schedule, not your heap.
+  id: arch_makepkg
+  displayName: makepkg
+  description: deal 7 + btw stacks x3; x4 at Arch v3+. overkill spills. 20% segfault: uptime -3 and corrupt a random card in hand.
+  flavorText: it built on my machine, which is the only machine.
   language: 0
-  rarity: 0
+  rarity: 1
   cycleCost: 2
   resolutionTrack: 0
-  distroExclusive: 0
+  distroExclusive: 1
   isToken: 0
-  isRunOnly: 1
-  designNotes: C run-only shop card. Uses segfault recoil hook through RandomRoll and DamagePipeline; draw uses existing draw pipeline.
+  isRunOnly: 0
+  designNotes: Arch exclusive. Reads CombatantState.ArchBtwStacks, then damage still routes through DamagePipeline and receives normal btw flat bonus too.
   requiresSystem: []
   upgradeTarget: {fileID: 0}
   effects: []

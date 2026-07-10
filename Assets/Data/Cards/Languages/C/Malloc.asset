@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: lang_c_malloc
   displayName: malloc()
-  description: deal 8. 20% segfault: uptime -3.
+  description: deal 12. overkill spills. 20% segfault: uptime -3 and corrupt a random card in hand.
   flavorText: memory acquired. ownership emotionally unresolved.
   language: 0
   rarity: 0

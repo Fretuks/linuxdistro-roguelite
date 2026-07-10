@@ -24,7 +24,9 @@ namespace KernelPanic.Combat
                 _intentPool.AddRange(Archetype.IntentPool);
             }
 
-            CountdownRemaining = HasBehavior(EnemyBehaviorFlags.Countdown) ? EnemyArchetypeCatalog.CronInitialCountdown : 0;
+            CountdownRemaining = HasBehavior(EnemyBehaviorFlags.Countdown)
+                ? EnemyArchetypeCatalog.CronInitialCountdown
+                : HasBehavior(EnemyBehaviorFlags.SegfaultOnDeath) ? EnemyArchetypeCatalog.SegfaultInitialCountdown : 0;
         }
 
         public string Name { get; }
@@ -42,7 +44,16 @@ namespace KernelPanic.Combat
         public bool PendingRevive { get; private set; }
         public bool Reaped { get; private set; }
         public bool LethalHitThisTurn { get; private set; }
+        public int PairId { get; private set; } = -1;
+        public int RaceEnrageStacks { get; private set; }
+        public bool SpawnedFromDeath { get; private set; }
         public bool HasPendingMarker => PendingRevive || HasRevived;
+        public bool HasSpecialSignal => HasSplitSignal || HasSegfaultSignal || HasRaceSignal || HasRootkitSignal || HasEliteSignal || SpawnedFromDeath;
+        public bool HasSplitSignal => HasBehavior(EnemyBehaviorFlags.Split);
+        public bool HasSegfaultSignal => HasBehavior(EnemyBehaviorFlags.SegfaultOnDeath);
+        public bool HasRaceSignal => HasBehavior(EnemyBehaviorFlags.RacePair);
+        public bool HasRootkitSignal => HasBehavior(EnemyBehaviorFlags.RootkitMasked);
+        public bool HasEliteSignal => HasBehavior(EnemyBehaviorFlags.Elite);
         public EnemyIntent DisplayIntent => BuildDisplayIntent();
 
         public void PickNextIntent()
@@ -61,6 +72,12 @@ namespace KernelPanic.Combat
                 return;
             }
 
+            if (HasBehavior(EnemyBehaviorFlags.SegfaultOnDeath) && CountdownRemaining > 0)
+            {
+                CurrentIntent = new EnemyIntent(EnemyIntentKind.Special, CountdownRemaining, CountdownRemaining, KernelPanic.Core.Language.C, "segfault in", "!");
+                return;
+            }
+
             if (_intentPool.Count == 0)
             {
                 CurrentIntent = default;
@@ -72,7 +89,9 @@ namespace KernelPanic.Combat
             if (HasBehavior(EnemyBehaviorFlags.Grow))
             {
                 int growth = TurnsAlive * EnemyArchetypeCatalog.MemoryLeakAttackGrowthPerTurn;
-                CurrentIntent = CurrentIntent.WithValues(CurrentIntent.MinValue + growth, CurrentIntent.MaxValue + growth, "growing leak");
+                int minValue = UnityEngine.Mathf.Min(CurrentIntent.MinValue + growth, EnemyArchetypeCatalog.MemoryLeakAttackCapMin);
+                int maxValue = UnityEngine.Mathf.Min(CurrentIntent.MaxValue + growth, EnemyArchetypeCatalog.MemoryLeakAttackCapMax);
+                CurrentIntent = CurrentIntent.WithValues(minValue, maxValue, "growing leak");
             }
         }
 
@@ -92,6 +111,21 @@ namespace KernelPanic.Combat
         public void MarkTurnSurvived()
         {
             TurnsAlive++;
+        }
+
+        public void SetPairId(int pairId)
+        {
+            PairId = pairId;
+        }
+
+        public void MarkSpawnedFromDeath()
+        {
+            SpawnedFromDeath = true;
+        }
+
+        public void EnrageRaceSurvivor()
+        {
+            RaceEnrageStacks++;
         }
 
         public void ResetTurnLethalMarker()
@@ -140,6 +174,14 @@ namespace KernelPanic.Combat
             CountdownRemaining = CurrentIntent.Kind == EnemyIntentKind.Attack
                 ? EnemyArchetypeCatalog.CronInitialCountdown
                 : UnityEngine.Mathf.Max(0, CountdownRemaining - 1);
+        }
+
+        public void AdvanceSegfaultCountdown()
+        {
+            if (HasBehavior(EnemyBehaviorFlags.SegfaultOnDeath))
+            {
+                CountdownRemaining = UnityEngine.Mathf.Max(0, CountdownRemaining - 1);
+            }
         }
 
         private EnemyIntent BuildDisplayIntent()

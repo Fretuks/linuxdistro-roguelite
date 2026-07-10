@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: lang_c_printf
   displayName: printf()
-  description: deal 4. 20% segfault: uptime -3.
+  description: deal 7. overkill spills. 20% segfault: uptime -3 and corrupt a random card in hand.
   flavorText: debugging by yelling into the void.
   language: 0
   rarity: 0

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: lang_c_pointer
   displayName: pointer
-  description: deal 6. if the previous card was C, deal 10 instead. 20% segfault: uptime -3.
+  description: deal 9. if the previous card was C, deal 15 instead. overkill spills. 20% segfault: uptime -3 and corrupt a random card in hand.
   flavorText: points at the bug with suspicious confidence.
   language: 0
   rarity: 0

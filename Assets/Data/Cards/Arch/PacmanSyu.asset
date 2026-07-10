@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178747fac4dbfc448ff15d8a687e03c, type: 3}
-  m_Name: Free
+  m_Name: PacmanSyu
   m_EditorClassIdentifier: 
-  id: shop_c_free
-  displayName: free()
-  description: deal 18. overkill spills. 20% segfault: uptime -3, corrupt a random card in hand, and draw 2.
-  flavorText: double-free your schedule, not your heap.
+  id: arch_pacman_syu
+  displayName: pacman -Syu
+  description: deal 14. overkill spills. 20% segfault: uptime -3 and corrupt a random card in hand.
+  flavorText: full system upgrade. what could possibly ABI wrong?
   language: 0
-  rarity: 0
-  cycleCost: 2
+  rarity: 1
+  cycleCost: 1
   resolutionTrack: 0
-  distroExclusive: 0
+  distroExclusive: 1
   isToken: 0
-  isRunOnly: 1
-  designNotes: C run-only shop card. Uses segfault recoil hook through RandomRoll and DamagePipeline; draw uses existing draw pipeline.
+  isRunOnly: 0
+  designNotes: Arch exclusive. Damage and segfault card corruption are live through DamagePipeline and the broken-card hand state.
   requiresSystem: []
   upgradeTarget: {fileID: 0}
   effects: []

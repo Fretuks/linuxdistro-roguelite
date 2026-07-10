@@ -12,7 +12,8 @@ namespace KernelPanic.UI
 {
     /// <summary>
     /// Runtime-built GameScene combat UI. Intent icons use a compact terminal vocabulary:
-    /// ! attack/status attack, # defend, + buff, * special, ? hidden, ~ reviving, : split, @ countdown.
+    /// ! attack/status attack/segfault, # defend, + buff, * special, ? hidden/rootkit,
+    /// ~ reviving/race link, : split, @ countdown, . orphan.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     [RequireComponent(typeof(RunManager))]
@@ -276,9 +277,12 @@ namespace KernelPanic.UI
 
             VisualElement enemiesPanel = CreatePanel("enemy processes", "intent telemetry", 438);
             main.Add(enemiesPanel);
+            ScrollView enemyScroll = new(ScrollViewMode.Vertical);
+            enemyScroll.AddToClassList("enemy-scroll");
+            enemiesPanel.Add(enemyScroll);
             _enemyRow = new();
             _enemyRow.AddToClassList("enemy-row");
-            enemiesPanel.Add(_enemyRow);
+            enemyScroll.Add(_enemyRow);
 
             VisualElement bottom = new();
             bottom.AddToClassList("bottom-layout");
@@ -445,6 +449,9 @@ namespace KernelPanic.UI
         {
             _enemyRow.Clear();
             _combatantElements.Clear();
+            int enemyCount = _combatManager.Enemies.Count;
+            bool compactEnemies = enemyCount >= 5;
+            _enemyRow.EnableInClassList("enemy-row-compact", compactEnemies);
             if (_combatManager.PlayerState != null)
             {
                 _combatantElements[_combatManager.PlayerState] = _playerPanel;
@@ -457,6 +464,7 @@ namespace KernelPanic.UI
                 Button card = new(() => _combatManager.SelectEnemy(index));
                 card.text = string.Empty;
                 card.AddToClassList("enemy-card");
+                card.EnableInClassList("enemy-card-compact", compactEnemies);
                 bool highlighted = _combatManager.PendingTargetCard != null || _combatManager.SelectedEnemyIndex == index;
                 if (highlighted)
                 {
@@ -471,6 +479,11 @@ namespace KernelPanic.UI
                     Label marker = new(enemy.PendingRevive ? "~ reviving" : "~ revived once");
                     marker.AddToClassList("status-label");
                     card.Add(marker);
+                }
+
+                if (enemy.HasSpecialSignal)
+                {
+                    card.Add(EnemySignalPanel(enemy, _combatManager.Enemies));
                 }
 
                 _combatantElements[enemy.State] = card;
@@ -823,6 +836,12 @@ namespace KernelPanic.UI
                 button.AddToClassList("hand-card-unaffordable");
             }
 
+            if (card.IsBroken || card.IsLocked)
+            {
+                button.AddToClassList("hand-card-unaffordable");
+                button.SetEnabled(false);
+            }
+
             PopulateCardFace(button, card);
             return button;
         }
@@ -852,6 +871,13 @@ namespace KernelPanic.UI
             top.Add(cost);
             top.Add(name);
             target.Add(top);
+
+            if (card.IsBroken || card.IsLocked)
+            {
+                Label state = new(card.IsBroken ? "segv corrupt" : "locked");
+                state.AddToClassList("status-label");
+                target.Add(state);
+            }
 
             VisualElement tags = new();
             tags.AddToClassList("tag-row");
@@ -883,6 +909,97 @@ namespace KernelPanic.UI
             panel.Add(value);
             panel.Add(detail);
             return panel;
+        }
+
+        private static VisualElement EnemySignalPanel(EnemyInstance enemy, IReadOnlyList<EnemyInstance> enemies)
+        {
+            VisualElement row = new();
+            row.AddToClassList("status-row");
+
+            if (enemy.SpawnedFromDeath)
+            {
+                row.Add(Tag(". orphaned", "track-tag"));
+            }
+
+            if (enemy.HasEliteSignal)
+            {
+                row.Add(Tag("! elite", "intent-attack"));
+            }
+
+            if (enemy.HasSplitSignal)
+            {
+                string text = CountLivingArchetype(enemies, enemy.ArchetypeId) >= EnemyArchetypeCatalog.ForkBombTotalCap
+                    ? ": split capped"
+                    : ": split next";
+                row.Add(Tag(text, "track-tag"));
+            }
+
+            if (enemy.HasSegfaultSignal)
+            {
+                row.Add(Tag($"! corrupt in {enemy.CountdownRemaining}", "track-tag"));
+            }
+
+            if (enemy.HasRaceSignal)
+            {
+                string text = HasLivingPair(enemies, enemy) ? "~ linked random" : "~ unlinked";
+                row.Add(Tag(text, "track-tag"));
+            }
+
+            if (enemy.HasRootkitSignal)
+            {
+                string text = HasOtherLivingEnemy(enemies, enemy) ? "? masked reduced" : "? exposed";
+                row.Add(Tag(text, "track-tag"));
+            }
+
+            return row;
+        }
+
+        private static int CountLivingArchetype(IReadOnlyList<EnemyInstance> enemies, string archetypeId)
+        {
+            int count = 0;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyInstance enemy = enemies[i];
+                if (enemy.ArchetypeId == archetypeId && !enemy.State.IsDefeated)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static bool HasLivingPair(IReadOnlyList<EnemyInstance> enemies, EnemyInstance target)
+        {
+            if (target == null || target.PairId < 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyInstance enemy = enemies[i];
+                if (enemy != target && enemy.PairId == target.PairId && !enemy.State.IsDefeated)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasOtherLivingEnemy(IReadOnlyList<EnemyInstance> enemies, EnemyInstance target)
+        {
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyInstance enemy = enemies[i];
+                if (enemy != target && !enemy.State.IsDefeated)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static VisualElement MeterBlock(string name, int current, int max, MeterTone tone)

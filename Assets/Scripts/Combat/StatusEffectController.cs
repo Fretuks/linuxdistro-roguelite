@@ -13,7 +13,7 @@ namespace KernelPanic.Combat
         private static readonly Dictionary<StatusType, StatusDescriptor> Descriptors = new()
         {
             [StatusType.MemoryLeak] = new(StatusType.MemoryLeak, "Memory Leak", "leak", false, StatusStackingRule.Intensity, StatusTickTiming.StartOfTurn, "Takes damage equal to stacks at start of turn."),
-            [StatusType.Segfault] = new(StatusType.Segfault, "Segfault", "segv", false, StatusStackingRule.Unique, StatusTickTiming.StartOfTurn, "Loses one cycle this turn. TODO: lock a random card slot."),
+            [StatusType.Segfault] = new(StatusType.Segfault, "Segfault", "segv", false, StatusStackingRule.Unique, StatusTickTiming.StartOfTurn, "Loses one cycle this turn. Segfault events corrupt a random hand card until fixed."),
             [StatusType.RaceCondition] = new(StatusType.RaceCondition, "Race Condition", "race", false, StatusStackingRule.Refresh, StatusTickTiming.None, "Randomizes multi-target resolution order where supported."),
             [StatusType.Deprecated] = new(StatusType.Deprecated, "Deprecated", "dep", false, StatusStackingRule.Duration, StatusTickTiming.StartOfTurn, "A temporary positive value decays. Currently reduces shield by 1."),
             [StatusType.DependencyError] = new(StatusType.DependencyError, "Dependency Error", "deps", false, StatusStackingRule.Unique, StatusTickTiming.None, "Registered for off-support card cost rules. TODO: connect draw-time cost path."),
