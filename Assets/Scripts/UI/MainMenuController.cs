@@ -194,7 +194,7 @@ namespace KernelPanic.UI
             FontAsset resolvedFont = ResolveMonospaceFont();
             featuredUnitPanel.Bind(_root, resolvedFont, GetBestWaveForUnit, OpenFeaturedUnitDetail);
             collectionScreen.Bind(_root, resolvedFont, languageDeckDatabase, cardDatabase, _playerCollection, GetMergesBalance, UpgradeCollectionUnit, packageDatabase, _packageLoadout, SaveCurrentState, () => _saveData, UpgradeCollectionPackage, ScrapCollectionPackage);
-            gachaScreen.Bind(_root, distroDatabase, resolvedFont, _gachaService, _playerCollection, _wallet, ResolvePulledDistros, HandleMetaStateChanged, OpenRootCreditExchange, StartGachaPullCutscene);
+            gachaScreen.Bind(_root, distroDatabase, packageDatabase, resolvedFont, _gachaService, _playerCollection, _wallet, ResolvePulledDistros, ClaimStandardFiveStarSelector, HandleMetaStateChanged, OpenRootCreditExchange, StartGachaPullCutscene);
             LoadMetaState();
             _playerCollection.Changed += HandleMetaStateChanged;
             _gachaService.Changed += HandleMetaStateChanged;
@@ -888,6 +888,47 @@ namespace KernelPanic.UI
         {
             PullResolutionContext context = new(_saveData, _playerCollection, distroDatabase, _playerCollection.FeaturedUnit?.Id);
             return PullResolver.Resolve(pulledDistros, context);
+        }
+
+        private string ClaimStandardFiveStarSelector(DistroDefinition distro, PackageDefinition package)
+        {
+            if (!_gachaService.TryClaimStandardFiveStarSelector(out string failureReason))
+            {
+                return $"selector claim failed: {failureReason}";
+            }
+
+            List<string> parts = new();
+
+            if (distro != null)
+            {
+                PullResolutionResult resolution = ResolvePulledDistros(new[] { distro });
+                RefreshFeaturedUnitPanel();
+                PullResolutionOutcome outcome = resolution != null && resolution.Outcomes.Count > 0 ? resolution.Outcomes[0] : default;
+                parts.Add(outcome.Kind == PullOutcomeKind.Granted
+                    ? $"{DistroPresentation.DisplayName(distro)}: granted"
+                    : $"{DistroPresentation.DisplayName(distro)}: duplicate +{outcome.MergesAwarded} merges");
+            }
+
+            if (package != null)
+            {
+                string packageName = string.IsNullOrWhiteSpace(package.DisplayName) ? package.Id : package.DisplayName;
+                bool duplicate = _playerCollection.IsPackageOwned(package.Id);
+                if (duplicate)
+                {
+                    int cache = PackageTuning.GetCacheForRarity(package.Rarity);
+                    _saveData.cacheBalance += cache;
+                    parts.Add($"{packageName}: duplicate +{cache} cache");
+                }
+                else
+                {
+                    _playerCollection.AddPackageSilently(package);
+                    parts.Add($"{packageName}: granted");
+                }
+            }
+
+            SaveCurrentState();
+            collectionScreen.RefreshUnits(_playerCollection.OwnedUnits);
+            return string.Join(" / ", parts);
         }
 
         private void StartGachaPullCutscene(string bannerId, int pullCount, int entropyTokenCount)

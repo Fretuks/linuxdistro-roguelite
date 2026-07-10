@@ -171,7 +171,9 @@ namespace KernelPanic.UI
             }
 
             _commandLabel.text = pending.PullCount == 10 ? "git pull --ten" : "git pull --single";
-            int pullCost = pending.PullCount == 10 ? GachaService.BeginnerTenPullCost : GachaService.BeginnerSinglePullCost;
+            int pullCost = pending.BannerId == GachaService.StandardBannerId
+                ? (pending.PullCount == 10 ? GachaService.StandardTenPullCost : GachaService.StandardSinglePullCost)
+                : (pending.PullCount == 10 ? GachaService.BeginnerTenPullCost : GachaService.BeginnerSinglePullCost);
             _costLabel.text = pending.EntropyTokenCount > 0
                 ? $"cost: {pending.EntropyTokenCount * GachaService.EntropyPerCommit} Entropy"
                 : $"cost: {pullCost} Commits / {pullCost * GachaService.EntropyPerCommit} Entropy";
@@ -253,9 +255,13 @@ namespace KernelPanic.UI
             RestoreBannerPool(gacha, saveData, pending.DistroDatabase);
             gacha.LoadProgress(saveData);
 
-            GachaPullResult result = pending.BannerId == GachaService.BeginnerBannerId
-                ? gacha.PerformBeginnerPull(pending.PullCount, wallet, pending.EntropyTokenCount > 0 ? PullPaymentSource.Entropy : PullPaymentSource.Commits)
-                : GachaPullResult.Failed(pending.BannerId, "remote not implemented yet");
+            PullPaymentSource paymentSource = pending.EntropyTokenCount > 0 ? PullPaymentSource.Entropy : PullPaymentSource.Commits;
+            GachaPullResult result = pending.BannerId switch
+            {
+                GachaService.BeginnerBannerId => gacha.PerformBeginnerPull(pending.PullCount, wallet, paymentSource),
+                GachaService.StandardBannerId => gacha.PerformStandardPull(pending.PullCount, wallet, paymentSource),
+                _ => GachaPullResult.Failed(pending.BannerId, "remote not implemented yet")
+            };
 
             if (!result.Success)
             {
@@ -310,7 +316,7 @@ namespace KernelPanic.UI
             }
 
             WriteState(saveService, saveData, wallet, collection, gacha);
-            return new CompletedGachaPull(result.BannerId, string.Join(" / ", header), completedRewards);
+            return new CompletedGachaPull(result.BannerId, string.Join(" / ", header), completedRewards, gacha.PendingStandardFiveStarSelectors);
         }
 
         private void BuildRows()

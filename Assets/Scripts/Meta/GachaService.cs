@@ -15,6 +15,9 @@ namespace KernelPanic.Meta
         public const int BeginnerMaxPulls = 50;
         public const int BeginnerSinglePullCost = 1;
         public const int BeginnerTenPullCost = 8;
+        public const int StandardSinglePullCost = 1;
+        public const int StandardTenPullCost = 10;
+        public const int StandardFiveStarSelectorInterval = 200;
         public const int FourStarHardPity = 10;
         public const int FiveStarSoftPityStart = 66;
         public const int FiveStarHardPity = 80;
@@ -32,6 +35,7 @@ namespace KernelPanic.Meta
         private readonly Dictionary<GachaCurrencyType, int> _currencyBalances = new();
         private readonly Random _random;
         private GachaBannerState _beginnerState = new(BeginnerBannerId);
+        private GachaBannerState _standardState = new(StandardBannerId);
 
         public GachaService()
             : this(new Random())
@@ -49,7 +53,9 @@ namespace KernelPanic.Meta
         public int RootCredits { get; private set; }
         public IReadOnlyList<DistroDefinition> BannerPool => _bannerPool;
         public GachaBannerState BeginnerState => _beginnerState;
+        public GachaBannerState StandardState => _standardState;
         public bool IsBeginnerBannerAvailable => !_beginnerState.exhausted && _beginnerState.totalPulls < BeginnerMaxPulls && _bannerPool.Count > 0;
+        public int PendingStandardFiveStarSelectors => Math.Max(0, _standardState.totalPulls / StandardFiveStarSelectorInterval - _standardState.fiveStarSelectorsClaimed);
 
         public event Action BannerPoolChanged;
         public event Action Changed;
@@ -74,6 +80,12 @@ namespace KernelPanic.Meta
 
             _beginnerState.fiveStarPityCounter = Math.Max(0, _beginnerState.fiveStarPityCounter);
 
+            _standardState = data.standardBannerState ?? new GachaBannerState(StandardBannerId);
+            _standardState.bannerId = StandardBannerId;
+            _standardState.EnsureLists();
+            _standardState.fiveStarPityCounter = Math.Max(0, _standardState.fiveStarPityCounter);
+            _standardState.fiveStarSelectorsClaimed = Math.Max(0, _standardState.fiveStarSelectorsClaimed);
+
             Changed?.Invoke();
         }
 
@@ -88,6 +100,7 @@ namespace KernelPanic.Meta
             data.rootCredits = RootCredits;
             data.commitsBalance = GetCurrencyBalance(GachaCurrencyType.StandardPull);
             data.beginnerBannerState = CloneState(_beginnerState);
+            data.standardBannerState = CloneState(_standardState);
         }
 
         public int GetCurrencyBalance(GachaCurrencyType currencyType)
@@ -196,26 +209,39 @@ namespace KernelPanic.Meta
 
         public bool CanAffordPull(int pullCount, EntropyWallet wallet, PullPaymentSource source, out string failureReason)
         {
+            return CanAffordPull(pullCount, wallet, source, BeginnerBannerId, out failureReason);
+        }
+
+        public bool CanAffordPull(int pullCount, EntropyWallet wallet, PullPaymentSource source, string bannerId, out string failureReason)
+        {
             if (pullCount != 1 && pullCount != 10)
             {
                 failureReason = "only single and ten pulls are supported";
                 return false;
             }
 
-            if (!IsBeginnerBannerAvailable)
+            if (bannerId == BeginnerBannerId)
             {
-                failureReason = "beginner banner unavailable";
+                if (!IsBeginnerBannerAvailable)
+                {
+                    failureReason = "beginner banner unavailable";
+                    return false;
+                }
+
+                int remainingPulls = BeginnerMaxPulls - _beginnerState.totalPulls;
+                if (pullCount > remainingPulls)
+                {
+                    failureReason = $"only {remainingPulls} beginner pull(s) remain";
+                    return false;
+                }
+            }
+            else if (bannerId != StandardBannerId)
+            {
+                failureReason = $"banner '{bannerId}' not implemented yet";
                 return false;
             }
 
-            int remainingPulls = BeginnerMaxPulls - _beginnerState.totalPulls;
-            if (pullCount > remainingPulls)
-            {
-                failureReason = $"only {remainingPulls} beginner pull(s) remain";
-                return false;
-            }
-
-            int cost = GetBeginnerPullCost(pullCount);
+            int cost = GetPullCost(bannerId, pullCount);
             if (source == PullPaymentSource.Commits && GetCurrencyBalance(GachaCurrencyType.StandardPull) < cost)
             {
                 failureReason = $"need {cost} {FormatCurrencyName(GachaCurrencyType.StandardPull)}";
@@ -233,16 +259,36 @@ namespace KernelPanic.Meta
             return true;
         }
 
+        public int GetPullCost(string bannerId, int pullCount)
+        {
+            if (bannerId == BeginnerBannerId)
+            {
+                return GetBeginnerPullCost(pullCount);
+            }
+
+            if (bannerId == StandardBannerId)
+            {
+                return pullCount == 10 ? StandardTenPullCost : StandardSinglePullCost;
+            }
+
+            return pullCount;
+        }
+
         public bool PayForPull(int pullCount, EntropyWallet wallet, PullPaymentSource source, out int commitsSpent, out int entropySpent, out string failureReason)
+        {
+            return PayForPull(pullCount, wallet, source, BeginnerBannerId, out commitsSpent, out entropySpent, out failureReason);
+        }
+
+        public bool PayForPull(int pullCount, EntropyWallet wallet, PullPaymentSource source, string bannerId, out int commitsSpent, out int entropySpent, out string failureReason)
         {
             commitsSpent = 0;
             entropySpent = 0;
-            if (!CanAffordPull(pullCount, wallet, source, out failureReason))
+            if (!CanAffordPull(pullCount, wallet, source, bannerId, out failureReason))
             {
                 return false;
             }
 
-            int cost = GetBeginnerPullCost(pullCount);
+            int cost = GetPullCost(bannerId, pullCount);
             if (source == PullPaymentSource.Commits)
             {
                 commitsSpent = cost;
@@ -299,6 +345,82 @@ namespace KernelPanic.Meta
 
             Changed?.Invoke();
             return new GachaPullResult(true, BeginnerBannerId, GachaCurrencyType.StandardPull, commitSpend, entropySpent, rewards, null);
+        }
+
+        public GachaPullResult PerformStandardPull(int pullCount, EntropyWallet wallet, PullPaymentSource source)
+        {
+            if (!CanAffordPull(pullCount, wallet, source, StandardBannerId, out string failureReason))
+            {
+                return GachaPullResult.Failed(StandardBannerId, failureReason);
+            }
+
+            if (!PayForPull(pullCount, wallet, source, StandardBannerId, out int commitSpend, out int entropySpent, out failureReason))
+            {
+                return GachaPullResult.Failed(StandardBannerId, failureReason);
+            }
+
+            List<GachaReward> rewards = new();
+            for (int i = 0; i < pullCount; i++)
+            {
+                _standardState.totalPulls++;
+                rewards.Add(RollGenericReward(_standardState));
+            }
+
+            Changed?.Invoke();
+            return new GachaPullResult(true, StandardBannerId, GachaCurrencyType.StandardPull, commitSpend, entropySpent, rewards, null);
+        }
+
+        public int GetStandardFiveStarSelectorProgress()
+        {
+            return _standardState.totalPulls % StandardFiveStarSelectorInterval;
+        }
+
+        public bool TryClaimStandardFiveStarSelector(out string failureReason)
+        {
+            if (PendingStandardFiveStarSelectors <= 0)
+            {
+                failureReason = "no 5-star selector available";
+                return false;
+            }
+
+            _standardState.fiveStarSelectorsClaimed++;
+            failureReason = null;
+            Changed?.Invoke();
+            return true;
+        }
+
+        public IReadOnlyList<DistroDefinition> GetStandardFiveStarCharacterChoices()
+        {
+            List<DistroDefinition> choices = new();
+            for (int i = 0; i < _bannerPool.Count; i++)
+            {
+                DistroDefinition distro = _bannerPool[i];
+                if (distro != null && GetDistroStars(distro) == 5)
+                {
+                    choices.Add(distro);
+                }
+            }
+
+            return choices;
+        }
+
+        public IReadOnlyList<PackageDefinition> GetStandardFiveStarEquipmentChoices(PackageDatabase packageDatabase)
+        {
+            List<PackageDefinition> choices = new();
+            if (packageDatabase != null)
+            {
+                IReadOnlyList<PackageDefinition> packages = packageDatabase.AllPackages;
+                for (int i = 0; i < packages.Count; i++)
+                {
+                    PackageDefinition package = packages[i];
+                    if (package != null && package.Rarity == 5)
+                    {
+                        choices.Add(package);
+                    }
+                }
+            }
+
+            return choices;
         }
 
         public static string FormatCurrencyName(GachaCurrencyType currencyType)
@@ -372,20 +494,25 @@ namespace KernelPanic.Meta
                 return RewardGuaranteedBeginnerFiveStar("50-pull beginner guarantee");
             }
 
-            if (TryRollFiveStar(_beginnerState, out bool fiveStarPityTriggered))
+            return RollGenericReward(_beginnerState);
+        }
+
+        private GachaReward RollGenericReward(GachaBannerState state)
+        {
+            if (TryRollFiveStar(state, out bool fiveStarPityTriggered))
             {
                 return RewardRandomFiveStar(fiveStarPityTriggered);
             }
 
-            bool pityTriggered = _beginnerState.pityCounter >= FourStarHardPity - 1;
+            bool pityTriggered = state.pityCounter >= FourStarHardPity - 1;
             bool hitFourStarOrCharacter = pityTriggered || _random.NextDouble() < FourStarBaseChance;
             if (!hitFourStarOrCharacter)
             {
-                _beginnerState.pityCounter++;
+                state.pityCounter++;
                 return GachaReward.Package(3, "3-star package", false, false);
             }
 
-            _beginnerState.pityCounter = 0;
+            state.pityCounter = 0;
             if (_bannerPool.Count > 0 && _random.NextDouble() < DistroChanceOnFeaturedTier)
             {
                 DistroDefinition distro = FindRandomBannerPoolDistroByStars(4);
@@ -560,7 +687,8 @@ namespace KernelPanic.Meta
                 pityCounter = state.pityCounter,
                 fiveStarPityCounter = state.fiveStarPityCounter,
                 exhausted = state.exhausted,
-                featuredFiveStarGuaranteed = state.featuredFiveStarGuaranteed
+                featuredFiveStarGuaranteed = state.featuredFiveStarGuaranteed,
+                fiveStarSelectorsClaimed = state.fiveStarSelectorsClaimed
             };
             clone.guaranteedDistroIds.AddRange(state.guaranteedDistroIds);
             return clone;

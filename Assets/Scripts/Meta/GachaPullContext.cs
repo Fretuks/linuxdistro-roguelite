@@ -64,16 +64,18 @@ namespace KernelPanic.Meta
 
     public sealed class CompletedGachaPull
     {
-        public CompletedGachaPull(string bannerId, string headerText, IReadOnlyList<CompletedGachaReward> rewards)
+        public CompletedGachaPull(string bannerId, string headerText, IReadOnlyList<CompletedGachaReward> rewards, int pendingFiveStarSelectorCount = 0)
         {
             BannerId = string.IsNullOrWhiteSpace(bannerId) ? GachaService.BeginnerBannerId : bannerId;
             HeaderText = headerText;
             Rewards = rewards ?? Array.Empty<CompletedGachaReward>();
+            PendingFiveStarSelectorCount = Math.Max(0, pendingFiveStarSelectorCount);
         }
 
         public string BannerId { get; }
         public string HeaderText { get; }
         public IReadOnlyList<CompletedGachaReward> Rewards { get; }
+        public int PendingFiveStarSelectorCount { get; }
 
         public IReadOnlyList<string> RewardLines
         {

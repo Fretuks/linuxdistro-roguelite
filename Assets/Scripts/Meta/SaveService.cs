@@ -81,6 +81,7 @@ namespace KernelPanic.Meta
         public List<string> ownedUnitIds = new();
         public List<string> bannerPoolIds = new();
         public GachaBannerState beginnerBannerState = new(GachaService.BeginnerBannerId);
+        public GachaBannerState standardBannerState = new(GachaService.StandardBannerId);
         public LastRunLoadoutSaveEntry lastRunLoadout = new();
         public string lastRunDistroId;
         public List<DistroBestWaveSaveEntry> distroBestWaves = new();
@@ -109,6 +110,9 @@ namespace KernelPanic.Meta
             beginnerBannerState ??= new GachaBannerState(GachaService.BeginnerBannerId);
             beginnerBannerState.bannerId = GachaService.BeginnerBannerId;
             beginnerBannerState.EnsureLists();
+            standardBannerState ??= new GachaBannerState(GachaService.StandardBannerId);
+            standardBannerState.bannerId = GachaService.StandardBannerId;
+            standardBannerState.EnsureLists();
             lastRunLoadout ??= new LastRunLoadoutSaveEntry();
             lastRunLoadout.EnsureLists();
             if (string.IsNullOrWhiteSpace(lastRunDistroId) && !string.IsNullOrWhiteSpace(lastRunLoadout.distroId))

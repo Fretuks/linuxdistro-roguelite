@@ -1617,7 +1617,8 @@ Button {
 
 .modal-overlay > .starter-dialog,
 .modal-overlay > .root-credit-dialog,
-.modal-overlay > .package-equip-dialog {
+.modal-overlay > .package-equip-dialog,
+.modal-overlay > .five-star-selector-dialog {
     scale: 0.94 0.94;
     transition-property: scale;
     transition-duration: 160ms;
@@ -1625,7 +1626,8 @@ Button {
 
 .modal-overlay.modal-open > .starter-dialog,
 .modal-overlay.modal-open > .root-credit-dialog,
-.modal-overlay.modal-open > .package-equip-dialog {
+.modal-overlay.modal-open > .package-equip-dialog,
+.modal-overlay.modal-open > .five-star-selector-dialog {
     scale: 1 1;
 }
 
@@ -1673,6 +1675,21 @@ Button {
     border-right-color: var(--kp-primary);
     border-top-color: var(--kp-primary);
     border-bottom-color: var(--kp-primary);
+    background-color: var(--kp-bg-solid);
+}
+
+.five-star-selector-dialog {
+    position: relative;
+    width: 60%;
+    padding: 22px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: var(--kp-amber);
+    border-right-color: var(--kp-amber);
+    border-top-color: var(--kp-amber);
+    border-bottom-color: var(--kp-amber);
     background-color: var(--kp-bg-solid);
 }
 
@@ -2001,6 +2018,7 @@ Button {
 .reduced-motion .modal-overlay > .starter-dialog,
 .reduced-motion .modal-overlay > .root-credit-dialog,
 .reduced-motion .modal-overlay > .package-equip-dialog,
+.reduced-motion .modal-overlay > .five-star-selector-dialog,
 .reduced-motion .command-row,
 .reduced-motion .gacha-banner-row,
 .reduced-motion .collection-tab,

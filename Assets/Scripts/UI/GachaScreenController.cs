@@ -16,6 +16,13 @@ namespace KernelPanic.UI
     {
         private const string SelectedClassName = "selected";
 
+        private enum SelectorStep
+        {
+            Character,
+            Equipment,
+            Confirm
+        }
+
         private readonly List<VisualElement> _bannerRows = new();
         private readonly string[] _bannerIds =
         {
@@ -24,20 +31,28 @@ namespace KernelPanic.UI
             GachaService.LimitedBannerId
         };
 
+        private VisualElement _root;
         private VisualElement _bannerList;
         private VisualElement _bannerDetail;
+        private VisualElement _selectorOverlay;
+        private VisualElement _selectorDialog;
         private DistroDatabase _distroDatabase;
+        private PackageDatabase _packageDatabase;
         private FontAsset _monospaceFont;
         private GachaService _gachaService;
         private PlayerCollection _playerCollection;
         private EntropyWallet _wallet;
         private Func<IReadOnlyList<DistroDefinition>, PullResolutionResult> _resolvePulledDistros;
+        private Func<DistroDefinition, PackageDefinition, string> _claimSelectorChoice;
         private Action _onChanged;
         private Action _requestRootCreditExchange;
         private Action<string, int, int> _requestPullCutscene;
         private int _selectedBannerIndex;
         private int _pendingPullCount;
         private int _pendingMissingTokens;
+        private SelectorStep _selectorStep;
+        private DistroDefinition _selectorChosenDistro;
+        private string _selectorResultText;
         private bool _hasOpened;
         private string _resultBannerId;
         private string _resultText;
@@ -45,14 +60,17 @@ namespace KernelPanic.UI
         private readonly List<int> _resultRewardStars = new();
         private bool _resultRevealed;
 
-        public void Bind(VisualElement root, DistroDatabase database, FontAsset artFont, GachaService service, PlayerCollection collection, EntropyWallet entropyWallet, Func<IReadOnlyList<DistroDefinition>, PullResolutionResult> pullResolver, Action changedCallback, Action rootCreditExchangeCallback, Action<string, int, int> pullCutsceneCallback)
+        public void Bind(VisualElement root, DistroDatabase database, PackageDatabase packageDatabase, FontAsset artFont, GachaService service, PlayerCollection collection, EntropyWallet entropyWallet, Func<IReadOnlyList<DistroDefinition>, PullResolutionResult> pullResolver, Func<DistroDefinition, PackageDefinition, string> claimSelectorChoice, Action changedCallback, Action rootCreditExchangeCallback, Action<string, int, int> pullCutsceneCallback)
         {
+            _root = root;
             _distroDatabase = database;
+            _packageDatabase = packageDatabase;
             _monospaceFont = artFont;
             _gachaService = service;
             _playerCollection = collection;
             _wallet = entropyWallet;
             _resolvePulledDistros = pullResolver;
+            _claimSelectorChoice = claimSelectorChoice;
             _onChanged = changedCallback;
             _requestRootCreditExchange = rootCreditExchangeCallback;
             _requestPullCutscene = pullCutsceneCallback;
@@ -149,6 +167,12 @@ namespace KernelPanic.UI
                 return;
             }
 
+            if (bannerId == GachaService.StandardBannerId)
+            {
+                RenderStandardBanner();
+                return;
+            }
+
             RenderFutureBanner(bannerId);
         }
 
@@ -207,6 +231,218 @@ namespace KernelPanic.UI
             }
         }
 
+        private void RenderStandardBanner()
+        {
+            GachaBannerState state = _gachaService.StandardState;
+            _bannerDetail.Add(BuildBannerHero("stable branch"));
+
+            Label title = new("stable branch");
+            title.AddToClassList("gacha-detail-title");
+            _bannerDetail.Add(title);
+
+            _bannerDetail.Add(BuildInfoLine("Entropy", _wallet == null ? "--" : _wallet.Balance.ToString()));
+            _bannerDetail.Add(BuildInfoLine("Commits", _gachaService.PullTokens.ToString()));
+            _bannerDetail.Add(BuildInfoLine("pulls", state.totalPulls.ToString()));
+            _bannerDetail.Add(BuildInfoLine("4-star pity", $"{state.pityCounter}/{GachaService.FourStarHardPity}"));
+            _bannerDetail.Add(BuildInfoLine("5-star pity", $"{state.fiveStarPityCounter}/{GachaService.FiveStarHardPity}"));
+            _bannerDetail.Add(BuildInfoLine("5-star selector", $"{_gachaService.GetStandardFiveStarSelectorProgress()}/{GachaService.StandardFiveStarSelectorInterval}"));
+            _bannerDetail.Add(BuildInfoLine("cost", $"{GachaService.StandardSinglePullCost} Commit / {GachaService.StandardTenPullCost} for ten"));
+
+            Label rules = new("Base result is a 3-star package cache. A 4-star package cache or install-media distro is guaranteed every 10 pulls; 5-star odds ramp up starting pull 66 of the pity cycle and are guaranteed by pull 80. Every 200 pulls, choose a standard 5-star character and a standard 5-star package outright.");
+            rules.AddToClassList("gacha-rules");
+            _bannerDetail.Add(rules);
+
+            VisualElement actions = new();
+            actions.AddToClassList("gacha-actions");
+
+            Button singleButton = new(() => RequestPullSelectedBanner(1))
+            {
+                text = $"git pull --single\n{GachaService.StandardSinglePullCost}x {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)}"
+            };
+            singleButton.AddToClassList("terminal-button");
+            singleButton.AddToClassList("gacha-action-button");
+            singleButton.SetEnabled(CanAttemptStandardPull(1));
+            actions.Add(singleButton);
+
+            Button tenButton = new(() => RequestPullSelectedBanner(10))
+            {
+                text = $"git pull --ten\n{GachaService.StandardTenPullCost}x {GachaService.FormatCurrencyName(GachaCurrencyType.StandardPull)}"
+            };
+            tenButton.AddToClassList("terminal-button");
+            tenButton.AddToClassList("gacha-action-button");
+            tenButton.SetEnabled(CanAttemptStandardPull(10));
+            actions.Add(tenButton);
+
+            _bannerDetail.Add(actions);
+
+            if (_pendingPullCount > 0)
+            {
+                _bannerDetail.Add(BuildEntropyPrompt());
+            }
+
+            if (_resultBannerId == GachaService.StandardBannerId &&
+                (_resultRewardLines.Count > 0 || !string.IsNullOrWhiteSpace(_resultText)))
+            {
+                _bannerDetail.Add(BuildPullResultReveal());
+            }
+
+            if (_gachaService.PendingStandardFiveStarSelectors > 0)
+            {
+                Button claimButton = new(OpenFiveStarSelector)
+                {
+                    text = $"claim 5★ selector x{_gachaService.PendingStandardFiveStarSelectors}"
+                };
+                claimButton.AddToClassList("terminal-button");
+                claimButton.AddToClassList("gacha-action-button");
+                _bannerDetail.Add(claimButton);
+            }
+        }
+
+        private void EnsureSelectorOverlay()
+        {
+            if (_root == null || _selectorOverlay != null)
+            {
+                return;
+            }
+
+            _selectorOverlay = new VisualElement();
+            _selectorOverlay.AddToClassList("modal-overlay");
+            _selectorOverlay.AddToClassList("five-star-selector-overlay");
+            _selectorOverlay.AddToClassList("hidden");
+            _selectorDialog = new VisualElement();
+            _selectorDialog.AddToClassList("five-star-selector-dialog");
+            _selectorOverlay.Add(_selectorDialog);
+            _root.Add(_selectorOverlay);
+        }
+
+        private void OpenFiveStarSelector()
+        {
+            if (_gachaService.PendingStandardFiveStarSelectors <= 0)
+            {
+                return;
+            }
+
+            EnsureSelectorOverlay();
+            _selectorStep = SelectorStep.Character;
+            _selectorChosenDistro = null;
+            _selectorResultText = null;
+            RenderFiveStarSelectorDialog();
+            _selectorOverlay.RemoveFromClassList("hidden");
+            _selectorOverlay.AddToClassList("modal-open");
+        }
+
+        private void CloseFiveStarSelector()
+        {
+            _selectorOverlay?.RemoveFromClassList("modal-open");
+            _selectorOverlay?.AddToClassList("hidden");
+            _selectorChosenDistro = null;
+            _selectorResultText = null;
+        }
+
+        private void RenderFiveStarSelectorDialog()
+        {
+            if (_selectorDialog == null)
+            {
+                return;
+            }
+
+            _selectorDialog.Clear();
+
+            VisualElement header = new();
+            header.AddToClassList("package-equip-header");
+            string stepTitle = _selectorStep switch
+            {
+                SelectorStep.Character => "5-star selector: choose a standard character",
+                SelectorStep.Equipment => "5-star selector: choose standard equipment",
+                _ => "5-star selector"
+            };
+            Label title = new(stepTitle);
+            title.AddToClassList("gacha-detail-title");
+            header.Add(title);
+            Button close = new(CloseFiveStarSelector) { text = "x", focusable = false };
+            close.AddToClassList("modal-close-button");
+            header.Add(close);
+            _selectorDialog.Add(header);
+
+            if (_selectorStep == SelectorStep.Confirm)
+            {
+                Label result = new(_selectorResultText);
+                result.AddToClassList("gacha-result");
+                _selectorDialog.Add(result);
+
+                Button continueButton = new(AdvanceAfterSelectorConfirm) { text = "> continue" };
+                continueButton.AddToClassList("terminal-button");
+                continueButton.AddToClassList("gacha-action-button");
+                _selectorDialog.Add(continueButton);
+                return;
+            }
+
+            VisualElement grid = new();
+            grid.AddToClassList("gacha-actions");
+            _selectorDialog.Add(grid);
+
+            if (_selectorStep == SelectorStep.Character)
+            {
+                IReadOnlyList<DistroDefinition> choices = _gachaService.GetStandardFiveStarCharacterChoices();
+                for (int i = 0; i < choices.Count; i++)
+                {
+                    DistroDefinition choice = choices[i];
+                    Button choiceButton = new(() => ChooseSelectorCharacter(choice))
+                    {
+                        text = $"5★ {DistroPresentation.DisplayName(choice)}"
+                    };
+                    choiceButton.AddToClassList("terminal-button");
+                    choiceButton.AddToClassList("gacha-action-button");
+                    grid.Add(choiceButton);
+                }
+            }
+            else
+            {
+                IReadOnlyList<PackageDefinition> choices = _gachaService.GetStandardFiveStarEquipmentChoices(_packageDatabase);
+                for (int i = 0; i < choices.Count; i++)
+                {
+                    PackageDefinition choice = choices[i];
+                    string name = string.IsNullOrWhiteSpace(choice.DisplayName) ? choice.Id : choice.DisplayName;
+                    Button choiceButton = new(() => ChooseSelectorEquipment(choice))
+                    {
+                        text = $"5★ {name}"
+                    };
+                    choiceButton.AddToClassList("terminal-button");
+                    choiceButton.AddToClassList("gacha-action-button");
+                    grid.Add(choiceButton);
+                }
+            }
+        }
+
+        private void ChooseSelectorCharacter(DistroDefinition distro)
+        {
+            _selectorChosenDistro = distro;
+            _selectorStep = SelectorStep.Equipment;
+            RenderFiveStarSelectorDialog();
+        }
+
+        private void ChooseSelectorEquipment(PackageDefinition package)
+        {
+            _selectorResultText = _claimSelectorChoice?.Invoke(_selectorChosenDistro, package) ?? "selector claim failed";
+            _selectorStep = SelectorStep.Confirm;
+            RenderFiveStarSelectorDialog();
+        }
+
+        private void AdvanceAfterSelectorConfirm()
+        {
+            if (_gachaService.PendingStandardFiveStarSelectors > 0)
+            {
+                _selectorStep = SelectorStep.Character;
+                _selectorChosenDistro = null;
+                _selectorResultText = null;
+                RenderFiveStarSelectorDialog();
+                return;
+            }
+
+            CloseFiveStarSelector();
+            RenderSelectedBanner();
+        }
+
         private void RenderFutureBanner(string bannerId)
         {
             _bannerDetail.Add(BuildBannerHero(GetBannerTitle(bannerId)));
@@ -238,7 +474,7 @@ namespace KernelPanic.UI
                 return;
             }
 
-            if (bannerId != GachaService.BeginnerBannerId)
+            if (bannerId != GachaService.BeginnerBannerId && bannerId != GachaService.StandardBannerId)
             {
                 _resultBannerId = bannerId;
                 _resultText = $"git pull origin {bannerId}: remote not implemented yet";
@@ -249,7 +485,9 @@ namespace KernelPanic.UI
             }
 
             PullPaymentSource source = entropyTokenCount > 0 ? PullPaymentSource.Entropy : PullPaymentSource.Commits;
-            GachaPullResult result = _gachaService.PerformBeginnerPull(pullCount, _wallet, source);
+            GachaPullResult result = bannerId == GachaService.BeginnerBannerId
+                ? _gachaService.PerformBeginnerPull(pullCount, _wallet, source)
+                : _gachaService.PerformStandardPull(pullCount, _wallet, source);
             if (!result.Success)
             {
                 _resultBannerId = bannerId;
@@ -323,6 +561,19 @@ namespace KernelPanic.UI
             }
 
             _resultRevealed = true;
+
+            int bannerIndex = Array.IndexOf(_bannerIds, result.BannerId);
+            if (bannerIndex >= 0)
+            {
+                _selectedBannerIndex = bannerIndex;
+            }
+
+            _hasOpened = true;
+
+            if (result.PendingFiveStarSelectorCount > 0)
+            {
+                OpenFiveStarSelector();
+            }
         }
 
         private VisualElement BuildPullResultReveal()
@@ -432,13 +683,13 @@ namespace KernelPanic.UI
         private void RequestPullSelectedBanner(int pullCount)
         {
             string bannerId = _bannerIds[_selectedBannerIndex];
-            if (bannerId != GachaService.BeginnerBannerId)
+            if (bannerId != GachaService.BeginnerBannerId && bannerId != GachaService.StandardBannerId)
             {
                 PullSelectedBanner(pullCount, 0);
                 return;
             }
 
-            int cost = _gachaService.GetBeginnerPullCost(pullCount);
+            int cost = _gachaService.GetPullCost(bannerId, pullCount);
             int missingTokens = _gachaService.GetMissingPullTokens(GachaCurrencyType.StandardPull, cost);
             if (missingTokens <= 0)
             {
@@ -525,6 +776,20 @@ namespace KernelPanic.UI
             }
 
             int cost = _gachaService.GetBeginnerPullCost(pullCount);
+            int missingTokens = _gachaService.GetMissingPullTokens(GachaCurrencyType.StandardPull, cost);
+            return missingTokens > 0 &&
+                   ((_wallet != null && _wallet.Balance >= cost * GachaService.EntropyPerCommit) ||
+                    _gachaService.RootCredits > 0);
+        }
+
+        private bool CanAttemptStandardPull(int pullCount)
+        {
+            if (_gachaService.CanAffordPull(pullCount, _wallet, PullPaymentSource.Commits, GachaService.StandardBannerId, out _))
+            {
+                return true;
+            }
+
+            int cost = _gachaService.GetPullCost(GachaService.StandardBannerId, pullCount);
             int missingTokens = _gachaService.GetMissingPullTokens(GachaCurrencyType.StandardPull, cost);
             return missingTokens > 0 &&
                    ((_wallet != null && _wallet.Balance >= cost * GachaService.EntropyPerCommit) ||
@@ -626,7 +891,7 @@ namespace KernelPanic.UI
             return bannerId switch
             {
                 GachaService.BeginnerBannerId => _gachaService.IsBeginnerBannerAvailable ? $"{_gachaService.BeginnerState.totalPulls}/{GachaService.BeginnerMaxPulls}" : "closed",
-                GachaService.StandardBannerId => "soon",
+                GachaService.StandardBannerId => _gachaService.PendingStandardFiveStarSelectors > 0 ? "selector ready" : $"{_gachaService.GetStandardFiveStarSelectorProgress()}/{GachaService.StandardFiveStarSelectorInterval}",
                 GachaService.LimitedBannerId => "soon",
                 _ => "--"
             };

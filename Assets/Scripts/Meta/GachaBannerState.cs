@@ -15,6 +15,7 @@ namespace KernelPanic.Meta
         public int fiveStarPityCounter;
         public bool exhausted;
         public bool featuredFiveStarGuaranteed;
+        public int fiveStarSelectorsClaimed;
         public List<string> guaranteedDistroIds = new();
 
         public GachaBannerState()
