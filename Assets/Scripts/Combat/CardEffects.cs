@@ -72,6 +72,11 @@ namespace KernelPanic.Combat
                     GrantRustOverkillShield(context, result, survivable);
                 }
 
+                if (result.TargetDefeated)
+                {
+                    context.CombatManager.QueueDefeatedCombatantForRemoval(target);
+                }
+
                 if (overkillSpills)
                 {
                     dealtDamage |= SpillOverkillDamage(context, target, result, survivable);
@@ -118,8 +123,15 @@ namespace KernelPanic.Combat
                 }
 
                 int survivable = GetSurvivableDamage(spillTarget, _trueDamage);
+                GameEvents.RaiseOverflowDamageTravel(new OverflowDamageTravelEvent(context.Source, firstTarget, spillTarget, remaining, _language));
                 DamageResult spillResult = context.DamagePipeline.DealDamage(new DamageRequest(context.Source, spillTarget, remaining, _language, _trueDamage, false, applySourceModifiers: false));
                 dealtDamage |= spillResult.IncomingAmount > 0;
+                if (spillResult.TargetDefeated)
+                {
+                    context.CombatManager.QueueDefeatedCombatantForRemoval(spillTarget);
+                }
+
+                firstTarget = spillTarget;
                 remaining = UnityEngine.Mathf.Max(0, spillResult.IncomingAmount - survivable);
             }
 

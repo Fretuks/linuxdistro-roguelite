@@ -28,6 +28,10 @@ namespace KernelPanic.Combat
         private readonly HashSet<string> _loggedEffectTodos = new();
         private readonly List<CardDefinition> _generatedCardPool = new();
         private readonly List<DelayedCombatEffect> _delayedEffects = new();
+        private readonly HashSet<EnemyInstance> _enemiesPendingExit = new();
+        private readonly Queue<EnemyInstance> _enemyExitQueue = new();
+        private readonly Dictionary<EnemyInstance, IReadOnlyList<DeathSpawnRequest>> _pendingDeathSpawns = new();
+        private readonly HashSet<EnemyInstance> _completedDeathVisuals = new();
         private RunManager _runManager;
         private RunConfig _runConfig;
         private HandController _handController;
@@ -39,7 +43,7 @@ namespace KernelPanic.Combat
         private bool _skipNextAllocateDraw;
         private bool _ubuntuEmptyHandRefillUsed;
         private int _fedoraCardsDiscountedThisTurn;
-        private int _fedoraCrashChance = CombatTuning.FedoraBleedingEdgeBaseCrashChance;
+        private float _fedoraCrashChance = CombatTuning.FedoraBleedingEdgeBaseCrashChance;
         private int _cardsPlayedThisTurn;
         private int _cardsPlayedThisWave;
         private int _cCardsPlayedThisTurn;
@@ -55,6 +59,9 @@ namespace KernelPanic.Combat
         private int _nextTurnCycleBonus;
         private int _nextRacePairId = 1;
         private int _activeKernelRamPenalty;
+        private int _deathSpawnSequencesActive;
+        private bool _enemyExitQueueDraining;
+        private EnemyInstance _enemyExitAwaitingVisual;
         private Coroutine _phaseCoroutine;
 
         public TurnPhase CurrentPhase => currentPhase;
@@ -66,6 +73,7 @@ namespace KernelPanic.Combat
         public LazyStack LazyStack => _lazyStack;
         public NativeTrack NativeTrack => _nativeTrack;
         public DamagePipeline DamagePipeline => _damagePipeline;
+        public float FedoraCrashChance => _fedoraCrashChance;
         public IReadOnlyList<EnemyInstance> Enemies => _enemies;
         public int SelectedEnemyIndex => _selectedEnemyIndex;
         public CardInstance PendingTargetCard => _pendingTargetCard;
@@ -73,6 +81,12 @@ namespace KernelPanic.Combat
         public bool RunLost => _runLost;
         public int CurrentWaveNumber => _runManager == null ? 1 : _runManager.CurrentWaveNumber;
         public int ActiveKernelRamPenalty => _activeKernelRamPenalty;
+        public bool CanSurrenderRun => currentPhase == TurnPhase.Execute
+            && !_awaitingWaveContinue
+            && !_runLost
+            && !VisualResolutionPending
+            && _playerState != null
+            && !_playerState.IsDefeated;
 
         public event Action StateChanged;
         public event Action<string> CombatLog;
@@ -86,11 +100,13 @@ namespace KernelPanic.Combat
         private void OnEnable()
         {
             GameEvents.DamageDealt += HandlePackageDamageDealt;
+            GameEvents.CombatantDeathVisualCompleted += HandleCombatantDeathVisualCompleted;
         }
 
         private void OnDisable()
         {
             GameEvents.DamageDealt -= HandlePackageDamageDealt;
+            GameEvents.CombatantDeathVisualCompleted -= HandleCombatantDeathVisualCompleted;
         }
 
         public void StartCombat()
@@ -131,6 +147,31 @@ namespace KernelPanic.Combat
             }
         }
 
+        public void SurrenderRun()
+        {
+            if (!CanSurrenderRun)
+            {
+                return;
+            }
+
+            _pendingTargetCard = null;
+            _selectedEnemyIndex = -1;
+            _damagePipeline.DefeatCombatant(_playerState, null, Language.C);
+            CheckLoss();
+            StateChanged?.Invoke();
+        }
+
+        public void QueueDefeatedCombatantForRemoval(CombatantState combatant)
+        {
+            EnemyInstance enemy = EnemyForState(combatant);
+            if (enemy == null)
+            {
+                return;
+            }
+
+            QueueDefeatedEnemyForRemoval(enemy);
+        }
+
         public void ContinueToNextWave()
         {
             if (!_awaitingWaveContinue || _runLost)
@@ -156,7 +197,7 @@ namespace KernelPanic.Combat
                 return;
             }
 
-            if (index < 0 || index >= _enemies.Count)
+            if (index < 0 || index >= _enemies.Count || _enemies[index].State.IsDefeated)
             {
                 _selectedEnemyIndex = -1;
                 StateChanged?.Invoke();
@@ -264,7 +305,8 @@ namespace KernelPanic.Combat
                     _rawhideBonusCharges--;
                 }
 
-                if (!IsCrashImmune(card) && RandomRoll.RollRange(1, 100, new RollContext(_playerState)) <= _fedoraCrashChance)
+                float fedoraCrashChanceBeforeRoll = _fedoraCrashChance;
+                if (!IsCrashImmune(card) && RandomRoll.RollRange(1, 1000, new RollContext(_playerState)) <= Mathf.RoundToInt(_fedoraCrashChance * 10f))
                 {
                     _fedoraCrashChance = CombatTuning.FedoraBleedingEdgeBaseCrashChance;
                     if (IsDistro("fedora") && _runConfig.DistroVersion >= 4)
@@ -276,6 +318,7 @@ namespace KernelPanic.Combat
                     _pendingTargetCard = null;
                     _selectedEnemyIndex = -1;
                     Log($"{GetCardName(card)} crashed under bleeding edge");
+                    GameEvents.RaiseFedoraBleedingEdgeTriggered(new FedoraBleedingEdgeEvent(card, true, firstFedoraBonusThisTurn, 0, fedoraCrashChanceBeforeRoll, _fedoraCrashChance));
                     StateChanged?.Invoke();
                     return true;
                 }
@@ -286,6 +329,7 @@ namespace KernelPanic.Combat
                 card.MarkFedoraNonCrashBonus();
                 _playerState.DamageMultiplierPercent = _runConfig.DistroVersion >= 2 ? 175 : 150;
                 ApplyFedoraGrowth(card, rawhideChargeUsed, firstFedoraBonusThisTurn);
+                GameEvents.RaiseFedoraBleedingEdgeTriggered(new FedoraBleedingEdgeEvent(card, false, firstFedoraBonusThisTurn, _playerState.DamageMultiplierPercent, fedoraCrashChanceBeforeRoll, _fedoraCrashChance));
             }
 
             if (card.Definition.Language == Language.C && _cCardsPlayedThisTurn == 0 && HasPackageEffect(PackageEffectKind.FirstCThisTurnDamageMultiplier, out PackageEffectData cPackageEffect))
@@ -669,6 +713,13 @@ namespace KernelPanic.Combat
             _queuedRepeatCharges = 0;
             _nextTurnCycleBonus = 0;
             _delayedEffects.Clear();
+            _enemiesPendingExit.Clear();
+            _enemyExitQueue.Clear();
+            _pendingDeathSpawns.Clear();
+            _completedDeathVisuals.Clear();
+            _deathSpawnSequencesActive = 0;
+            _enemyExitQueueDraining = false;
+            _enemyExitAwaitingVisual = null;
             RandomRoll.Seed(_runConfig.RunSeed);
             _playerState = new CombatantState(_runManager.EffectiveMaxUptime(), _runManager.EffectiveRam(), _runManager.EffectiveMaxCycles());
             ApplyVersionState(_playerState);
@@ -726,6 +777,13 @@ namespace KernelPanic.Combat
             _deckController.Initialize(startingCards);
             _interpreterQueue.Clear();
             _enemies.Clear();
+            _enemiesPendingExit.Clear();
+            _enemyExitQueue.Clear();
+            _pendingDeathSpawns.Clear();
+            _completedDeathVisuals.Clear();
+            _deathSpawnSequencesActive = 0;
+            _enemyExitQueueDraining = false;
+            _enemyExitAwaitingVisual = null;
             SpawnStructuralEnemies();
             RecalculateKernelRamPressure();
             PickEnemyIntents();
@@ -877,7 +935,13 @@ namespace KernelPanic.Combat
                 return;
             }
 
+            int archBtwStacksBeforeReset = _playerState?.ArchBtwStacks ?? 0;
             ResetArchBtwAtEndOfTurn();
+            if (IsDistro("arch") && archBtwStacksBeforeReset > 0)
+            {
+                GameEvents.RaiseArchBtwTurnEnded(new ArchBtwTurnEndedEvent(archBtwStacksBeforeReset, _playerState.ArchBtwStacks > 0));
+            }
+
             RemoveDefeatedEnemies();
             CheckWinOrLoss();
             StateChanged?.Invoke();
@@ -952,7 +1016,7 @@ namespace KernelPanic.Combat
             }
 
             int lookCount = _runConfig.DistroVersion >= 2 ? 3 : 2;
-            if (!_deckController.TryDrawCheapestFromTop(lookCount, out CardInstance card))
+            if (!_deckController.TryDrawCheapestFromTop(lookCount, out CardInstance card, out IReadOnlyList<PeekedCardInfo> peeked, out bool wasTie))
             {
                 return;
             }
@@ -965,6 +1029,7 @@ namespace KernelPanic.Combat
             if (_handController.Add(card))
             {
                 Log($"apt update: staged {GetCardName(card)} from top {lookCount}");
+                GameEvents.RaiseUbuntuAptUpdatePeeked(new UbuntuAptUpdatePeekedEvent(peeked, card, wasTie, lookCount));
             }
             else
             {
@@ -1836,17 +1901,7 @@ namespace KernelPanic.Combat
             {
                 if (_enemies[i].State.IsDefeated)
                 {
-                    EnemyInstance enemy = _enemies[i];
-                    if (enemy.PendingRevive)
-                    {
-                        continue;
-                    }
-
-                    Log($"{enemy.Name} exited");
-                    _runManager?.AddBits(CombatTuning.BitsPerKill);
-                    HandleEnemyDeath(enemy);
-                    _enemies.RemoveAt(i);
-                    RecalculateKernelRamPressure();
+                    QueueDefeatedEnemyForRemoval(_enemies[i]);
                 }
             }
 
@@ -1854,13 +1909,40 @@ namespace KernelPanic.Combat
             {
                 _selectedEnemyIndex = -1;
             }
+
+            if (_enemyExitQueue.Count > 0 && !_enemyExitQueueDraining)
+            {
+                StartCoroutine(DrainEnemyExitQueue());
+            }
         }
 
-        private void HandleEnemyDeath(EnemyInstance enemy)
+        private void QueueDefeatedEnemyForRemoval(EnemyInstance enemy)
         {
-            if (enemy == null)
+            if (enemy == null || enemy.State == null || !enemy.State.IsDefeated || enemy.PendingRevive || _enemiesPendingExit.Contains(enemy))
             {
                 return;
+            }
+
+            Log($"{enemy.Name} exited");
+            _runManager?.AddBits(CombatTuning.BitsPerKill);
+            List<DeathSpawnRequest> deathSpawns = HandleEnemyDeath(enemy);
+            enemy.MarkDefeatedPendingRemoval();
+            _enemiesPendingExit.Add(enemy);
+            _pendingDeathSpawns[enemy] = deathSpawns;
+            _enemyExitQueue.Enqueue(enemy);
+
+            if (!_enemyExitQueueDraining)
+            {
+                StartCoroutine(DrainEnemyExitQueue());
+            }
+        }
+
+        private List<DeathSpawnRequest> HandleEnemyDeath(EnemyInstance enemy)
+        {
+            List<DeathSpawnRequest> deathSpawns = new();
+            if (enemy == null)
+            {
+                return deathSpawns;
             }
 
             if (enemy.HasBehavior(EnemyBehaviorFlags.SegfaultOnDeath))
@@ -1875,7 +1957,148 @@ namespace KernelPanic.Combat
 
             if (enemy.HasBehavior(EnemyBehaviorFlags.LeavesOrphan))
             {
-                SpawnOrphanFromDeath(enemy);
+                deathSpawns.Add(CreateOrphanDeathSpawn(enemy));
+            }
+
+            return deathSpawns;
+        }
+
+        private void HandleCombatantDeathVisualCompleted(CombatantDeathVisualCompletedEvent payload)
+        {
+            EnemyInstance enemy = EnemyForState(payload.Combatant);
+            if (enemy == null)
+            {
+                return;
+            }
+
+            _completedDeathVisuals.Add(enemy);
+        }
+
+        private EnemyInstance EnemyForState(CombatantState state)
+        {
+            if (state == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                if (_enemies[i].State == state)
+                {
+                    return _enemies[i];
+                }
+            }
+
+            return null;
+        }
+
+        private IEnumerator DrainEnemyExitQueue()
+        {
+            if (_enemyExitQueueDraining)
+            {
+                yield break;
+            }
+
+            _enemyExitQueueDraining = true;
+            float elapsedMs = 0f;
+            while (_enemyExitQueue.Count > 0)
+            {
+                bool removedAny = false;
+                int pendingCount = _enemyExitQueue.Count;
+                for (int i = 0; i < pendingCount; i++)
+                {
+                    EnemyInstance enemy = _enemyExitQueue.Dequeue();
+                    bool visualComplete = _completedDeathVisuals.Contains(enemy);
+                    bool timedOut = elapsedMs >= CombatTuning.VisualQueueMaxDrainMs;
+                    if (!visualComplete && !timedOut)
+                    {
+                        _enemyExitQueue.Enqueue(enemy);
+                        continue;
+                    }
+
+                    _enemyExitAwaitingVisual = enemy;
+                    _completedDeathVisuals.Remove(enemy);
+                    yield return CompleteEnemyExit(enemy);
+                    _enemyExitAwaitingVisual = null;
+                    removedAny = true;
+                }
+
+                if (removedAny)
+                {
+                    elapsedMs = 0f;
+                    continue;
+                }
+
+                elapsedMs += Time.unscaledDeltaTime * 1000f;
+                yield return null;
+            }
+
+            _enemyExitQueueDraining = false;
+            CheckWinOrLoss();
+            StateChanged?.Invoke();
+            if (!IsCombatPaused && currentPhase != TurnPhase.Execute)
+            {
+                yield return Wait(CombatTuning.PhaseTransitionDelaySeconds);
+                AdvancePhase();
+            }
+        }
+
+        private IEnumerator CompleteEnemyExit(EnemyInstance enemy)
+        {
+            if (enemy == null)
+            {
+                yield break;
+            }
+
+            _pendingDeathSpawns.TryGetValue(enemy, out IReadOnlyList<DeathSpawnRequest> deathSpawns);
+            _pendingDeathSpawns.Remove(enemy);
+
+            int removedIndex = _enemies.IndexOf(enemy);
+            if (removedIndex >= 0)
+            {
+                enemy.ClearDefeatedPendingRemoval();
+                _enemies.RemoveAt(removedIndex);
+                if (_selectedEnemyIndex >= _enemies.Count)
+                {
+                    _selectedEnemyIndex = -1;
+                }
+
+                RecalculateKernelRamPressure();
+                StateChanged?.Invoke();
+            }
+
+            _enemiesPendingExit.Remove(enemy);
+
+            if (deathSpawns != null)
+            {
+                _deathSpawnSequencesActive++;
+                for (int i = 0; i < deathSpawns.Count; i++)
+                {
+                    yield return WaitSequencedMs(CombatTuning.SpawnDelayMs, CombatTuning.ReducedMotionSpawnDelayMs);
+                    EnemyInstance spawned = SpawnEnemy(deathSpawns[i].ArchetypeId, deathSpawns[i].UptimeBonus);
+                    spawned.MarkSpawnedFromDeath();
+                    spawned.PickNextIntent();
+                    Log(deathSpawns[i].LogMessage);
+                    StateChanged?.Invoke();
+                    GameEvents.RaiseDeathSpawnedEnemy(new DeathSpawnedEnemyEvent(deathSpawns[i].Source, spawned));
+
+                    yield return WaitSequencedMs(
+                        CombatTuning.SpawnMaterializeMs + CombatTuning.SpawnTelegraphDelayMs,
+                        CombatTuning.ReducedMotionSpawnMaterializeMs + CombatTuning.ReducedMotionSpawnTelegraphDelayMs);
+                    spawned.RevealDeathSpawnIntent();
+                    StateChanged?.Invoke();
+                }
+
+                _deathSpawnSequencesActive = Mathf.Max(0, _deathSpawnSequencesActive - 1);
+            }
+        }
+
+        private static IEnumerator WaitSequencedMs(int normalMs, int reducedMotionMs)
+        {
+            int durationMs = UIPreferences.ReducedMotion ? reducedMotionMs : normalMs;
+            if (durationMs > 0)
+            {
+                yield return new WaitForSeconds(durationMs / 1000f);
             }
         }
 
@@ -2004,11 +2227,9 @@ namespace KernelPanic.Combat
             Log($"{survivor.Name} race link broke; survivor enraged");
         }
 
-        private void SpawnOrphanFromDeath(EnemyInstance source)
+        private static DeathSpawnRequest CreateOrphanDeathSpawn(EnemyInstance source)
         {
-            EnemyInstance orphan = SpawnEnemy("orphan_process", 0);
-            orphan.MarkSpawnedFromDeath();
-            Log($"{source.Name} left an orphan process");
+            return new DeathSpawnRequest(source?.State, "orphan_process", 0, $"{source?.Name ?? "enemy"} left an orphan process");
         }
 
         private void SpawnStructuralEnemies()
@@ -2473,9 +2694,14 @@ namespace KernelPanic.Combat
 
         private bool CheckWin()
         {
-            if (_awaitingWaveContinue || _runLost || _enemies.Count > 0)
+            if (_awaitingWaveContinue || _runLost)
             {
                 return _awaitingWaveContinue;
+            }
+
+            if (LivingEnemyStates().Count > 0 || VisualResolutionPending)
+            {
+                return false;
             }
 
             _awaitingWaveContinue = true;
@@ -2512,7 +2738,13 @@ namespace KernelPanic.Combat
             return string.IsNullOrWhiteSpace(card.Definition.DisplayName) ? card.Definition.Id : card.Definition.DisplayName;
         }
 
-        private bool IsCombatPaused => _awaitingWaveContinue || _runLost;
+        private bool VisualResolutionPending => _enemiesPendingExit.Count > 0
+            || _enemyExitQueue.Count > 0
+            || _enemyExitQueueDraining
+            || _enemyExitAwaitingVisual != null
+            || _deathSpawnSequencesActive > 0;
+
+        private bool IsCombatPaused => _awaitingWaveContinue || _runLost || VisualResolutionPending;
 
         private enum DelayedCombatEffectKind
         {
@@ -2542,6 +2774,22 @@ namespace KernelPanic.Combat
             {
                 return new DelayedCombatEffect(DelayedCombatEffectKind.TimeshiftRestore, uptime, garbageCollectionsRemaining);
             }
+        }
+
+        private readonly struct DeathSpawnRequest
+        {
+            public DeathSpawnRequest(CombatantState source, string archetypeId, int uptimeBonus, string logMessage)
+            {
+                Source = source;
+                ArchetypeId = archetypeId;
+                UptimeBonus = uptimeBonus;
+                LogMessage = logMessage;
+            }
+
+            public CombatantState Source { get; }
+            public string ArchetypeId { get; }
+            public int UptimeBonus { get; }
+            public string LogMessage { get; }
         }
     }
 }

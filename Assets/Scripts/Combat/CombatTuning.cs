@@ -41,9 +41,9 @@ namespace KernelPanic.Combat
         public const int StatUpgradeHealPercent = 30;
         public const int StatUpgradeRam = 1;
         public const int UpgradeMagnitudeBonus = 2;
-        public const int FedoraBleedingEdgeBaseCrashChance = 5;
-        public const int FedoraBleedingEdgeCrashChanceStep = 5;
-        public const int FedoraBleedingEdgeMaxCrashChance = 90;
+        public const float FedoraBleedingEdgeBaseCrashChance = 5f;
+        public const float FedoraBleedingEdgeCrashChanceStep = 2.5f;
+        public const float FedoraBleedingEdgeMaxCrashChance = 90f;
         public const int HitMagnitudeModeratePercent = 10;
         public const int HitMagnitudeMajorPercent = 25;
         public const int HitMagnitudeMassivePercent = 45;
@@ -66,6 +66,25 @@ namespace KernelPanic.Combat
         public const float QueueCardResolveDelaySeconds = 0.45f;
         public const float EnemyTelegraphDelaySeconds = 0.35f;
         public const float EnemyActionDelaySeconds = 0.45f;
+
+        public const int DeathBeatMs = 420;
+        public const int PostDeathPauseMs = 180;
+        public const int OverflowTravelMs = 180;
+        public const int SpawnDelayMs = 220;
+        public const int SpawnMaterializeMs = 220;
+        public const int SpawnTelegraphDelayMs = 120;
+        public const int CombatBeatDefaultMs = 120;
+        public const int CombatBeatSettleMs = 60;
+        public const int VisualQueueMaxDrainMs = 2400;
+        public const int ReducedMotionDeathBeatMs = 90;
+        public const int ReducedMotionPostDeathPauseMs = 45;
+        public const int ReducedMotionOverflowTravelMs = 55;
+        public const int ReducedMotionSpawnDelayMs = 60;
+        public const int ReducedMotionSpawnMaterializeMs = 70;
+        public const int ReducedMotionSpawnTelegraphDelayMs = 35;
+        public const int ReducedMotionCombatBeatDefaultMs = 45;
+        public const int ReducedMotionCombatBeatMinMs = 35;
+        public const int ReducedMotionCombatBeatMaxMs = 90;
     }
 
     public enum HitMagnitudeTier

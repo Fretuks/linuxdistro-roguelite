@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using KernelPanic.Combat;
 
 namespace KernelPanic.Core
@@ -12,7 +13,10 @@ namespace KernelPanic.Core
         public static event Action<CardResolvedEvent> CardResolved;
         public static event Action<PhaseChangedEvent> PhaseChanged;
         public static event Action<DamageDealtEvent> DamageDealt;
+        public static event Action<OverflowDamageTravelEvent> OverflowDamageTravel;
         public static event Action<CombatantDefeatedEvent> CombatantDefeated;
+        public static event Action<CombatantDeathVisualCompletedEvent> CombatantDeathVisualCompleted;
+        public static event Action<DeathSpawnedEnemyEvent> DeathSpawnedEnemy;
         public static event Action<EnemyWouldActEvent> EnemyWouldAct;
         public static event Action<EnemyActedEvent> EnemyActed;
         public static event Action<PlayerDamagedEvent> PlayerDamaged;
@@ -24,6 +28,9 @@ namespace KernelPanic.Core
         public static event Action<StatusExpiredEvent> StatusExpired;
         public static event Action<StatusCleansedEvent> StatusCleansed;
         public static event Action<RunEndedEvent> RunEnded;
+        public static event Action<UbuntuAptUpdatePeekedEvent> UbuntuAptUpdatePeeked;
+        public static event Action<FedoraBleedingEdgeEvent> FedoraBleedingEdgeTriggered;
+        public static event Action<ArchBtwTurnEndedEvent> ArchBtwTurnEnded;
 
         public static void RaiseCardPlayed(CardPlayedEvent payload)
         {
@@ -45,9 +52,24 @@ namespace KernelPanic.Core
             DamageDealt?.Invoke(payload);
         }
 
+        public static void RaiseOverflowDamageTravel(OverflowDamageTravelEvent payload)
+        {
+            OverflowDamageTravel?.Invoke(payload);
+        }
+
         public static void RaiseCombatantDefeated(CombatantDefeatedEvent payload)
         {
             CombatantDefeated?.Invoke(payload);
+        }
+
+        public static void RaiseCombatantDeathVisualCompleted(CombatantDeathVisualCompletedEvent payload)
+        {
+            CombatantDeathVisualCompleted?.Invoke(payload);
+        }
+
+        public static void RaiseDeathSpawnedEnemy(DeathSpawnedEnemyEvent payload)
+        {
+            DeathSpawnedEnemy?.Invoke(payload);
         }
 
         public static void RaiseEnemyWouldAct(EnemyWouldActEvent payload)
@@ -103,6 +125,21 @@ namespace KernelPanic.Core
         public static void RaiseRunEnded(RunEndedEvent payload)
         {
             RunEnded?.Invoke(payload);
+        }
+
+        public static void RaiseUbuntuAptUpdatePeeked(UbuntuAptUpdatePeekedEvent payload)
+        {
+            UbuntuAptUpdatePeeked?.Invoke(payload);
+        }
+
+        public static void RaiseFedoraBleedingEdgeTriggered(FedoraBleedingEdgeEvent payload)
+        {
+            FedoraBleedingEdgeTriggered?.Invoke(payload);
+        }
+
+        public static void RaiseArchBtwTurnEnded(ArchBtwTurnEndedEvent payload)
+        {
+            ArchBtwTurnEnded?.Invoke(payload);
         }
     }
 
@@ -171,7 +208,7 @@ namespace KernelPanic.Core
         {
         }
 
-        public DamageDealtEvent(CombatantState source, CombatantState target, int amount, Language language, int incomingAmount, int absorbedAmount, bool wasCritical, int shieldDamage, int uptimeDamage, bool trueDamage)
+        public DamageDealtEvent(CombatantState source, CombatantState target, int amount, Language language, int incomingAmount, int absorbedAmount, bool wasCritical, int shieldDamage, int uptimeDamage, bool trueDamage, int archBtwBonusAmount = 0, bool archRollingReleaseSaveTriggered = false)
         {
             Source = source;
             Target = target;
@@ -183,6 +220,8 @@ namespace KernelPanic.Core
             ShieldDamage = shieldDamage;
             UptimeDamage = uptimeDamage;
             TrueDamage = trueDamage;
+            ArchBtwBonusAmount = archBtwBonusAmount;
+            ArchRollingReleaseSaveTriggered = archRollingReleaseSaveTriggered;
         }
 
         public CombatantState Source { get; }
@@ -195,6 +234,8 @@ namespace KernelPanic.Core
         public int ShieldDamage { get; }
         public int UptimeDamage { get; }
         public bool TrueDamage { get; }
+        public int ArchBtwBonusAmount { get; }
+        public bool ArchRollingReleaseSaveTriggered { get; }
         public bool WasFullyBlocked => IncomingAmount > 0 && UptimeDamage <= 0;
         public bool WasMitigated => ShieldDamage > 0 || AbsorbedAmount > 0 || WasFullyBlocked;
     }
@@ -210,6 +251,46 @@ namespace KernelPanic.Core
         }
 
         public CombatantState Combatant { get; }
+    }
+
+    public readonly struct OverflowDamageTravelEvent
+    {
+        public OverflowDamageTravelEvent(CombatantState source, CombatantState from, CombatantState to, int amount, Language language)
+        {
+            Source = source;
+            From = from;
+            To = to;
+            Amount = amount;
+            Language = language;
+        }
+
+        public CombatantState Source { get; }
+        public CombatantState From { get; }
+        public CombatantState To { get; }
+        public int Amount { get; }
+        public Language Language { get; }
+    }
+
+    public readonly struct CombatantDeathVisualCompletedEvent
+    {
+        public CombatantDeathVisualCompletedEvent(CombatantState combatant)
+        {
+            Combatant = combatant;
+        }
+
+        public CombatantState Combatant { get; }
+    }
+
+    public readonly struct DeathSpawnedEnemyEvent
+    {
+        public DeathSpawnedEnemyEvent(CombatantState source, EnemyInstance enemy)
+        {
+            Source = source;
+            Enemy = enemy;
+        }
+
+        public CombatantState Source { get; }
+        public EnemyInstance Enemy { get; }
     }
 
     /// <summary>
@@ -347,5 +428,63 @@ namespace KernelPanic.Core
 
         public bool PlayerDied { get; }
         public int EntropyEarned { get; }
+    }
+
+    /// <summary>
+    /// Describes an Ubuntu "apt update" peek-and-pick: the cards inspected at the top of the draw
+    /// pile and which one was added to hand.
+    /// </summary>
+    public readonly struct UbuntuAptUpdatePeekedEvent
+    {
+        public UbuntuAptUpdatePeekedEvent(IReadOnlyList<PeekedCardInfo> peeked, CardInstance chosen, bool wasTie, int lookCount)
+        {
+            Peeked = peeked;
+            Chosen = chosen;
+            WasTie = wasTie;
+            LookCount = lookCount;
+        }
+
+        public IReadOnlyList<PeekedCardInfo> Peeked { get; }
+        public CardInstance Chosen { get; }
+        public bool WasTie { get; }
+        public int LookCount { get; }
+    }
+
+    /// <summary>
+    /// Describes the outcome of Fedora's "Bleeding Edge" crash roll for a bonus-eligible card.
+    /// </summary>
+    public readonly struct FedoraBleedingEdgeEvent
+    {
+        public FedoraBleedingEdgeEvent(CardInstance card, bool crashed, bool firstBonusThisTurn, int damageMultiplierPercent, float crashChanceRolled, float crashChanceAfter)
+        {
+            Card = card;
+            Crashed = crashed;
+            FirstBonusThisTurn = firstBonusThisTurn;
+            DamageMultiplierPercent = damageMultiplierPercent;
+            CrashChanceRolled = crashChanceRolled;
+            CrashChanceAfter = crashChanceAfter;
+        }
+
+        public CardInstance Card { get; }
+        public bool Crashed { get; }
+        public bool FirstBonusThisTurn { get; }
+        public int DamageMultiplierPercent { get; }
+        public float CrashChanceRolled { get; }
+        public float CrashChanceAfter { get; }
+    }
+
+    /// <summary>
+    /// Describes the end-of-turn resolution of Arch's btw stacks: whether they reset or persisted.
+    /// </summary>
+    public readonly struct ArchBtwTurnEndedEvent
+    {
+        public ArchBtwTurnEndedEvent(int stacksBefore, bool persisted)
+        {
+            StacksBefore = stacksBefore;
+            Persisted = persisted;
+        }
+
+        public int StacksBefore { get; }
+        public bool Persisted { get; }
     }
 }

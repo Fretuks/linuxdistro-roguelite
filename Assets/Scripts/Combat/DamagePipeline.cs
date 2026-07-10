@@ -61,6 +61,21 @@ namespace KernelPanic.Combat
     {
         public System.Func<DamageRequest, int, int> ResistanceResolver { get; set; }
 
+        public DamageResult DefeatCombatant(CombatantState target, CombatantState source, Language language)
+        {
+            if (target == null || target.IsDefeated)
+            {
+                return new DamageResult(0, false);
+            }
+
+            int uptimeDamage = Mathf.Max(0, target.CurrentUptime);
+            target.CurrentUptime = 0;
+            GameEvents.RaiseDamageDealt(new DamageDealtEvent(source, target, uptimeDamage, language, uptimeDamage, 0, false, 0, uptimeDamage, true));
+            target.IsDefeated = true;
+            GameEvents.RaiseCombatantDefeated(new CombatantDefeatedEvent(target));
+            return new DamageResult(uptimeDamage, true, false, 0, 0, uptimeDamage, uptimeDamage);
+        }
+
         public DamageResult DealDamage(DamageRequest request)
         {
             if (request.Target == null || request.Target.IsDefeated)
@@ -70,9 +85,10 @@ namespace KernelPanic.Combat
 
             int amount = Mathf.Max(0, request.Amount);
             bool wasCritical = false;
+            int archBtwBonus = 0;
             if (request.ApplySourceModifiers)
             {
-                amount = ApplyFlatAdditions(amount, request);
+                amount = ApplyFlatAdditions(amount, request, out archBtwBonus);
                 amount = ApplyMultipliers(amount, request);
                 amount = ApplyCrit(amount, request, out wasCritical);
             }
@@ -81,7 +97,8 @@ namespace KernelPanic.Combat
 
             int finalAmount = ApplyShieldAndUptime(amount, request, out int absorbedAmount, out int shieldDamage, out int uptimeDamage);
             ApplyArchRollingReleaseSave(request);
-            GameEvents.RaiseDamageDealt(new DamageDealtEvent(request.Source, request.Target, finalAmount, request.Language, amount, absorbedAmount, wasCritical, shieldDamage, uptimeDamage, request.TrueDamage));
+            bool rollingReleaseSaveTriggered = request.Target != null && request.Target.ArchRollingReleaseRecoveredThisHit;
+            GameEvents.RaiseDamageDealt(new DamageDealtEvent(request.Source, request.Target, finalAmount, request.Language, amount, absorbedAmount, wasCritical, shieldDamage, uptimeDamage, request.TrueDamage, archBtwBonus, rollingReleaseSaveTriggered));
 
             bool defeated = false;
             if (request.Target.CurrentUptime <= 0 && !request.Target.IsDefeated)
@@ -113,8 +130,9 @@ namespace KernelPanic.Combat
             return Mathf.RoundToInt(amount * (multiplier / 100f) * (currentCardMultiplier / 100f));
         }
 
-        private static int ApplyFlatAdditions(int amount, DamageRequest request)
+        private static int ApplyFlatAdditions(int amount, DamageRequest request, out int archBtwBonus)
         {
+            archBtwBonus = 0;
             if (amount == int.MaxValue)
             {
                 return amount;
@@ -127,7 +145,8 @@ namespace KernelPanic.Combat
 
             if (request.Source != null && (request.Language == Language.C || request.Language == Language.Rust))
             {
-                amount += Mathf.Max(0, request.Source.ArchBtwStacks) * Mathf.Max(1, request.Source.ArchBtwDamagePerStack);
+                archBtwBonus = Mathf.Max(0, request.Source.ArchBtwStacks) * Mathf.Max(1, request.Source.ArchBtwDamagePerStack);
+                amount += archBtwBonus;
             }
 
             return amount;

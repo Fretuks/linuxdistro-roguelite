@@ -4,6 +4,21 @@ using System.Linq;
 namespace KernelPanic.Combat
 {
     /// <summary>
+    /// Describes one card inspected by a top-of-deck peek (e.g. Ubuntu's apt update), for UI display.
+    /// </summary>
+    public readonly struct PeekedCardInfo
+    {
+        public PeekedCardInfo(CardInstance card, int cost)
+        {
+            Card = card;
+            Cost = cost;
+        }
+
+        public CardInstance Card { get; }
+        public int Cost { get; }
+    }
+
+    /// <summary>
     /// Manages draw, discard, and exhaust piles for a combat deck.
     /// </summary>
     public sealed class DeckController
@@ -55,9 +70,11 @@ namespace KernelPanic.Combat
             return drawn;
         }
 
-        public bool TryDrawCheapestFromTop(int lookCount, out CardInstance card)
+        public bool TryDrawCheapestFromTop(int lookCount, out CardInstance card, out IReadOnlyList<PeekedCardInfo> peeked, out bool wasTie)
         {
             card = null;
+            peeked = System.Array.Empty<PeekedCardInfo>();
+            wasTie = false;
             if (lookCount <= 0)
             {
                 return false;
@@ -76,17 +93,27 @@ namespace KernelPanic.Combat
             int inspectCount = System.Math.Min(lookCount, _drawPile.Count);
             int selectedIndex = _drawPile.Count - 1;
             int selectedCost = CombatManager.GetCardCost(_drawPile[selectedIndex]);
+            List<PeekedCardInfo> inspected = new(inspectCount) { new PeekedCardInfo(_drawPile[selectedIndex], selectedCost) };
+            int tieCount = 1;
             for (int offset = 1; offset < inspectCount; offset++)
             {
                 int index = _drawPile.Count - 1 - offset;
                 int cost = CombatManager.GetCardCost(_drawPile[index]);
+                inspected.Add(new PeekedCardInfo(_drawPile[index], cost));
                 if (cost < selectedCost)
                 {
                     selectedCost = cost;
                     selectedIndex = index;
+                    tieCount = 1;
+                }
+                else if (cost == selectedCost)
+                {
+                    tieCount++;
                 }
             }
 
+            peeked = inspected;
+            wasTie = tieCount > 1;
             card = _drawPile[selectedIndex];
             _drawPile.RemoveAt(selectedIndex);
             return card != null;

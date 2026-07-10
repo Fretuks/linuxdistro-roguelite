@@ -52,6 +52,8 @@ namespace KernelPanic.UI
         private VisualElement _handRow;
         private VisualElement _turnResourceGrid;
         private Label _logLabel;
+        private Button _surrenderButton;
+        private Label _surrenderConfirmLabel;
         private VisualElement _feedbackLayer;
         private VisualElement _damageVignette;
         private VisualElement _overlay;
@@ -63,13 +65,28 @@ namespace KernelPanic.UI
         private readonly Dictionary<CombatantState, int> _previousUptime = new();
         private readonly Dictionary<CombatantState, int> _previousShield = new();
         private readonly Dictionary<VisualElement, int> _feedbackBeatVersions = new();
+        private readonly Dictionary<CombatantState, Rect> _lastCombatantFeedbackRects = new();
+        private readonly Dictionary<CombatantState, int> _heldDeathUptime = new();
+        private readonly HashSet<CombatantState> _deathBeatStartedCombatants = new();
+        private readonly HashSet<CombatantState> _visuallyRemovedCombatants = new();
         private readonly HashSet<CardInstance> _knownHandCards = new();
         private int _queueCascadeIndex;
         private int _feedbackCascadeIndex;
         private int _feedbackBeatVersion;
+        private int _combatBeatCursorMs;
+        private int _combatBeatCursorVersion;
         private int _rootShakeVersion;
         private int _hitStopVersion;
         private int _lastHitStopFrame = -1;
+        private Label _archBtwCounterLabel;
+        private VisualElement _fedoraRiskFillElement;
+        private Label _fedoraRiskValueLabel;
+        private bool _pendingFedoraPayoff;
+        private int _rollingReleaseHitStopVersion;
+        private bool _surrenderConfirming;
+        private bool _runEndedBySurrender;
+        private bool _runEndOverlayPresented;
+        private bool _playerFeedbackAnchorTracked;
 
         private void Awake()
         {
@@ -105,12 +122,18 @@ namespace KernelPanic.UI
             GameEvents.CardResolved += HandleCardResolved;
             GameEvents.PhaseChanged += HandlePhaseChanged;
             GameEvents.DamageDealt += HandleDamageDealt;
+            GameEvents.OverflowDamageTravel += HandleOverflowDamageTravel;
             GameEvents.CombatantDefeated += HandleCombatantDefeated;
+            GameEvents.DeathSpawnedEnemy += HandleDeathSpawnedEnemy;
             GameEvents.EnemyWouldAct += HandleEnemyWouldAct;
             GameEvents.PlayerDamaged += HandlePlayerDamaged;
             GameEvents.StatusApplied += HandleStatusApplied;
             GameEvents.StatusExpired += HandleStatusEnded;
             GameEvents.StatusCleansed += HandleStatusEnded;
+            GameEvents.UbuntuAptUpdatePeeked += HandleUbuntuAptUpdatePeeked;
+            GameEvents.FedoraBleedingEdgeTriggered += HandleFedoraBleedingEdgeTriggered;
+            GameEvents.ArchBtwTurnEnded += HandleArchBtwTurnEnded;
+            _root?.RegisterCallback<KeyDownEvent>(HandleKeyDown);
         }
 
         private void Start()
@@ -156,12 +179,39 @@ namespace KernelPanic.UI
             GameEvents.CardResolved -= HandleCardResolved;
             GameEvents.PhaseChanged -= HandlePhaseChanged;
             GameEvents.DamageDealt -= HandleDamageDealt;
+            GameEvents.OverflowDamageTravel -= HandleOverflowDamageTravel;
             GameEvents.CombatantDefeated -= HandleCombatantDefeated;
+            GameEvents.DeathSpawnedEnemy -= HandleDeathSpawnedEnemy;
             GameEvents.EnemyWouldAct -= HandleEnemyWouldAct;
             GameEvents.PlayerDamaged -= HandlePlayerDamaged;
             GameEvents.StatusApplied -= HandleStatusApplied;
             GameEvents.StatusExpired -= HandleStatusEnded;
             GameEvents.StatusCleansed -= HandleStatusEnded;
+            GameEvents.UbuntuAptUpdatePeeked -= HandleUbuntuAptUpdatePeeked;
+            GameEvents.FedoraBleedingEdgeTriggered -= HandleFedoraBleedingEdgeTriggered;
+            GameEvents.ArchBtwTurnEnded -= HandleArchBtwTurnEnded;
+            _root?.UnregisterCallback<KeyDownEvent>(HandleKeyDown);
+        }
+
+        private void HandleKeyDown(KeyDownEvent evt)
+        {
+            if (!_surrenderConfirming)
+            {
+                return;
+            }
+
+            if (evt.keyCode == KeyCode.Y || evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+            {
+                ConfirmSurrender();
+                evt.StopPropagation();
+                return;
+            }
+
+            if (evt.keyCode == KeyCode.N || evt.keyCode == KeyCode.Escape)
+            {
+                CancelSurrender();
+                evt.StopPropagation();
+            }
         }
 
         private bool TryBuildRunConfig(out RunConfig config)
@@ -260,6 +310,11 @@ namespace KernelPanic.UI
         private void BuildLayout()
         {
             _root.Clear();
+            _lastCombatantFeedbackRects.Clear();
+            _heldDeathUptime.Clear();
+            _deathBeatStartedCombatants.Clear();
+            _visuallyRemovedCombatants.Clear();
+            _playerFeedbackAnchorTracked = false;
             _root.AddToClassList("combat-root");
             _root.style.flexGrow = 1;
 
@@ -310,6 +365,16 @@ namespace KernelPanic.UI
             Button endTurn = new(() => _combatManager.EndPlayerTurn()) { text = "> end-turn" };
             endTurn.AddToClassList("primary-action");
             commandPanel.Add(endTurn);
+
+            _surrenderButton = new(HandleSurrenderClicked) { text = "> shutdown -r run" };
+            _surrenderButton.AddToClassList("secondary-action");
+            _surrenderButton.AddToClassList("surrender-action");
+            commandPanel.Add(_surrenderButton);
+
+            _surrenderConfirmLabel = new("end this run now? progress since the last wave clear is lost. [Y/n]");
+            _surrenderConfirmLabel.AddToClassList("surrender-confirm");
+            _surrenderConfirmLabel.AddToClassList("hidden");
+            commandPanel.Add(_surrenderConfirmLabel);
 
             _logLabel = new();
             _logLabel.AddToClassList("log-line");
@@ -428,6 +493,7 @@ namespace KernelPanic.UI
             ApplyAccent(_playerPanel);
 
             CombatantState state = _combatManager.PlayerState;
+            TrackCombatantFeedbackAnchor(state, _playerPanel);
             DetectBeneficialResourceFeedback(state, _playerPanel);
             ApplyStatusStateClasses(_playerPanel, state);
             _playerPanel.Add(MeterBlock("uptime", state.CurrentUptime, state.MaxUptime, MeterTone.Uptime));
@@ -446,6 +512,21 @@ namespace KernelPanic.UI
             }
 
             _playerPanel.Add(StatusBlock(state, true));
+
+            if (IsDistro("fedora"))
+            {
+                _playerPanel.Add(FedoraRiskMeter(_combatManager.FedoraCrashChance));
+            }
+
+            if (IsDistro("arch"))
+            {
+                _playerPanel.Add(ArchBtwCounter(state.ArchBtwStacks));
+            }
+        }
+
+        private bool IsDistro(string id)
+        {
+            return string.Equals(_runManager?.CurrentConfig?.Distro?.Id, id, StringComparison.OrdinalIgnoreCase);
         }
 
         private void RefreshTracks()
@@ -462,6 +543,7 @@ namespace KernelPanic.UI
         {
             _enemyRow.Clear();
             _combatantElements.Clear();
+            PruneVisuallyRemovedCombatants();
             int enemyCount = _combatManager.Enemies.Count;
             bool compactEnemies = enemyCount >= 5;
             _enemyRow.EnableInClassList("enemy-row-compact", compactEnemies);
@@ -474,11 +556,24 @@ namespace KernelPanic.UI
             {
                 int index = i;
                 EnemyInstance enemy = _combatManager.Enemies[i];
+                if (_visuallyRemovedCombatants.Contains(enemy.State))
+                {
+                    continue;
+                }
+
                 Button card = new(() => _combatManager.SelectEnemy(index));
                 card.text = string.Empty;
                 card.AddToClassList("enemy-card");
                 card.EnableInClassList("enemy-card-compact", compactEnemies);
                 card.EnableInClassList("enemy-card-elite", enemy.HasEliteSignal);
+                bool deathPending = enemy.DefeatedPendingRemoval || (enemy.State.IsDefeated && !enemy.PendingRevive);
+                bool deathBeatStarted = _deathBeatStartedCombatants.Contains(enemy.State);
+                bool holdDeathDisplay = deathPending && !deathBeatStarted;
+                int displayedUptime = holdDeathDisplay
+                    ? HeldDeathUptime(enemy.State, enemy.MaxUptime)
+                    : enemy.CurrentUptime;
+                card.EnableInClassList("enemy-card-defeated-hold", deathPending && deathBeatStarted);
+                card.SetEnabled(!enemy.State.IsDefeated || holdDeathDisplay);
                 bool highlighted = _combatManager.PendingTargetCard != null || _combatManager.SelectedEnemyIndex == index;
                 if (highlighted)
                 {
@@ -488,6 +583,7 @@ namespace KernelPanic.UI
                 Label name = new(enemy.Name);
                 name.AddToClassList("enemy-name");
                 card.Add(name);
+
                 if (enemy.HasPendingMarker)
                 {
                     Label marker = new(enemy.PendingRevive ? "~ reviving" : "~ revived once");
@@ -501,9 +597,13 @@ namespace KernelPanic.UI
                 }
 
                 _combatantElements[enemy.State] = card;
-                DetectBeneficialResourceFeedback(enemy.State, card);
+                if (!deathPending)
+                {
+                    DetectBeneficialResourceFeedback(enemy.State, card);
+                }
+
                 ApplyStatusStateClasses(card, enemy.State);
-                card.Add(MeterBlock("uptime", enemy.CurrentUptime, enemy.MaxUptime, MeterTone.Uptime));
+                card.Add(MeterBlock("uptime", displayedUptime, enemy.MaxUptime, MeterTone.Uptime));
                 if (enemy.State.Shield > 0)
                 {
                     Label shield = new($"# shield {enemy.State.Shield}");
@@ -512,8 +612,63 @@ namespace KernelPanic.UI
                 }
 
                 card.Add(StatusPipRow(enemy.State));
-                card.Add(IntentPanel(enemy.DisplayIntent));
+                if (!deathPending && (!enemy.SpawnedFromDeath || enemy.DeathSpawnIntentRevealed))
+                {
+                    card.Add(IntentPanel(enemy.DisplayIntent));
+                }
                 _enemyRow.Add(card);
+                TrackCombatantFeedbackAnchor(enemy.State, card);
+            }
+        }
+
+        private int HeldDeathUptime(CombatantState state, int maxUptime)
+        {
+            if (state != null && _heldDeathUptime.TryGetValue(state, out int uptime))
+            {
+                return Mathf.Clamp(uptime, 0, Mathf.Max(1, maxUptime));
+            }
+
+            return Mathf.Clamp(maxUptime, 1, Mathf.Max(1, maxUptime));
+        }
+
+        private void PruneVisuallyRemovedCombatants()
+        {
+            bool IsRemoved(CombatantState state)
+            {
+                IReadOnlyList<EnemyInstance> enemies = _combatManager.Enemies;
+                for (int i = 0; i < enemies.Count; i++)
+                {
+                    if (enemies[i].State == state)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            _visuallyRemovedCombatants.RemoveWhere(IsRemoved);
+            _deathBeatStartedCombatants.RemoveWhere(IsRemoved);
+            List<CombatantState> staleHeldStates = null;
+            foreach (CombatantState state in _heldDeathUptime.Keys)
+            {
+                if (!IsRemoved(state))
+                {
+                    continue;
+                }
+
+                staleHeldStates ??= new List<CombatantState>();
+                staleHeldStates.Add(state);
+            }
+
+            if (staleHeldStates == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < staleHeldStates.Count; i++)
+            {
+                _heldDeathUptime.Remove(staleHeldStates[i]);
             }
         }
 
@@ -554,6 +709,73 @@ namespace KernelPanic.UI
             _turnResourceGrid.Add(TurnStat("draw", _combatManager.DeckController.DrawPile.Count.ToString()));
             _turnResourceGrid.Add(TurnStat("discard", _combatManager.DeckController.DiscardPile.Count.ToString()));
             _turnResourceGrid.Add(TurnStat("exhaust", _combatManager.DeckController.ExhaustPile.Count.ToString()));
+            RefreshSurrenderCommand();
+        }
+
+        private void RefreshSurrenderCommand()
+        {
+            bool canSurrender = _combatManager.CanSurrenderRun;
+            if (!canSurrender)
+            {
+                _surrenderConfirming = false;
+            }
+
+            if (_surrenderButton != null)
+            {
+                _surrenderButton.text = _surrenderConfirming ? "> confirm shutdown" : "> shutdown -r run";
+                _surrenderButton.SetEnabled(canSurrender);
+                _surrenderButton.EnableInClassList("surrender-action-confirming", _surrenderConfirming);
+            }
+
+            if (_surrenderConfirmLabel != null)
+            {
+                _surrenderConfirmLabel.EnableInClassList("hidden", !_surrenderConfirming);
+            }
+        }
+
+        private void HandleSurrenderClicked()
+        {
+            if (!_combatManager.CanSurrenderRun)
+            {
+                _surrenderConfirming = false;
+                RefreshSurrenderCommand();
+                return;
+            }
+
+            if (!_surrenderConfirming)
+            {
+                _surrenderConfirming = true;
+                RefreshSurrenderCommand();
+                _root?.Focus();
+                return;
+            }
+
+            ConfirmSurrender();
+        }
+
+        private void ConfirmSurrender()
+        {
+            if (!_combatManager.CanSurrenderRun)
+            {
+                _surrenderConfirming = false;
+                RefreshSurrenderCommand();
+                return;
+            }
+
+            _surrenderConfirming = false;
+            _runEndedBySurrender = true;
+            _combatManager.SurrenderRun();
+        }
+
+        private void CancelSurrender()
+        {
+            if (!_surrenderConfirming)
+            {
+                return;
+            }
+
+            _surrenderConfirming = false;
+            RefreshSurrenderCommand();
         }
 
         private void RefreshOverlay()
@@ -568,18 +790,12 @@ namespace KernelPanic.UI
             {
                 SettleRunRewardsIfNeeded();
                 _overlay.style.display = DisplayStyle.Flex;
-                _overlay.Add(OverlayTitle("kernel panic"));
-                _overlay.Add(OverlayLine("fatal: player uptime reached 0"));
-                _overlay.Add(OverlayLine($"wave {_runManager.CurrentWaveNumber} reached  seed {_runManager.CurrentConfig?.RunSeed ?? 0}"));
-                _overlay.Add(OverlayLine($"waves cleared: {_runManager.WavesCleared}"));
-                _overlay.Add(OverlayLine($"+{_runManager.AccruedBandwidth} bandwidth"));
-                _overlay.Add(OverlayLine($"+{_runManager.AccruedEntropy} entropy"));
-                Button returnButton = new(() => SceneLoader.LoadMainMenu(_root)) { text = "> return to menu" };
-                returnButton.AddToClassList("primary-action");
-                _overlay.Add(returnButton);
+                _overlay.Add(BuildRunEndOverlay());
                 return;
             }
 
+            _runEndOverlayPresented = false;
+            _runEndedBySurrender = false;
             if (_combatManager.AwaitingWaveContinue)
             {
                 if (!_runManager.RepositoryVisitActive)
@@ -594,6 +810,58 @@ namespace KernelPanic.UI
             }
 
             _overlay.style.display = DisplayStyle.None;
+        }
+
+        private VisualElement BuildRunEndOverlay()
+        {
+            VisualElement screen = new();
+            screen.AddToClassList("death-overlay");
+
+            if (!_runEndOverlayPresented)
+            {
+                _runEndOverlayPresented = true;
+                if (!UIPreferences.ReducedMotion)
+                {
+                    VisualElement beat = new();
+                    beat.AddToClassList("death-crash-beat");
+                    screen.Add(beat);
+                    screen.schedule.Execute(() => beat.AddToClassList("death-crash-beat-settled")).StartingIn(25);
+                    screen.schedule.Execute(() => beat.RemoveFromHierarchy()).StartingIn(260);
+                }
+            }
+
+            VisualElement content = new();
+            content.AddToClassList("death-content");
+
+            content.Add(OverlayTitle("KERNEL PANIC"));
+
+            string cause = _runEndedBySurrender ? "fatal: shutdown signal accepted" : "fatal: player uptime reached 0";
+            Label causeLabel = OverlayLine(cause);
+            causeLabel.AddToClassList("death-cause");
+            content.Add(causeLabel);
+
+            VisualElement summary = new();
+            summary.AddToClassList("death-section");
+            summary.AddToClassList("death-summary");
+            summary.Add(DeathStat("wave reached", _runManager.CurrentWaveNumber.ToString()));
+            summary.Add(DeathStat("waves cleared", _runManager.WavesCleared.ToString()));
+            summary.Add(DeathStat("seed", (_runManager.CurrentConfig?.RunSeed ?? 0).ToString()));
+            content.Add(summary);
+
+            VisualElement rewards = new();
+            rewards.AddToClassList("death-section");
+            rewards.AddToClassList("death-rewards");
+            rewards.Add(RewardReadout("#", _runManager.AccruedBandwidth, "bandwidth", false));
+            rewards.Add(RewardReadout("*", _runManager.AccruedEntropy, "entropy", _runManager.AccruedEntropy <= 0));
+            content.Add(rewards);
+
+            Button returnButton = new(() => SceneLoader.LoadMainMenu(_root)) { text = "> return to menu" };
+            returnButton.AddToClassList("primary-action");
+            returnButton.AddToClassList("death-return-action");
+            content.Add(returnButton);
+
+            screen.Add(content);
+            return screen;
         }
 
         private void SettleRunRewardsIfNeeded()
@@ -619,10 +887,12 @@ namespace KernelPanic.UI
         {
             VisualElement repo = new();
             repo.AddToClassList("repository");
+            repo.AddToClassList("screen-frame");
             repo.Add(BuildRepositoryHeader());
 
             ScrollView body = new(ScrollViewMode.Vertical);
             body.AddToClassList("repository-body");
+            body.AddToClassList("screen-frame-content");
 
             VisualElement offers = new();
             offers.AddToClassList("repository-offers");
@@ -644,12 +914,14 @@ namespace KernelPanic.UI
 
             VisualElement footer = new();
             footer.AddToClassList("repository-footer");
+            footer.AddToClassList("screen-frame-footer");
             Button reroll = new(() => _runManager.RerollRepositoryOffers(cardDatabase, languageDeckDatabase))
             {
-                text = $"apt update - reroll  ({_runManager.RerollCost} bits)"
+                text = $"apt update   {_runManager.RerollCost} bits"
             };
             reroll.AddToClassList("primary-action");
             reroll.AddToClassList("repository-footer-action");
+            reroll.AddToClassList("repository-reroll-action");
             reroll.EnableInClassList("repo-unaffordable", _runManager.Bits < _runManager.RerollCost);
             reroll.SetEnabled(_runManager.Bits >= _runManager.RerollCost);
             footer.Add(reroll);
@@ -660,8 +932,9 @@ namespace KernelPanic.UI
             VisualElement leaveBlock = new();
             leaveBlock.AddToClassList("repository-leave-block");
             leaveBlock.Add(leave);
-            Label banked = new($"{_runManager.Bits} bits banked");
+            Label banked = new($"{_runManager.Bits} bits remaining");
             banked.AddToClassList("repository-banked-hint");
+            banked.AddToClassList("screen-frame-hint");
             leaveBlock.Add(banked);
             footer.Add(leaveBlock);
             repo.Add(footer);
@@ -672,19 +945,21 @@ namespace KernelPanic.UI
         {
             VisualElement header = new();
             header.AddToClassList("repository-header");
+            header.AddToClassList("screen-frame-header");
 
             VisualElement copy = new();
             copy.AddToClassList("repository-header-copy");
-            Label title = new($"repository :: wave {_runManager.CurrentWaveNumber - 1} cleared");
-            title.AddToClassList("overlay-title");
-            Label subtitle = new($"$ apt browse    {_runManager.RepositoryOffers.Count}/{CombatTuning.ShopSize} offers");
-            subtitle.AddToClassList("overlay-line");
+            Label title = new("repository");
+            title.AddToClassList("repository-title");
+            title.AddToClassList("screen-frame-title");
+            Label subtitle = new($"wave {_runManager.CurrentWaveNumber - 1} cleared  /  {_runManager.RepositoryOffers.Count} packages indexed");
+            subtitle.AddToClassList("repository-subtitle");
             copy.Add(title);
             copy.Add(subtitle);
 
             VisualElement wallet = new();
             wallet.AddToClassList("repository-wallet");
-            Label walletLabel = new("bits wallet");
+            Label walletLabel = new("available bits");
             walletLabel.AddToClassList("status-label");
             Label walletValue = new($"◆ {_runManager.Bits}");
             walletValue.AddToClassList("repository-wallet-value");
@@ -724,8 +999,9 @@ namespace KernelPanic.UI
 
             Button buy = new(() => _runManager.BuyOffer(offer, _combatManager.PlayerState))
             {
-                text = offer.Sold ? "installed" : OfferCommandText(offer)
+                text = offer.Sold ? "installed" : OfferActionText(offer.Kind)
             };
+            buy.tooltip = OfferCommandText(offer);
             buy.AddToClassList("repository-action");
             buy.SetEnabled(!offer.Sold && _runManager.Bits >= offer.Price);
             tile.Add(buy);
@@ -812,7 +1088,7 @@ namespace KernelPanic.UI
         {
             VisualElement block = new();
             block.AddToClassList("repository-remove");
-            Label title = new($"apt remove  ({CombatTuning.RemoveCardCost} bits)");
+            Label title = new($"installed deck maintenance  /  remove for {CombatTuning.RemoveCardCost} bit");
             title.AddToClassList("repository-name");
             block.Add(title);
 
@@ -1087,26 +1363,93 @@ namespace KernelPanic.UI
             return block;
         }
 
+        private VisualElement FedoraRiskMeter(float chancePercent)
+        {
+            float clamped = Mathf.Clamp(chancePercent, 0f, 100f);
+            VisualElement block = new();
+            block.AddToClassList("meter-block");
+            block.AddToClassList("fedora-risk-meter");
+
+            VisualElement head = new();
+            head.AddToClassList("meter-head");
+            Label label = new("crash risk");
+            label.AddToClassList("metric-label");
+            Label value = new($"{clamped:0.#}%");
+            value.AddToClassList("metric-value");
+            head.Add(label);
+            head.Add(value);
+            block.Add(head);
+
+            VisualElement track = new();
+            track.AddToClassList("meter-track");
+            VisualElement fill = new();
+            fill.AddToClassList("meter-fill");
+            fill.AddToClassList(FedoraRiskFillClass(clamped));
+            fill.style.width = Length.Percent(clamped);
+            track.Add(fill);
+            block.Add(track);
+
+            _fedoraRiskFillElement = fill;
+            _fedoraRiskValueLabel = value;
+            return block;
+        }
+
+        private static string FedoraRiskFillClass(float chancePercent)
+        {
+            if (chancePercent >= 50f)
+            {
+                return "meter-fill-danger";
+            }
+
+            return chancePercent >= 25f ? "meter-fill-warning" : "meter-fill";
+        }
+
+        private VisualElement ArchBtwCounter(int stacks)
+        {
+            VisualElement block = new();
+            block.AddToClassList("arch-btw-counter");
+            Label label = new($"btw ×{stacks}");
+            label.AddToClassList("arch-btw-value");
+            label.style.color = _distroAccent;
+            block.Add(label);
+            _archBtwCounterLabel = label;
+            return block;
+        }
+
         private static VisualElement StatusBlock(CombatantState state, bool includeTooltips)
         {
             VisualElement block = new();
             Label title = new("statuses");
             title.AddToClassList("status-section-title");
             block.Add(title);
-            block.Add(StatusPipRow(state));
-
-            if (includeTooltips)
+            if (!includeTooltips || state.Statuses.Count == 0)
             {
-                for (int i = 0; i < state.Statuses.Count; i++)
-                {
-                    StatusDescriptor descriptor = StatusEffectController.GetDescriptor(state.Statuses[i].Type);
-                    Label tooltip = new(descriptor.Tooltip);
-                    tooltip.AddToClassList("status-tooltip");
-                    block.Add(tooltip);
-                }
+                block.Add(StatusPipRow(state));
+                return block;
             }
 
+            VisualElement details = new();
+            details.AddToClassList("status-detail-list");
+            for (int i = 0; i < state.Statuses.Count; i++)
+            {
+                details.Add(StatusDetail(state.Statuses[i]));
+            }
+
+            block.Add(details);
             return block;
+        }
+
+        private static VisualElement StatusDetail(StatusInstance status)
+        {
+            StatusDescriptor descriptor = StatusEffectController.GetDescriptor(status.Type);
+            VisualElement item = new();
+            item.AddToClassList("status-detail");
+            item.Add(StatusPip(status));
+
+            Label tooltip = new(descriptor.Tooltip);
+            tooltip.AddToClassList("status-tooltip");
+            item.Add(tooltip);
+            return item;
         }
 
         private static VisualElement StatusPipRow(CombatantState state)
@@ -1232,6 +1575,12 @@ namespace KernelPanic.UI
             };
 
             FlyCardGhost(payload.Card, source, destination, payload.Track == ResolutionTrack.Native ? "feedback-card-strike" : "feedback-card-route");
+
+            if (IsDistro("arch") && _archBtwCounterLabel != null && _combatManager.PlayerState != null)
+            {
+                _archBtwCounterLabel.text = $"btw ×{_combatManager.PlayerState.ArchBtwStacks}";
+                PlayElementBeat(_archBtwCounterLabel, "arch-btw-pop", 200);
+            }
         }
 
         private void HandleCardResolved(CardResolvedEvent payload)
@@ -1270,17 +1619,31 @@ namespace KernelPanic.UI
             }
 
             _feedbackCascadeIndex = 0;
+            _combatBeatCursorMs = 0;
+            _combatBeatCursorVersion++;
             ScheduleFeedback(() => PlayElementBeat(_phaseLabel, "phase-pulse", 260), 0);
         }
 
         private void HandleDamageDealt(DamageDealtEvent payload)
         {
             bool isPlayer = payload.Target == _combatManager.PlayerState;
-            VisualElement target = CombatantElement(payload.Target);
             int magnitudeAmount = payload.UptimeDamage > 0 ? payload.UptimeDamage : payload.ShieldDamage > 0 ? payload.ShieldDamage : payload.Amount;
             bool defeated = payload.Target != null && payload.Target.CurrentUptime <= 0;
             HitMagnitudeTier tier = HitMagnitude.Classify(magnitudeAmount, payload.Target?.MaxUptime ?? 1, defeated);
             bool shieldOnly = payload.WasFullyBlocked && payload.ShieldDamage > 0;
+
+            bool fedoraPayoff = _pendingFedoraPayoff && payload.Source == _combatManager.PlayerState && payload.UptimeDamage > 0;
+            _pendingFedoraPayoff = false;
+            if (fedoraPayoff && tier < HitMagnitudeTier.Major)
+            {
+                tier = HitMagnitudeTier.Major;
+            }
+
+            if (payload.ArchRollingReleaseSaveTriggered)
+            {
+                TriggerRollingReleaseSave();
+            }
+
             ScheduleCombatBeat(beatIndex =>
             {
                 string bypass = payload.TrueDamage ? "! " : string.Empty;
@@ -1290,39 +1653,156 @@ namespace KernelPanic.UI
                         ? $"{bypass}blocked"
                         : $"{bypass}-{Mathf.RoundToInt(payload.UptimeDamage)}";
                 string tone = BuildDamageFloatClasses(tier, payload, shieldOnly);
-                string beatClass = BuildDamageBeatClass(tier, payload, shieldOnly);
-                int beatDuration = HitBeatDuration(tier, payload.WasMitigated);
+                string beatClass = fedoraPayoff ? "feedback-fedora-payoff" : BuildDamageBeatClass(tier, payload, shieldOnly);
+                if (fedoraPayoff)
+                {
+                    tone += " float-fedora-payoff";
+                }
+
+                int beatDuration = fedoraPayoff ? Mathf.Max(360, HitBeatDuration(tier, payload.WasMitigated)) : HitBeatDuration(tier, payload.WasMitigated);
 
                 TriggerHitStop(tier);
                 TriggerRootShake(tier, isPlayer);
-                SpawnFloatingText(target, text, tone, beatIndex);
-                SpawnImpactMarker(target, payload.WasCritical, payload.WasMitigated, beatIndex, tier, shieldOnly);
-                PlayElementBeat(target, beatClass, beatDuration);
+                SpawnFloatingText(payload.Target, text, tone, beatIndex);
+                SpawnImpactMarker(payload.Target, payload.WasCritical, payload.WasMitigated, beatIndex, tier, shieldOnly);
+                if (TryGetCombatantElement(payload.Target, out VisualElement target))
+                {
+                    PlayElementBeat(target, beatClass, beatDuration);
+                }
+                if (payload.ArchBtwBonusAmount > 0)
+                {
+                    SpawnFloatingText(payload.Target, $"+{payload.ArchBtwBonusAmount} btw", "float-btw-bonus", beatIndex + 1);
+                }
+
                 if (isPlayer && payload.UptimeDamage > 0)
                 {
                     FlashDamageVignette(tier);
                 }
-            });
+            }, HitBeatDuration(tier, payload.WasMitigated));
+        }
+
+        private void HandleOverflowDamageTravel(OverflowDamageTravelEvent payload)
+        {
+            ScheduleCombatBeat(() => SpawnOverflowTravel(payload.From, payload.To, payload.Amount), CombatTuning.OverflowTravelMs);
+        }
+
+        private void TriggerRollingReleaseSave()
+        {
+            SpawnFloatingText(_playerPanel, "rolling release: recovered", "float-heal float-large");
+            PlayElementBeat(_damageVignette, "damage-vignette-rolling-release", 420);
+            if (UIPreferences.ReducedMotion)
+            {
+                return;
+            }
+
+            int version = ++_rollingReleaseHitStopVersion;
+            Time.timeScale = 0.04f;
+            ScheduleFeedback(() =>
+            {
+                if (_rollingReleaseHitStopVersion == version)
+                {
+                    Time.timeScale = 1f;
+                }
+            }, 220);
         }
 
         private void HandleCombatantDefeated(CombatantDefeatedEvent payload)
         {
-            VisualElement target = CombatantElement(payload.Combatant);
-            Rect targetBounds = target?.worldBound ?? Rect.zero;
-            ScheduleCombatBeat(() =>
+            HoldDeathUptime(payload.Combatant);
+            int completionMs = ScheduleCombatBeat(() =>
             {
-                SpawnFloatingText(target, "killed", "float-kill float-large", 0);
-                SpawnDeathGhost(targetBounds);
-                if (target != _enemyRow)
+                if (payload.Combatant != null && payload.Combatant != _combatManager.PlayerState)
                 {
+                    _deathBeatStartedCombatants.Add(payload.Combatant);
+                    RefreshEnemies();
+                }
+
+                SpawnFloatingText(payload.Combatant, "killed", "float-kill float-large", 0);
+                if (TryGetCombatantFeedbackRect(payload.Combatant, out Rect targetBounds))
+                {
+                    SpawnDeathGhost(targetBounds);
+                }
+
+                if (TryGetCombatantElement(payload.Combatant, out VisualElement target))
+                {
+                    if (target != _playerPanel)
+                    {
+                        target.AddToClassList("enemy-card-defeated-hold");
+                        target.SetEnabled(false);
+                    }
+
                     PlayElementBeat(target, "feedback-killed", 420);
                 }
-            });
+            }, CombatTuning.DeathBeatMs + CombatTuning.PostDeathPauseMs);
+            ScheduleFeedback(() => CompleteCombatantDeathVisual(payload.Combatant), completionMs);
+        }
+
+        private void HoldDeathUptime(CombatantState combatant)
+        {
+            if (combatant == null || combatant == _combatManager.PlayerState || _heldDeathUptime.ContainsKey(combatant))
+            {
+                return;
+            }
+
+            int held = _previousUptime.TryGetValue(combatant, out int previous)
+                ? previous
+                : combatant.MaxUptime;
+            _heldDeathUptime[combatant] = Mathf.Clamp(held, 1, Mathf.Max(1, combatant.MaxUptime));
+        }
+
+        private void CompleteCombatantDeathVisual(CombatantState combatant)
+        {
+            if (ShouldHideCombatantAfterDeathVisual(combatant))
+            {
+                _visuallyRemovedCombatants.Add(combatant);
+                _heldDeathUptime.Remove(combatant);
+                _deathBeatStartedCombatants.Remove(combatant);
+                RefreshEnemies();
+            }
+
+            GameEvents.RaiseCombatantDeathVisualCompleted(new CombatantDeathVisualCompletedEvent(combatant));
+        }
+
+        private bool ShouldHideCombatantAfterDeathVisual(CombatantState combatant)
+        {
+            if (combatant == null || combatant == _combatManager.PlayerState)
+            {
+                return false;
+            }
+
+            IReadOnlyList<EnemyInstance> enemies = _combatManager.Enemies;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                if (enemies[i].State == combatant)
+                {
+                    return !enemies[i].PendingRevive;
+                }
+            }
+
+            return false;
+        }
+
+        private void HandleDeathSpawnedEnemy(DeathSpawnedEnemyEvent payload)
+        {
+            ScheduleFeedback(() =>
+            {
+                SpawnFloatingText(payload.Enemy?.State, "spawned", "float-status");
+                if (TryGetCombatantElement(payload.Enemy?.State, out VisualElement target))
+                {
+                    PlayElementBeat(target, "feedback-spawned", CombatTuning.SpawnMaterializeMs);
+                }
+            }, 0);
         }
 
         private void HandleEnemyWouldAct(EnemyWouldActEvent payload)
         {
-            ScheduleCombatBeat(() => PlayElementBeat(CombatantElement(payload.Enemy?.State), "enemy-anticipating", 340));
+            ScheduleCombatBeat(() =>
+            {
+                if (TryGetCombatantElement(payload.Enemy?.State, out VisualElement enemy))
+                {
+                    PlayElementBeat(enemy, "enemy-anticipating", 340);
+                }
+            });
         }
 
         private void HandlePlayerDamaged(PlayerDamagedEvent payload)
@@ -1335,10 +1815,13 @@ namespace KernelPanic.UI
             ScheduleCombatBeat(() =>
             {
                 StatusDescriptor descriptor = StatusEffectController.GetDescriptor(payload.StatusType);
-                VisualElement target = CombatantElement(payload.Target);
-                ApplyStatusStateClass(target, payload.StatusType, true);
-                SpawnFloatingText(target, $"{descriptor.IconKey} x{payload.Stacks}", descriptor.IsBeneficial ? "float-heal" : "float-status");
-                PlayElementBeat(target, descriptor.IsBeneficial ? "feedback-boost" : "feedback-status", 220);
+                if (TryGetCombatantElement(payload.Target, out VisualElement target))
+                {
+                    ApplyStatusStateClass(target, payload.StatusType, true);
+                    PlayElementBeat(target, descriptor.IsBeneficial ? "feedback-boost" : "feedback-status", 220);
+                }
+
+                SpawnFloatingText(payload.Target, $"{descriptor.IconKey} x{payload.Stacks}", descriptor.IsBeneficial ? "float-heal" : "float-status");
             });
         }
 
@@ -1350,6 +1833,221 @@ namespace KernelPanic.UI
         private void HandleStatusEnded(StatusCleansedEvent payload)
         {
             ApplyStatusStateClass(CombatantElement(payload.Target), payload.StatusType, false);
+        }
+
+        private void HandleUbuntuAptUpdatePeeked(UbuntuAptUpdatePeekedEvent payload)
+        {
+            if (payload.Peeked == null || payload.Peeked.Count == 0 || payload.Chosen == null)
+            {
+                return;
+            }
+
+            int minCost = int.MaxValue;
+            for (int i = 0; i < payload.Peeked.Count; i++)
+            {
+                minCost = Mathf.Min(minCost, payload.Peeked[i].Cost);
+            }
+
+            if (UIPreferences.ReducedMotion)
+            {
+                string summary = string.Empty;
+                for (int i = 0; i < payload.Peeked.Count; i++)
+                {
+                    PeekedCardInfo info = payload.Peeked[i];
+                    summary += (i > 0 ? ", " : string.Empty) + $"{DisplayName(info.Card.Definition)} {info.Cost}c";
+                }
+
+                string prefix = payload.WasTie ? "apt update tie" : "apt update peeked";
+                SpawnStaticInfoLabel(_turnResourceGrid, $"{prefix}: {summary} -> added {DisplayName(payload.Chosen.Definition)}", 900);
+                return;
+            }
+
+            if (!TryGetElementWorldRect(_turnResourceGrid, out Rect turnResourceRect)
+                || !TryGetFeedbackLocalRect(turnResourceRect, out Rect anchorRect))
+            {
+                return;
+            }
+
+            List<VisualElement> stageElements = new(payload.Peeked.Count);
+            for (int i = 0; i < payload.Peeked.Count; i++)
+            {
+                PruneFeedbackLayer();
+                VisualElement stageCard = CardFaceView(payload.Peeked[i].Card);
+                stageCard.AddToClassList("peek-card");
+                stageCard.style.position = Position.Absolute;
+                stageCard.style.left = anchorRect.x + (i * 96f);
+                stageCard.style.top = anchorRect.y - 128f;
+                stageCard.style.width = 88f;
+                stageCard.style.height = 108f;
+                stageCard.style.opacity = 0f;
+                _feedbackLayer.Add(stageCard);
+                stageElements.Add(stageCard);
+            }
+
+            ScheduleFeedback(() =>
+            {
+                for (int i = 0; i < stageElements.Count; i++)
+                {
+                    stageElements[i].style.opacity = 1f;
+                }
+            }, 20);
+
+            ScheduleFeedback(() =>
+            {
+                for (int i = 0; i < payload.Peeked.Count; i++)
+                {
+                    if (payload.Peeked[i].Cost != minCost)
+                    {
+                        continue;
+                    }
+
+                    stageElements[i].AddToClassList("peek-card-marked");
+                    stageElements[i].EnableInClassList("peek-card-tie", payload.WasTie);
+                }
+            }, 180);
+
+            ScheduleFeedback(() =>
+            {
+                for (int i = 0; i < payload.Peeked.Count; i++)
+                {
+                    VisualElement stage = stageElements[i];
+                    if (payload.Peeked[i].Card == payload.Chosen)
+                    {
+                        FlyCardGhost(payload.Chosen, stage, _handRow, "feedback-card-route");
+                        stage.style.opacity = 0f;
+                        ScheduleFeedback(() => stage.RemoveFromHierarchy(), 40);
+                    }
+                    else
+                    {
+                        stage.style.opacity = 0f;
+                        ScheduleFeedback(() => stage.RemoveFromHierarchy(), 220);
+                    }
+                }
+            }, 340);
+        }
+
+        private void HandleFedoraBleedingEdgeTriggered(FedoraBleedingEdgeEvent payload)
+        {
+            if (payload.Card == null)
+            {
+                return;
+            }
+
+            VisualElement anchor = _handCardElements.TryGetValue(payload.Card, out VisualElement cardElement)
+                ? cardElement
+                : CombatantElement(_combatManager.PlayerState);
+
+            if (payload.Crashed)
+            {
+                SnapFedoraRiskMeter(payload.CrashChanceAfter);
+            }
+
+            if (UIPreferences.ReducedMotion)
+            {
+                string outcome = payload.Crashed ? "crashed - no effect" : $"hit +{payload.DamageMultiplierPercent - 100}%";
+                SpawnStaticInfoLabel(anchor, $"bleeding edge: -1c {outcome}", 700);
+                if (!payload.Crashed)
+                {
+                    _pendingFedoraPayoff = true;
+                }
+
+                return;
+            }
+
+            VisualElement windup = CardFaceView(payload.Card);
+            windup.AddToClassList("feedback-fedora-windup");
+            windup.style.position = Position.Absolute;
+            if (!TryGetElementWorldRect(anchor, out Rect anchorWorldRect) || !TryGetFeedbackLocalRect(anchorWorldRect, out Rect anchorRect))
+            {
+                return;
+            }
+
+            windup.style.left = anchorRect.x;
+            windup.style.top = anchorRect.y;
+            windup.style.width = Mathf.Max(110f, anchorRect.width);
+            windup.style.height = Mathf.Max(94f, anchorRect.height);
+            PruneFeedbackLayer();
+            _feedbackLayer.Add(windup);
+
+            VisualElement badgeRow = new();
+            badgeRow.AddToClassList("tag-row");
+            badgeRow.Add(Tag("-1c", "fedora-badge"));
+            badgeRow.Add(Tag($"+{payload.DamageMultiplierPercent - 100}%", "fedora-badge"));
+            windup.Add(badgeRow);
+
+            ScheduleFeedback(() =>
+            {
+                if (payload.Crashed)
+                {
+                    windup.AddToClassList("feedback-fedora-crash");
+                    Label stamp = new("CRASHED");
+                    stamp.AddToClassList("fedora-crash-stamp");
+                    windup.Add(stamp);
+                    SpawnFloatingText(anchor, "no effect", "float-crash");
+                    ScheduleFeedback(() => windup.style.opacity = 0.15f, 60);
+                    ScheduleFeedback(() => windup.style.opacity = 0.85f, 120);
+                    ScheduleFeedback(() => windup.style.opacity = 0f, 220);
+                    ScheduleFeedback(() => windup.RemoveFromHierarchy(), 320);
+                    return;
+                }
+
+                _pendingFedoraPayoff = true;
+                windup.style.opacity = 0f;
+                ScheduleFeedback(() => windup.RemoveFromHierarchy(), 220);
+            }, 200);
+        }
+
+        private void SnapFedoraRiskMeter(float chanceAfter)
+        {
+            float clamped = Mathf.Clamp(chanceAfter, 0f, 100f);
+            if (_fedoraRiskValueLabel != null)
+            {
+                _fedoraRiskValueLabel.text = $"{clamped:0.#}%";
+            }
+
+            if (_fedoraRiskFillElement != null)
+            {
+                _fedoraRiskFillElement.style.width = Length.Percent(clamped);
+                _fedoraRiskFillElement.RemoveFromClassList("meter-fill-warning");
+                _fedoraRiskFillElement.RemoveFromClassList("meter-fill-danger");
+                _fedoraRiskFillElement.AddToClassList(FedoraRiskFillClass(clamped));
+                PlayElementBeat(_fedoraRiskFillElement, "fedora-risk-snap", 260);
+            }
+        }
+
+        private void HandleArchBtwTurnEnded(ArchBtwTurnEndedEvent payload)
+        {
+            if (_archBtwCounterLabel == null)
+            {
+                return;
+            }
+
+            if (payload.Persisted)
+            {
+                PlayElementBeat(_archBtwCounterLabel, "arch-btw-persist", 320);
+                return;
+            }
+
+            _archBtwCounterLabel.text = "btw ×0";
+            PlayElementBeat(_archBtwCounterLabel, "arch-btw-reset", 260);
+        }
+
+        private void SpawnStaticInfoLabel(VisualElement anchor, string text, int holdMs)
+        {
+            if (_feedbackLayer == null || !TryGetElementWorldRect(anchor, out Rect anchorRect) || !TryGetFeedbackLocalRect(anchorRect, out Rect localRect))
+            {
+                return;
+            }
+
+            PruneFeedbackLayer();
+            Label label = new(text);
+            label.AddToClassList("float-number");
+            label.AddToClassList("float-status");
+            label.AddToClassList("float-static");
+            label.style.left = localRect.center.x - 80f;
+            label.style.top = localRect.y - 26f;
+            _feedbackLayer.Add(label);
+            ScheduleFeedback(() => label.RemoveFromHierarchy(), holdMs);
         }
 
         private void DetectBeneficialResourceFeedback(CombatantState state, VisualElement element)
@@ -1449,6 +2147,107 @@ namespace KernelPanic.UI
             };
         }
 
+        private void TrackCombatantFeedbackAnchor(CombatantState state, VisualElement element)
+        {
+            if (state == null || element == null)
+            {
+                return;
+            }
+
+            TryCacheCombatantFeedbackRect(state, element);
+            if (element == _playerPanel)
+            {
+                if (_playerFeedbackAnchorTracked)
+                {
+                    return;
+                }
+
+                _playerFeedbackAnchorTracked = true;
+            }
+
+            element.RegisterCallback<GeometryChangedEvent>(_ => TryCacheCombatantFeedbackRect(state, element));
+        }
+
+        private bool TryCacheCombatantFeedbackRect(CombatantState state, VisualElement element)
+        {
+            if (state == null || !TryGetElementWorldRect(element, out Rect rect))
+            {
+                return false;
+            }
+
+            _lastCombatantFeedbackRects[state] = rect;
+            return true;
+        }
+
+        private bool TryGetCombatantFeedbackRect(CombatantState state, out Rect rect)
+        {
+            if (state != null && _combatantElements.TryGetValue(state, out VisualElement element) && TryGetElementWorldRect(element, out rect))
+            {
+                _lastCombatantFeedbackRects[state] = rect;
+                return true;
+            }
+
+            if (state != null && _lastCombatantFeedbackRects.TryGetValue(state, out rect) && IsValidRect(rect))
+            {
+                return true;
+            }
+
+            rect = default;
+            return false;
+        }
+
+        private bool TryGetCombatantElement(CombatantState state, out VisualElement element)
+        {
+            if (state != null && _combatantElements.TryGetValue(state, out element))
+            {
+                return element != null;
+            }
+
+            element = state == _combatManager.PlayerState ? _playerPanel : null;
+            return element != null;
+        }
+
+        private bool TryGetElementWorldRect(VisualElement element, out Rect rect)
+        {
+            rect = default;
+            if (element == null || element.panel == null)
+            {
+                return false;
+            }
+
+            rect = element.worldBound;
+            return IsValidRect(rect);
+        }
+
+        private bool TryGetFeedbackLocalRect(Rect worldRect, out Rect localRect)
+        {
+            localRect = default;
+            if (_feedbackLayer == null || !IsValidRect(worldRect) || !TryGetElementWorldRect(_feedbackLayer, out Rect layerRect))
+            {
+                return false;
+            }
+
+            localRect = new Rect(worldRect.x - layerRect.x, worldRect.y - layerRect.y, worldRect.width, worldRect.height);
+            return IsValidRect(localRect);
+        }
+
+        private static bool IsValidRect(Rect rect)
+        {
+            return rect.width > 0f
+                && rect.height > 0f
+                && IsFinite(rect.x)
+                && IsFinite(rect.y)
+                && IsFinite(rect.width)
+                && IsFinite(rect.height)
+                && IsFinite(rect.center.x)
+                && IsFinite(rect.center.y);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
         private VisualElement CombatantElement(CombatantState state)
         {
             if (state != null && _combatantElements.TryGetValue(state, out VisualElement element))
@@ -1463,19 +2262,18 @@ namespace KernelPanic.UI
         {
             if (card?.TargetSnapshot == null)
             {
-                return _enemyRow;
+                return null;
             }
 
             for (int i = 0; i < card.TargetSnapshot.Count; i++)
             {
-                VisualElement element = CombatantElement(card.TargetSnapshot[i]);
-                if (element != null)
+                if (TryGetCombatantElement(card.TargetSnapshot[i], out VisualElement element))
                 {
                     return element;
                 }
             }
 
-            return _enemyRow;
+            return null;
         }
 
         private void PlayElementBeat(VisualElement element, string className, int durationMs)
@@ -1511,14 +2309,32 @@ namespace KernelPanic.UI
 
         private void SpawnFloatingText(VisualElement anchor, string text, string className, int cascadeOffset = 0)
         {
-            if (_feedbackLayer == null || anchor == null)
+            if (!TryGetElementWorldRect(anchor, out Rect anchorRect))
+            {
+                return;
+            }
+
+            SpawnFloatingText(anchorRect, text, className, cascadeOffset);
+        }
+
+        private void SpawnFloatingText(CombatantState anchor, string text, string className, int cascadeOffset = 0)
+        {
+            if (!TryGetCombatantFeedbackRect(anchor, out Rect anchorRect))
+            {
+                return;
+            }
+
+            SpawnFloatingText(anchorRect, text, className, cascadeOffset);
+        }
+
+        private void SpawnFloatingText(Rect anchorRect, string text, string className, int cascadeOffset = 0)
+        {
+            if (_feedbackLayer == null || !TryGetFeedbackLocalRect(anchorRect, out Rect localRect))
             {
                 return;
             }
 
             PruneFeedbackLayer();
-            Rect anchorRect = anchor.worldBound;
-            Rect rootRect = _root.worldBound;
             Label label = new(text);
             label.AddToClassList("float-number");
             if (!string.IsNullOrWhiteSpace(className))
@@ -1535,8 +2351,8 @@ namespace KernelPanic.UI
 
             float offsetX = (((cascadeOffset % 5) - 2) * 14f);
             float offsetY = ((cascadeOffset % 3) * 5f);
-            label.style.left = anchorRect.center.x - rootRect.x - 30f + offsetX;
-            label.style.top = anchorRect.center.y - rootRect.y - 16f + offsetY;
+            label.style.left = localRect.center.x - 30f + offsetX;
+            label.style.top = localRect.center.y - 16f + offsetY;
             _feedbackLayer.Add(label);
 
             if (UIPreferences.ReducedMotion)
@@ -1548,7 +2364,7 @@ namespace KernelPanic.UI
 
             ScheduleFeedback(() =>
             {
-                label.style.top = anchorRect.center.y - rootRect.y - 42f + offsetY;
+                label.style.top = localRect.center.y - 42f + offsetY;
                 label.style.opacity = 0f;
             }, 20);
             ScheduleFeedback(() => label.RemoveFromHierarchy(), 520);
@@ -1556,22 +2372,40 @@ namespace KernelPanic.UI
 
         private void SpawnImpactMarker(VisualElement anchor, bool critical, bool mitigated, int cascadeOffset, HitMagnitudeTier tier = HitMagnitudeTier.Moderate, bool shieldOnly = false)
         {
-            if (_feedbackLayer == null || anchor == null)
+            if (!TryGetElementWorldRect(anchor, out Rect anchorRect))
+            {
+                return;
+            }
+
+            SpawnImpactMarker(anchorRect, critical, mitigated, cascadeOffset, tier, shieldOnly);
+        }
+
+        private void SpawnImpactMarker(CombatantState anchor, bool critical, bool mitigated, int cascadeOffset, HitMagnitudeTier tier = HitMagnitudeTier.Moderate, bool shieldOnly = false)
+        {
+            if (!TryGetCombatantFeedbackRect(anchor, out Rect anchorRect))
+            {
+                return;
+            }
+
+            SpawnImpactMarker(anchorRect, critical, mitigated, cascadeOffset, tier, shieldOnly);
+        }
+
+        private void SpawnImpactMarker(Rect anchorRect, bool critical, bool mitigated, int cascadeOffset, HitMagnitudeTier tier = HitMagnitudeTier.Moderate, bool shieldOnly = false)
+        {
+            if (_feedbackLayer == null || !TryGetFeedbackLocalRect(anchorRect, out Rect localRect))
             {
                 return;
             }
 
             PruneFeedbackLayer();
-            Rect anchorRect = anchor.worldBound;
-            Rect rootRect = _root.worldBound;
             Label marker = new(shieldOnly ? "shield" : critical ? "crit" : mitigated ? "clang" : "hit");
             marker.AddToClassList("impact-marker");
             marker.AddToClassList(shieldOnly || mitigated ? "impact-marker-clang" : critical ? "impact-marker-crit" : "impact-marker-hit");
             marker.AddToClassList(TierImpactClass(tier));
 
             float lane = (cascadeOffset % 4) * 18f;
-            marker.style.left = anchorRect.xMax - rootRect.x - 54f;
-            marker.style.top = anchorRect.y - rootRect.y + 8f + lane;
+            marker.style.left = localRect.xMax - 54f;
+            marker.style.top = localRect.y + 8f + lane;
             _feedbackLayer.Add(marker);
 
             if (UIPreferences.ReducedMotion)
@@ -1582,7 +2416,7 @@ namespace KernelPanic.UI
 
             ScheduleFeedback(() =>
             {
-                marker.style.left = anchorRect.xMax - rootRect.x - 34f;
+                marker.style.left = localRect.xMax - 34f;
                 marker.style.opacity = 0f;
             }, 20);
             ScheduleFeedback(() => marker.RemoveFromHierarchy(), 420);
@@ -1649,21 +2483,22 @@ namespace KernelPanic.UI
 
         private void FlyCardGhost(CardInstance card, VisualElement source, VisualElement destination, string className)
         {
-            if (_feedbackLayer == null || card == null)
+            if (_feedbackLayer == null
+                || card == null
+                || !TryGetElementWorldRect(source, out Rect sourceWorldRect)
+                || !TryGetElementWorldRect(destination, out Rect destinationWorldRect)
+                || !TryGetFeedbackLocalRect(sourceWorldRect, out Rect sourceRect)
+                || !TryGetFeedbackLocalRect(destinationWorldRect, out Rect destinationRect))
             {
                 return;
             }
-
-            Rect rootRect = _root.worldBound;
-            Rect sourceRect = source == null ? new Rect(rootRect.center.x - 70f, rootRect.center.y - 50f, 140f, 110f) : source.worldBound;
-            Rect destinationRect = destination == null ? sourceRect : destination.worldBound;
 
             VisualElement ghost = CardFaceView(card);
             ghost.AddToClassList("feedback-card-ghost");
             ghost.AddToClassList(className);
             ghost.style.position = Position.Absolute;
-            ghost.style.left = sourceRect.x - rootRect.x;
-            ghost.style.top = sourceRect.y - rootRect.y;
+            ghost.style.left = sourceRect.x;
+            ghost.style.top = sourceRect.y;
             ghost.style.width = Mathf.Max(110f, sourceRect.width);
             ghost.style.height = Mathf.Max(94f, sourceRect.height);
             _feedbackLayer.Add(ghost);
@@ -1677,8 +2512,8 @@ namespace KernelPanic.UI
 
             ScheduleFeedback(() =>
             {
-                ghost.style.left = destinationRect.center.x - rootRect.x - (sourceRect.width * 0.5f);
-                ghost.style.top = destinationRect.center.y - rootRect.y - (sourceRect.height * 0.5f);
+                ghost.style.left = destinationRect.center.x - (sourceRect.width * 0.5f);
+                ghost.style.top = destinationRect.center.y - (sourceRect.height * 0.5f);
                 ghost.style.opacity = 0f;
             }, 20);
             ScheduleFeedback(() => ghost.RemoveFromHierarchy(), 360);
@@ -1686,19 +2521,18 @@ namespace KernelPanic.UI
 
         private void SpawnDeathGhost(Rect sourceRect)
         {
-            if (_feedbackLayer == null || sourceRect.width <= 0f || sourceRect.height <= 0f)
+            if (_feedbackLayer == null || !TryGetFeedbackLocalRect(sourceRect, out Rect localRect))
             {
                 return;
             }
 
-            Rect rootRect = _root.worldBound;
             float ghostWidth = Mathf.Min(sourceRect.width, 156f);
             float ghostHeight = Mathf.Min(sourceRect.height, 132f);
             VisualElement ghost = new();
             ghost.AddToClassList("death-ghost");
             ghost.style.position = Position.Absolute;
-            ghost.style.left = sourceRect.center.x - rootRect.x - (ghostWidth * 0.5f);
-            ghost.style.top = sourceRect.center.y - rootRect.y - (ghostHeight * 0.5f);
+            ghost.style.left = localRect.center.x - (ghostWidth * 0.5f);
+            ghost.style.top = localRect.center.y - (ghostHeight * 0.5f);
             ghost.style.width = ghostWidth;
             ghost.style.height = ghostHeight;
             _feedbackLayer.Add(ghost);
@@ -1715,6 +2549,40 @@ namespace KernelPanic.UI
                 ghost.style.scale = new Scale(new Vector3(0.92f, 0.92f, 1f));
             }, 20);
             ScheduleFeedback(() => ghost.RemoveFromHierarchy(), 360);
+        }
+
+        private void SpawnOverflowTravel(CombatantState source, CombatantState destination, int amount)
+        {
+            if (_feedbackLayer == null
+                || !TryGetCombatantFeedbackRect(source, out Rect sourceWorldRect)
+                || !TryGetCombatantFeedbackRect(destination, out Rect destinationWorldRect)
+                || !TryGetFeedbackLocalRect(sourceWorldRect, out Rect sourceRect)
+                || !TryGetFeedbackLocalRect(destinationWorldRect, out Rect destinationRect))
+            {
+                return;
+            }
+
+            PruneFeedbackLayer();
+            Label spill = new($"> {Mathf.Max(0, amount)}");
+            spill.AddToClassList("overflow-travel");
+            spill.style.position = Position.Absolute;
+            spill.style.left = sourceRect.center.x - 20f;
+            spill.style.top = sourceRect.center.y - 12f;
+            _feedbackLayer.Add(spill);
+
+            if (UIPreferences.ReducedMotion)
+            {
+                ScheduleFeedback(() => spill.RemoveFromHierarchy(), CombatTuning.ReducedMotionOverflowTravelMs);
+                return;
+            }
+
+            ScheduleFeedback(() =>
+            {
+                spill.style.left = destinationRect.center.x - 20f;
+                spill.style.top = destinationRect.center.y - 12f;
+                spill.style.opacity = 0f;
+            }, 20);
+            ScheduleFeedback(() => spill.RemoveFromHierarchy(), CombatTuning.OverflowTravelMs + 80);
         }
 
         private void FlashDamageVignette(HitMagnitudeTier tier)
@@ -1755,23 +2623,52 @@ namespace KernelPanic.UI
             element.RemoveFromClassList("damage-vignette-on");
             element.RemoveFromClassList("damage-vignette-crit");
             element.RemoveFromClassList("damage-vignette-massive");
+            element.RemoveFromClassList("damage-vignette-rolling-release");
+            element.RemoveFromClassList("feedback-fedora-payoff");
+            element.RemoveFromClassList("feedback-spawned");
+            element.RemoveFromClassList("fedora-risk-snap");
+            element.RemoveFromClassList("arch-btw-pop");
+            element.RemoveFromClassList("arch-btw-reset");
+            element.RemoveFromClassList("arch-btw-persist");
         }
 
-        private void ScheduleCombatBeat(Action action, int holdMs = 0)
+        private int ScheduleCombatBeat(Action action, int holdMs = 0)
         {
-            ScheduleCombatBeat(_ => action?.Invoke(), holdMs);
+            return ScheduleCombatBeat(_ => action?.Invoke(), holdMs);
         }
 
-        private void ScheduleCombatBeat(Action<int> action, int holdMs = 0)
+        private int ScheduleCombatBeat(Action<int> action, int holdMs = 0)
         {
             if (action == null)
             {
-                return;
+                return 0;
             }
 
             int beatIndex = _feedbackCascadeIndex++;
-            int delay = UIPreferences.ReducedMotion ? 0 : Mathf.Min(beatIndex * 120, 840);
-            ScheduleFeedback(() => action(beatIndex), delay + (UIPreferences.ReducedMotion ? 0 : holdMs));
+            int delay = _combatBeatCursorMs;
+            int step = CombatBeatStepMs(holdMs);
+            _combatBeatCursorMs += step;
+            int version = ++_combatBeatCursorVersion;
+            ScheduleFeedback(() => action(beatIndex), delay);
+            ScheduleFeedback(() =>
+            {
+                if (_combatBeatCursorVersion == version)
+                {
+                    _combatBeatCursorMs = 0;
+                }
+            }, delay + step + CombatTuning.CombatBeatSettleMs);
+            return delay + step;
+        }
+
+        private static int CombatBeatStepMs(int holdMs)
+        {
+            if (UIPreferences.ReducedMotion)
+            {
+                int compressed = holdMs <= 0 ? CombatTuning.ReducedMotionCombatBeatDefaultMs : holdMs / 4;
+                return Mathf.Clamp(compressed, CombatTuning.ReducedMotionCombatBeatMinMs, CombatTuning.ReducedMotionCombatBeatMaxMs);
+            }
+
+            return Mathf.Max(CombatTuning.CombatBeatDefaultMs, holdMs);
         }
 
         private void ScheduleFeedback(Action action, int delayMs)
@@ -1916,6 +2813,39 @@ namespace KernelPanic.UI
             Label label = new(text);
             label.AddToClassList("overlay-line");
             return label;
+        }
+
+        private static VisualElement DeathStat(string labelText, string valueText)
+        {
+            VisualElement row = new();
+            row.AddToClassList("death-stat-row");
+            Label label = new(labelText);
+            label.AddToClassList("death-stat-label");
+            Label value = new(valueText);
+            value.AddToClassList("death-stat-value");
+            row.Add(label);
+            row.Add(value);
+            return row;
+        }
+
+        private static VisualElement RewardReadout(string iconText, int amount, string currencyName, bool subdued)
+        {
+            VisualElement item = new();
+            item.AddToClassList("death-reward-item");
+            item.AddToClassList($"death-reward-{currencyName}");
+            item.EnableInClassList("death-reward-subdued", subdued);
+
+            Label icon = new(iconText);
+            icon.AddToClassList("death-reward-icon");
+            Label value = new($"+{amount}");
+            value.AddToClassList("death-reward-value");
+            Label name = new(currencyName);
+            name.AddToClassList("death-reward-name");
+
+            item.Add(icon);
+            item.Add(value);
+            item.Add(name);
+            return item;
         }
 
         private static VisualElement Tag(string text, string className)
@@ -2097,6 +3027,16 @@ namespace KernelPanic.UI
                 RepositoryOfferKind.CardUpgrade => $"apt upgrade {offer.CommandName}",
                 RepositoryOfferKind.StatUpgrade => $"apt install {offer.CommandName}",
                 _ => $"apt install {offer.CommandName}"
+            };
+        }
+
+        private static string OfferActionText(RepositoryOfferKind kind)
+        {
+            return kind switch
+            {
+                RepositoryOfferKind.CardUpgrade => "apt upgrade",
+                RepositoryOfferKind.StatUpgrade => "apt apply",
+                _ => "apt install"
             };
         }
 

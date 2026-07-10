@@ -44,10 +44,12 @@ namespace KernelPanic.Combat
         public bool PendingRevive { get; private set; }
         public bool Reaped { get; private set; }
         public bool LethalHitThisTurn { get; private set; }
+        public bool DefeatedPendingRemoval { get; private set; }
         public int PairId { get; private set; } = -1;
         public int RaceEnrageStacks { get; private set; }
         public int TelemetryStacks { get; private set; }
         public bool SpawnedFromDeath { get; private set; }
+        public bool DeathSpawnIntentRevealed { get; private set; } = true;
         public bool HasPendingMarker => PendingRevive || HasRevived;
         public bool HasSpecialSignal => HasSplitSignal || HasSegfaultSignal || HasRaceSignal || HasRootkitSignal || HasEliteSignal || HasRamPressureSignal || HasTelemetrySignal || HasCardLockerSignal || SpawnedFromDeath;
         public bool HasSplitSignal => HasBehavior(EnemyBehaviorFlags.Split);
@@ -133,6 +135,12 @@ namespace KernelPanic.Combat
         public void MarkSpawnedFromDeath()
         {
             SpawnedFromDeath = true;
+            DeathSpawnIntentRevealed = false;
+        }
+
+        public void RevealDeathSpawnIntent()
+        {
+            DeathSpawnIntentRevealed = true;
         }
 
         public void EnrageRaceSurvivor()
@@ -162,8 +170,19 @@ namespace KernelPanic.Combat
             LethalHitThisTurn = true;
         }
 
+        public void MarkDefeatedPendingRemoval()
+        {
+            DefeatedPendingRemoval = true;
+        }
+
+        public void ClearDefeatedPendingRemoval()
+        {
+            DefeatedPendingRemoval = false;
+        }
+
         public void MarkPendingRevive()
         {
+            DefeatedPendingRemoval = false;
             PendingRevive = true;
             State.IsDefeated = false;
             State.CurrentUptime = 0;
